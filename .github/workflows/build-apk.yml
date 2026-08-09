@@ -38,14 +38,29 @@ jobs:
       - name: Android SDK einrichten
         uses: android-actions/setup-android@v3
 
-      - name: Unit-Tests
-        run: ./gradlew test --stacktrace
+      # Tests und beide APKs in einem Gradle-Aufruf: das spart die
+      # Konfigurationsphase zweimal. Die Ausgabe wird mitgeschrieben, damit
+      # der Schritt darunter im Fehlerfall die Compiler-Meldungen
+      # herausfiltern kann.
+      #
+      # Bewusst ohne --stacktrace: der Gradle-Stacktrace ist mehrere hundert
+      # Zeilen lang und verdrängt genau die "e:"-Zeilen, auf die es ankommt.
+      - name: Testen und APKs bauen
+        run: |
+          set -o pipefail
+          ./gradlew test assembleDebug assembleRelease 2>&1 | tee /tmp/build.log
 
-      - name: Debug-APK bauen
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Release-APK bauen
-        run: ./gradlew assembleRelease --stacktrace
+      # Läuft nur bei einem Fehlschlag und hebt die eigentlichen Meldungen
+      # ans Ende des Protokolls, wo sie ohne Scrollen zu finden sind.
+      - name: Kompilierfehler zusammenfassen
+        if: failure()
+        run: |
+          echo "===================== Kompilierfehler ====================="
+          grep -E "^e: |^error: |^w: .*\(error\)|Unresolved reference|Type mismatch" /tmp/build.log \
+            | head -100 || echo "(keine Compiler-Meldungen gefunden)"
+          echo "==========================================================="
+          echo "--- letzte Gradle-Zusammenfassung ---"
+          grep -E "^\* What went wrong|^> |FAILURE:|BUILD FAILED" /tmp/build.log | head -40 || true
 
       # Die Dateinamen bekommen die Build-Nummer, damit im Download-Ordner
       # des Sticks erkennbar bleibt, welche Version welche ist.
