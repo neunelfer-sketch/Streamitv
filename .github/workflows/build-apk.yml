@@ -128,15 +128,20 @@ jobs:
       #
       # Läuft nur, wenn RELEASE_TOKEN hinterlegt ist, und darf fehlschlagen,
       # ohne den Build rot zu färben - die APKs liegen dann immer noch hier.
-      - name: APKs ins öffentliche Repo spiegeln
+      - name: APK ins öffentliche Repo spiegeln
         if: env.RELEASE_TOKEN != ''
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           VERSION="${{ steps.rename.outputs.version }}"
-          echo "Spiegele nach $PUBLIC_RELEASE_REPO ..."
-          gh release create "$VERSION" out/*.apk \
+          # Bewusst nur die fertige APK, nicht der Debug-Build: der ist
+          # 25 MB groß, langsamer und dient allein der Fehlersuche.
+          # 9elf-Player-latest.apk ist dieselbe Datei unter festem Namen und
+          # sorgt für die gleichbleibende Download-Adresse.
+          FILES=("out/9elf-Player-$VERSION.apk" "out/9elf-Player-latest.apk")
+          echo "Spiegele nach $PUBLIC_RELEASE_REPO: ${FILES[*]}"
+          gh release create "$VERSION" "${FILES[@]}" \
             --repo "$PUBLIC_RELEASE_REPO" \
             --title "9elf Player $VERSION" \
             --notes "Testbuild für Android TV und Fire TV.
@@ -150,12 +155,12 @@ jobs:
              \`github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk\`
           3. Nach dem Laden auf *Installieren* gehen.
 
-          \`9elf-Player-$VERSION.apk\` ist der optimierte Build – den nehmen.
-          \`…-debug.apk\` dient nur der Fehlersuche und läuft langsamer.
+          Beide Dateien sind identisch – \`9elf-Player-latest.apk\` trägt nur
+          den festen Namen für die dauerhafte Adresse.
 
           Signiert mit einem öffentlichen Testschlüssel, nicht mit einem
           Veröffentlichungsschlüssel." \
-            || gh release upload "$VERSION" out/*.apk --repo "$PUBLIC_RELEASE_REPO" --clobber
+            || gh release upload "$VERSION" "${FILES[@]}" --repo "$PUBLIC_RELEASE_REPO" --clobber
 
       - name: Download-Adresse ausgeben
         run: |
