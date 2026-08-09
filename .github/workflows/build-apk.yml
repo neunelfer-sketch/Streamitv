@@ -28,7 +28,7 @@ jobs:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       # Ziel für die öffentlichen Testbuilds. Über eine Repository-Variable
       # überschreibbar, falls das Repo mal anders heißt.
-      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/9elf-player-releases' }}
+      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/9elf-Player' }}
 
     steps:
       - name: Quellcode auschecken
@@ -79,6 +79,10 @@ jobs:
           VERSION="v1.0.${{ github.run_number }}"
           cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-$VERSION.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "out/9elf-Player-$VERSION-debug.apk"
+          # Gleichbleibender Dateiname: zusammen mit der "latest"-Weiterleitung
+          # von GitHub ergibt sich eine Adresse, die über alle Versionen hinweg
+          # gleich bleibt. Auf einer Fernbedienung tippt man sie genau einmal.
+          cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-latest.apk"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           ls -lh out/
 
@@ -141,8 +145,9 @@ jobs:
 
           1. Einstellungen → *Mein Fire TV* → *Entwickleroptionen* → Installation
              unbekannter Apps für *Downloader* erlauben.
-          2. In der App *Downloader* die Adresse dieser Datei eingeben:
-             \`9elf-Player-$VERSION.apk\`
+          2. In der App *Downloader* diese Adresse eingeben – sie bleibt für
+             alle künftigen Versionen gleich:
+             \`github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk\`
           3. Nach dem Laden auf *Installieren* gehen.
 
           \`9elf-Player-$VERSION.apk\` ist der optimierte Build – den nehmen.
@@ -160,5 +165,5 @@ jobs:
           if [ -n "$RELEASE_TOKEN" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Öffentlich (direkt auf dem Stick ladbar):" >> $GITHUB_STEP_SUMMARY
-            echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/download/${{ steps.rename.outputs.version }}/9elf-Player-${{ steps.rename.outputs.version }}.apk" >> $GITHUB_STEP_SUMMARY
+            echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk" >> $GITHUB_STEP_SUMMARY
           fi
