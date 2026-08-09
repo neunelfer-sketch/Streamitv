@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV-Banner (320x180 dp) für den Leanback-Launcher -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <path
+        android:fillColor="#0B0E14"
+        android:pathData="M0,0h320v180h-320z" />
+
+    <!-- Stilisiertes Play-Dreieck -->
+    <path
+        android:fillColor="#3D8BFF"
+        android:pathData="M118,62 L118,118 L166,90 Z" />
+
+    <!-- Bildschirmrahmen -->
+    <path
+        android:strokeColor="#3D8BFF"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M98,50 L222,50 A8,8 0 0 1 230,58 L230,122 A8,8 0 0 1 222,130 L98,130 A8,8 0 0 1 90,122 L90,58 A8,8 0 0 1 98,50 Z" />
+</vector>

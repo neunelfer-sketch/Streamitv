@@ -1,0 +1,251 @@
+name: APK bauen
+
+# Baut die App und hängt die fertigen APKs an ein GitHub-Release, sodass
+# sie direkt auf dem Fire TV Stick heruntergeladen werden können.
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+  workflow_dispatch:
+    inputs:
+      nur_veroeffentlichen:
+        description: 'Nicht neu bauen, sondern die APK des letzten erfolgreichen Laufs veröffentlichen'
+        type: boolean
+        default: false
+
+permissions:
+  # Wird gebraucht, um das Release anzulegen und die APKs anzuhängen.
+  contents: write
+  # Wird gebraucht, um die Artefakte früherer Läufe herunterzuladen.
+  actions: read
+
+concurrency:
+  # Ein neuer Push macht einen noch laufenden Build überflüssig.
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      # Muss auf Job-Ebene stehen: in der "if"-Bedingung eines Schritts ist
+      # dessen eigenes env noch nicht sichtbar.
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      # Ziel für die öffentlichen Testbuilds. Über eine Repository-Variable
+      # überschreibbar, falls das Repo mal anders heißt.
+      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/9elf-Player' }}
+
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v4
+
+      - name: JDK 17 einrichten
+        if: ${{ !inputs.nur_veroeffentlichen }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle einrichten
+        if: ${{ !inputs.nur_veroeffentlichen }}
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Android SDK einrichten
+        if: ${{ !inputs.nur_veroeffentlichen }}
+        uses: android-actions/setup-android@v3
+
+      # Tests und beide APKs in einem Gradle-Aufruf: das spart die
+      # Konfigurationsphase zweimal. Die Ausgabe wird mitgeschrieben, damit
+      # der Schritt darunter im Fehlerfall die Compiler-Meldungen
+      # herausfiltern kann.
+      #
+      # Bewusst ohne --stacktrace: der Gradle-Stacktrace ist mehrere hundert
+      # Zeilen lang und verdrängt genau die "e:"-Zeilen, auf die es ankommt.
+      - name: Testen und APKs bauen
+        if: ${{ !inputs.nur_veroeffentlichen }}
+        run: |
+          set -o pipefail
+          ./gradlew test assembleDebug assembleRelease 2>&1 | tee /tmp/build.log
+
+      # Läuft nur bei einem Fehlschlag und hebt die eigentlichen Meldungen
+      # ans Ende des Protokolls, wo sie ohne Scrollen zu finden sind.
+      - name: Kompilierfehler zusammenfassen
+        if: failure()
+        run: |
+          echo "===================== Kompilierfehler ====================="
+          grep -E "^e: |^error: |^w: .*\(error\)|Unresolved reference|Type mismatch" /tmp/build.log \
+            | head -100 || echo "(keine Compiler-Meldungen gefunden)"
+          echo "==========================================================="
+          echo "--- letzte Gradle-Zusammenfassung ---"
+          grep -E "^\* What went wrong|^> |FAILURE:|BUILD FAILED" /tmp/build.log | head -40 || true
+
+      # Die Dateinamen bekommen die Build-Nummer, damit im Download-Ordner
+      # des Sticks erkennbar bleibt, welche Version welche ist.
+      - name: APKs umbenennen
+        id: rename
+        if: ${{ !inputs.nur_veroeffentlichen }}
+        run: |
+          mkdir -p out
+          VERSION="v1.0.${{ github.run_number }}"
+          cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-$VERSION.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "out/9elf-Player-$VERSION-debug.apk"
+          # Gleichbleibender Dateiname: zusammen mit der "latest"-Weiterleitung
+          # von GitHub ergibt sich eine Adresse, die über alle Versionen hinweg
+          # gleich bleibt. Auf einer Fernbedienung tippt man sie genau einmal.
+          cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-latest.apk"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          ls -lh out/
+
+      # Zweiter Weg: nichts bauen, sondern das Ergebnis eines früheren Laufs
+      # verwenden. Nützlich, wenn nur die Veröffentlichung nachzuholen ist -
+      # etwa weil das Token erst nach dem Build hinterlegt wurde.
+      - name: APK aus dem letzten Build übernehmen
+        id: reuse
+        if: ${{ inputs.nur_veroeffentlichen }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+
+          # Nicht einfach den letzten erfolgreichen Lauf nehmen: Läufe in
+          # genau diesem Modus sind ebenfalls erfolgreich, erzeugen aber kein
+          # Artefakt. Gesucht ist der jüngste Lauf, der tatsächlich eine APK
+          # hinterlegt hat.
+          RUN_ID=""
+          for CANDIDATE in $(gh run list --repo "$REPO" --workflow build-apk.yml \
+              --status success --limit 15 --json databaseId --jq '.[].databaseId'); do
+            if gh api "repos/$REPO/actions/runs/$CANDIDATE/artifacts" \
+                 --jq '.artifacts[].name' 2>/dev/null | grep -q '^apk-'; then
+              RUN_ID="$CANDIDATE"
+              break
+            fi
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::Unter den letzten 15 erfolgreichen Läufen hat keiner" \
+                 "ein APK-Artefakt. Bitte einmal regulär bauen lassen."
+            exit 1
+          fi
+          echo "Verwende die Artefakte aus Lauf $RUN_ID"
+
+          gh run download "$RUN_ID" --repo "${{ github.repository }}" --dir raw
+          mkdir -p out
+          find raw -name '*.apk' -exec cp {} out/ \;
+          ls -lh out/
+
+          VERSION=$(ls out/ | grep -oE '^9elf-Player-v[0-9]+\.[0-9]+\.[0-9]+\.apk$' \
+            | head -1 | sed -E 's/^9elf-Player-(v[0-9.]+)\.apk$/\1/')
+          if [ -z "$VERSION" ]; then
+            echo "::error::Im Artefakt von Lauf $RUN_ID steckt keine versionierte APK."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      # Beide Wege münden hier: eine Versionsnummer, egal woher sie stammt.
+      - name: Version bestimmen
+        id: version
+        run: |
+          V="${{ steps.rename.outputs.version }}"
+          [ -z "$V" ] && V="${{ steps.reuse.outputs.version }}"
+          if [ -z "$V" ]; then
+            echo "::error::Keine Version ermittelbar."
+            exit 1
+          fi
+          echo "value=$V" >> "$GITHUB_OUTPUT"
+
+      - name: APKs als Workflow-Artefakt sichern
+        if: ${{ !inputs.nur_veroeffentlichen }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ steps.rename.outputs.version }}
+          path: out/*.apk
+          retention-days: 30
+
+      - name: Release veröffentlichen
+        if: ${{ !inputs.nur_veroeffentlichen }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.value }}"
+          # --clobber überschreibt die Dateien, falls das Tag schon existiert.
+          gh release create "$VERSION" out/*.apk \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "9elf Player $VERSION" \
+            --notes "Testbuild vom Branch \`${{ github.ref_name }}\`.
+
+          **Zum Installieren auf dem Fire TV Stick**
+
+          1. In den Einstellungen unter *Mein Fire TV → Entwickleroptionen* die
+             Installation unbekannter Apps für den Downloader erlauben.
+          2. Die App *Downloader* öffnen und die URL der Datei
+             \`9elf-Player-$VERSION.apk\` von dieser Seite eingeben.
+          3. Nach dem Download auf *Installieren* gehen.
+
+          \`9elf-Player-$VERSION.apk\` ist der optimierte Build – den nehmen.
+          \`…-debug.apk\` ist nur für die Fehlersuche gedacht und läuft langsamer.
+
+          Beide sind mit einem öffentlichen Testschlüssel signiert, nicht mit
+          einem Veröffentlichungsschlüssel." \
+            || gh release upload "$VERSION" out/*.apk --repo "${{ github.repository }}" --clobber
+
+      # Der Quellcode liegt in einem privaten Repository; dessen
+      # Release-Dateien sind nicht ohne Anmeldung abrufbar, und die
+      # Downloader-App auf dem Fire TV kann sich nicht anmelden. Deshalb
+      # landen die APKs zusätzlich in einem öffentlichen Repository, das
+      # ausschließlich die Builds enthält.
+      #
+      # Läuft nur, wenn RELEASE_TOKEN hinterlegt ist, und darf fehlschlagen,
+      # ohne den Build rot zu färben - die APKs liegen dann immer noch hier.
+      - name: APK ins öffentliche Repo spiegeln
+        if: env.RELEASE_TOKEN != ''
+        run: |
+          # Das Token wird von Leerraum befreit, bevor es benutzt wird.
+          # Beim Einfügen in das Secret-Feld wandert leicht ein Zeilenumbruch
+          # mit; der macht den Authorization-Kopf ungültig, und die Anfrage
+          # scheitert mit "invalid header field value" - eine Meldung, die
+          # nach einem Rechteproblem aussieht, aber keines ist.
+          GH_TOKEN=$(printf '%s' "$RELEASE_TOKEN" | tr -d '[:space:]')
+          export GH_TOKEN
+
+          VERSION="${{ steps.version.outputs.value }}"
+          # Bewusst nur die fertige APK, nicht der Debug-Build: der ist
+          # 25 MB groß, langsamer und dient allein der Fehlersuche.
+          # 9elf-Player-latest.apk ist dieselbe Datei unter festem Namen und
+          # sorgt für die gleichbleibende Download-Adresse.
+          FILES=("out/9elf-Player-$VERSION.apk" "out/9elf-Player-latest.apk")
+          echo "Spiegele nach $PUBLIC_RELEASE_REPO: ${FILES[*]}"
+          gh release create "$VERSION" "${FILES[@]}" \
+            --repo "$PUBLIC_RELEASE_REPO" \
+            --title "9elf Player $VERSION" \
+            --notes "Testbuild für Android TV und Fire TV.
+
+          **Installation auf dem Fire TV Stick**
+
+          1. Einstellungen → *Mein Fire TV* → *Entwickleroptionen* → Installation
+             unbekannter Apps für *Downloader* erlauben.
+          2. In der App *Downloader* diese Adresse eingeben – sie bleibt für
+             alle künftigen Versionen gleich:
+             \`github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk\`
+          3. Nach dem Laden auf *Installieren* gehen.
+
+          Beide Dateien sind identisch – \`9elf-Player-latest.apk\` trägt nur
+          den festen Namen für die dauerhafte Adresse.
+
+          Signiert mit einem öffentlichen Testschlüssel, nicht mit einem
+          Veröffentlichungsschlüssel." \
+            || gh release upload "$VERSION" "${FILES[@]}" --repo "$PUBLIC_RELEASE_REPO" --clobber
+
+      - name: Download-Adresse ausgeben
+        run: |
+          echo "### APK fertig :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Privat: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.value }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$RELEASE_TOKEN" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Öffentlich (direkt auf dem Stick ladbar):" >> $GITHUB_STEP_SUMMARY
+            echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk" >> $GITHUB_STEP_SUMMARY
+          fi

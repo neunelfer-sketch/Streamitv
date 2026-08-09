@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tv_background">#FF0B0E14</color>
+    <color name="tv_surface">#FF141822</color>
+    <color name="tv_accent">#FF3D8BFF</color>
+    <color name="ic_launcher_background">#FF0B0E14</color>
+</resources>

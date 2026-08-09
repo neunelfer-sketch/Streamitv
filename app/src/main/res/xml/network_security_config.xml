@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Viele IPTV-Panels laufen ausschließlich über HTTP (Port 8080/25461).
+  Ab Android 9 ist Klartext-Traffic standardmäßig blockiert – deshalb
+  erlauben wir ihn hier explizit. Systemzertifikate bleiben aktiv,
+  Nutzerzertifikate werden nur im Debug-Build akzeptiert.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

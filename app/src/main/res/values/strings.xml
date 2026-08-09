@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">9elf Player</string>
+
+    <!-- Login / Playlist-Einrichtung -->
+    <string name="login_title">Playlist hinzufügen</string>
+    <string name="login_subtitle">Wähle den Typ deiner Playlist</string>
+    <string name="login_type_xtream">Xtream Codes</string>
+    <string name="login_type_m3u">M3U / M3U8 Link</string>
+    <string name="login_playlist_name">Name der Playlist</string>
+    <string name="login_server_url">Server-URL (z. B. http://server.tv:8080)</string>
+    <string name="login_username">Benutzername</string>
+    <string name="login_password">Passwort</string>
+    <string name="login_m3u_url">M3U-URL</string>
+    <string name="login_epg_url">EPG-URL (XMLTV, optional)</string>
+    <string name="login_connect">Verbinden</string>
+    <string name="login_connecting">Verbinde…</string>
+
+    <!-- Navigation -->
+    <string name="nav_live">Live TV</string>
+    <string name="nav_movies">Filme</string>
+    <string name="nav_series">Serien</string>
+    <string name="nav_guide">TV-Guide</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- Kategorien -->
+    <string name="category_all">Alle Sender</string>
+    <string name="category_favorites">Favoriten</string>
+    <string name="category_recent">Zuletzt gesehen</string>
+
+    <!-- Player-Overlay -->
+    <string name="player_audio_track">Tonspur</string>
+    <string name="player_subtitles">Untertitel</string>
+    <string name="player_aspect_ratio">Seitenverhältnis</string>
+    <string name="player_subtitles_off">Aus</string>
+    <string name="player_add_favorite">Zu Favoriten</string>
+    <string name="player_remove_favorite">Favorit entfernen</string>
+    <string name="player_pip">Bild-in-Bild</string>
+    <string name="player_multiview">Multiview</string>
+    <string name="player_no_program">Keine Programminformationen</string>
+
+    <!-- Allgemein -->
+    <string name="loading">Lade…</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="empty_channels">Keine Sender in dieser Kategorie</string>
+    <string name="search_hint">Sender suchen</string>
+
+    <!-- Einstellungen -->
+    <string name="settings_refresh_playlist">Playlist aktualisieren</string>
+    <string name="settings_refresh_epg">EPG aktualisieren</string>
+    <string name="settings_buffer">Puffergröße</string>
+    <string name="settings_remove_playlist">Playlist entfernen</string>
+    <string name="settings_about">Über 9elf Player</string>
+</resources>
