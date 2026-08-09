@@ -82,17 +82,18 @@ android {
         buildConfig = true
     }
 
+    lint {
+        // Media3 markiert große Teile seiner API als "UnstableApi". Die
+        // Nutzung ist hier bewusst – ohne diese Ausnahme bricht
+        // lintVitalRelease den Release-Build ab.
+        disable += "UnsafeOptInUsageError"
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-}
-
-// Room-Schema-Export für reproduzierbare Migrationen.
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-    arg("room.incremental", "true")
 }
 
 dependencies {

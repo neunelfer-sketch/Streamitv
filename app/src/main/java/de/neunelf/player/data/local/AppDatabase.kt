@@ -23,7 +23,12 @@ import androidx.room.RoomDatabase
         RecentEntity::class,
     ],
     version = 1,
-    exportSchema = true,
+    // Kein Schema-Export: die Datenbank ist ein reiner Cache mit
+    // fallbackToDestructiveMigration, es werden nie Migrationen von Hand
+    // geschrieben. Der Export brachte hier nur einen Konflikt, weil die
+    // KSP-Tasks für Debug und Release parallel in dasselbe Verzeichnis
+    // schreiben ("Empty schema file").
+    exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao
