@@ -185,10 +185,15 @@ jobs:
       # ohne den Build rot zu färben - die APKs liegen dann immer noch hier.
       - name: APK ins öffentliche Repo spiegeln
         if: env.RELEASE_TOKEN != ''
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
+          # Das Token wird von Leerraum befreit, bevor es benutzt wird.
+          # Beim Einfügen in das Secret-Feld wandert leicht ein Zeilenumbruch
+          # mit; der macht den Authorization-Kopf ungültig, und die Anfrage
+          # scheitert mit "invalid header field value" - eine Meldung, die
+          # nach einem Rechteproblem aussieht, aber keines ist.
+          GH_TOKEN=$(printf '%s' "$RELEASE_TOKEN" | tr -d '[:space:]')
+          export GH_TOKEN
+
           VERSION="${{ steps.version.outputs.value }}"
           # Bewusst nur die fertige APK, nicht der Debug-Build: der ist
           # 25 MB groß, langsamer und dient allein der Fehlersuche.
