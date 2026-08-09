@@ -108,9 +108,26 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RUN_ID=$(gh run list --repo "${{ github.repository }}" \
-            --workflow build-apk.yml --status success --limit 1 \
-            --json databaseId --jq '.[0].databaseId')
+          REPO="${{ github.repository }}"
+
+          # Nicht einfach den letzten erfolgreichen Lauf nehmen: Läufe in
+          # genau diesem Modus sind ebenfalls erfolgreich, erzeugen aber kein
+          # Artefakt. Gesucht ist der jüngste Lauf, der tatsächlich eine APK
+          # hinterlegt hat.
+          RUN_ID=""
+          for CANDIDATE in $(gh run list --repo "$REPO" --workflow build-apk.yml \
+              --status success --limit 15 --json databaseId --jq '.[].databaseId'); do
+            if gh api "repos/$REPO/actions/runs/$CANDIDATE/artifacts" \
+                 --jq '.artifacts[].name' 2>/dev/null | grep -q '^apk-'; then
+              RUN_ID="$CANDIDATE"
+              break
+            fi
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::Unter den letzten 15 erfolgreichen Läufen hat keiner" \
+                 "ein APK-Artefakt. Bitte einmal regulär bauen lassen."
+            exit 1
+          fi
           echo "Verwende die Artefakte aus Lauf $RUN_ID"
 
           gh run download "$RUN_ID" --repo "${{ github.repository }}" --dir raw
