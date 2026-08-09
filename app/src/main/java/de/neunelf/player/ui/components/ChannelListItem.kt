@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -75,9 +76,9 @@ fun ChannelListItem(
         modifier = modifier
             .fillMaxWidth()
             .height(72.dp)
-            .onFocusChangedCompat { focused ->
-                isFocused = focused
-                if (focused) onFocused()
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+                if (focusState.isFocused) onFocused()
             },
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
@@ -231,10 +232,3 @@ fun ProgramProgressBar(
         )
     }
 }
-
-/**
- * Kleiner Wrapper um `onFocusChanged`, damit die Import-Liste der
- * aufrufenden Dateien kurz bleibt.
- */
-private fun Modifier.onFocusChangedCompat(onChanged: (Boolean) -> Unit): Modifier =
-    androidx.compose.ui.focus.onFocusChanged { onChanged(it.isFocused) }
