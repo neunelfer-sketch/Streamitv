@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.streamitv.tv"
+    namespace = "de.neunelf.player"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.streamitv.tv"
+        applicationId = "de.neunelf.player"
         // minSdk 22 deckt Fire OS 5 (Fire TV Stick 2. Gen) sowie Android TV 5.1 ab.
         minSdk = 22
         targetSdk = 34

@@ -5,7 +5,7 @@
       damit beim App-Start kein weißer Blitz auf dem TV entsteht.
       Das eigentliche Design wird in Compose (ui/theme) definiert.
     -->
-    <style name="Theme.StreamiTV" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.NeunelfPlayer" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/tv_background</item>
         <item name="android:colorBackground">@color/tv_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>

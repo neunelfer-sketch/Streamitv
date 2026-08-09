@@ -1,4 +1,4 @@
-# StreamiTV
+# 9elf Player
 
 IPTV-Player für **Android TV** und **Fire TV** im Stil von TiviMate.
 Nativ umgesetzt mit **Kotlin, Jetpack Compose for TV und Media3/ExoPlayer**.
@@ -17,9 +17,9 @@ und in allen dreien ist der native Weg klar im Vorteil:
 ## Projektstruktur
 
 ```
-app/src/main/java/com/streamitv/tv/
+app/src/main/java/de/neunelf/player/
 │
-├─ StreamiTvApplication.kt      Hilt-Einstieg, Coil-Bildcache
+├─ NeunelfPlayerApplication.kt  Hilt-Einstieg, Coil-Bildcache
 ├─ MainActivity.kt              Single Activity, Bild-in-Bild
 │
 ├─ core/

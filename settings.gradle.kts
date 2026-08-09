@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "StreamiTV"
+rootProject.name = "NeunelfPlayer"
 include(":app")

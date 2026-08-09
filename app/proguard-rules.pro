@@ -14,11 +14,11 @@
 }
 
 # Alle DTOs samt ihrer generierten $$serializer-Klassen behalten.
--keep,includedescriptorclasses class com.streamitv.tv.data.remote.**$$serializer { *; }
--keepclassmembers class com.streamitv.tv.data.remote.** {
+-keep,includedescriptorclasses class de.neunelf.player.data.remote.**$$serializer { *; }
+-keepclassmembers class de.neunelf.player.data.remote.** {
     *** Companion;
 }
--keepclasseswithmembers class com.streamitv.tv.data.remote.** {
+-keepclasseswithmembers class de.neunelf.player.data.remote.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
