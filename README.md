@@ -115,6 +115,31 @@ automatisch als EPG-Quelle übernommen.
 läuft streamend und schreibt in Blöcken zu 1.000 Sendungen, damit auch
 Dateien jenseits von 100 MB auf einem Stick durchlaufen.
 
+## Fertige APK laden
+
+Jeder Push auf `main` oder einen `claude/*`-Branch baut die App auf GitHub
+Actions und hängt zwei APKs an ein Release:
+
+- `9elf-Player-vX.Y.Z.apk` – optimierter Build, dieser gehört auf den Stick
+- `9elf-Player-vX.Y.Z-debug.apk` – nur für die Fehlersuche, deutlich größer
+  und langsamer
+
+Weil dieses Repository privat ist, sind seine Release-Dateien nicht ohne
+Anmeldung abrufbar – die Downloader-App auf dem Fire TV kann sich aber nicht
+anmelden. Die Builds werden deshalb zusätzlich in ein öffentliches
+Repository gespiegelt, das ausschließlich die APKs enthält.
+
+Dafür sind zwei Dinge nötig:
+
+1. Ein öffentliches Repository, standardmäßig `9elf-player-releases`.
+   Ein anderer Name lässt sich über die Repository-Variable
+   `PUBLIC_RELEASE_REPO` einstellen.
+2. Ein Zugriffstoken mit Schreibrecht auf dieses Repository, hinterlegt als
+   Secret `RELEASE_TOKEN`.
+
+Fehlt das Secret, überspringt der Workflow die Spiegelung und der Build
+bleibt trotzdem grün.
+
 ## Bauen
 
 ```bash

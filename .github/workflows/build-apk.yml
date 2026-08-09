@@ -22,6 +22,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      # Muss auf Job-Ebene stehen: in der "if"-Bedingung eines Schritts ist
+      # dessen eigenes env noch nicht sichtbar.
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      # Ziel für die öffentlichen Testbuilds. Über eine Repository-Variable
+      # überschreibbar, falls das Repo mal anders heißt.
+      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/9elf-player-releases' }}
+
     steps:
       - name: Quellcode auschecken
         uses: actions/checkout@v4
@@ -108,8 +116,49 @@ jobs:
           einem Veröffentlichungsschlüssel." \
             || gh release upload "$VERSION" out/*.apk --repo "${{ github.repository }}" --clobber
 
+      # Der Quellcode liegt in einem privaten Repository; dessen
+      # Release-Dateien sind nicht ohne Anmeldung abrufbar, und die
+      # Downloader-App auf dem Fire TV kann sich nicht anmelden. Deshalb
+      # landen die APKs zusätzlich in einem öffentlichen Repository, das
+      # ausschließlich die Builds enthält.
+      #
+      # Läuft nur, wenn RELEASE_TOKEN hinterlegt ist, und darf fehlschlagen,
+      # ohne den Build rot zu färben - die APKs liegen dann immer noch hier.
+      - name: APKs ins öffentliche Repo spiegeln
+        if: env.RELEASE_TOKEN != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          VERSION="${{ steps.rename.outputs.version }}"
+          echo "Spiegele nach $PUBLIC_RELEASE_REPO ..."
+          gh release create "$VERSION" out/*.apk \
+            --repo "$PUBLIC_RELEASE_REPO" \
+            --title "9elf Player $VERSION" \
+            --notes "Testbuild für Android TV und Fire TV.
+
+          **Installation auf dem Fire TV Stick**
+
+          1. Einstellungen → *Mein Fire TV* → *Entwickleroptionen* → Installation
+             unbekannter Apps für *Downloader* erlauben.
+          2. In der App *Downloader* die Adresse dieser Datei eingeben:
+             \`9elf-Player-$VERSION.apk\`
+          3. Nach dem Laden auf *Installieren* gehen.
+
+          \`9elf-Player-$VERSION.apk\` ist der optimierte Build – den nehmen.
+          \`…-debug.apk\` dient nur der Fehlersuche und läuft langsamer.
+
+          Signiert mit einem öffentlichen Testschlüssel, nicht mit einem
+          Veröffentlichungsschlüssel." \
+            || gh release upload "$VERSION" out/*.apk --repo "$PUBLIC_RELEASE_REPO" --clobber
+
       - name: Download-Adresse ausgeben
         run: |
           echo "### APK fertig :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "https://github.com/${{ github.repository }}/releases/tag/${{ steps.rename.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Privat: https://github.com/${{ github.repository }}/releases/tag/${{ steps.rename.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$RELEASE_TOKEN" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Öffentlich (direkt auf dem Stick ladbar):" >> $GITHUB_STEP_SUMMARY
+            echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/download/${{ steps.rename.outputs.version }}/9elf-Player-${{ steps.rename.outputs.version }}.apk" >> $GITHUB_STEP_SUMMARY
+          fi
