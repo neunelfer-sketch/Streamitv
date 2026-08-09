@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,6 +29,7 @@ import androidx.tv.material3.Text
 import com.streamitv.tv.core.TimeFormat
 import com.streamitv.tv.data.model.AspectRatioMode
 import com.streamitv.tv.data.prefs.SettingsStore
+import com.streamitv.tv.ui.components.DeveloperCredit
 import com.streamitv.tv.ui.theme.TvAccent
 import com.streamitv.tv.ui.theme.TvBackground
 import com.streamitv.tv.ui.theme.TvOnSurfaceMuted
@@ -157,6 +159,9 @@ fun SettingsScreen(
                     onClick = onBack,
                 )
             }
+            // Ganz unten und nicht fokussierbar: der Hinweis soll da sein,
+            // aber niemandem im Weg stehen.
+            item { DeveloperCredit(textAlign = TextAlign.Start) }
         }
     }
 }

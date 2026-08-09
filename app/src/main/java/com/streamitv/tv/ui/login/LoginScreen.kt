@@ -35,6 +35,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.streamitv.tv.data.model.PlaylistType
+import com.streamitv.tv.ui.components.DeveloperCredit
 import com.streamitv.tv.ui.theme.TvAccent
 import com.streamitv.tv.ui.theme.TvBackground
 import com.streamitv.tv.ui.theme.TvOnSurface
@@ -178,6 +179,8 @@ fun LoginScreen(
                 ) {
                     Text(if (state.isBusy) "Verbinde…" else "Verbinden")
                 }
+
+                DeveloperCredit()
             }
         }
     }

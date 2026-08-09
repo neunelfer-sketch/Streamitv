@@ -152,3 +152,7 @@ Voraussetzungen: JDK 17, Android SDK 35, `minSdk 22` (deckt Fire OS 5 ab).
 - Multiview (mehrere Streams gleichzeitig)
 - Sortierung und Ausblenden von Sendern durch den Nutzer
 - Aufnahmefunktion
+
+---
+
+_Developed by 9elf_
