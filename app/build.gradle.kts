@@ -22,10 +22,30 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        // Fester Signaturschlüssel für Testbuilds.
+        //
+        // Ohne ihn erzeugt jeder CI-Lauf einen neuen Debug-Schlüssel, und
+        // Android verweigert dann die Installation über eine bestehende
+        // Version ("Signaturen stimmen nicht überein"). Der Schlüssel ist
+        // bewusst öffentlich und ausschließlich für Testbuilds gedacht –
+        // für eine Veröffentlichung im Store gehört ein eigener, geheimer
+        // Schlüssel her (siehe README).
+        getByName("debug") {
+            storeFile = rootProject.file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
+            // Eigene Anwendungs-ID, damit Test- und Release-Build
+            // nebeneinander installiert werden können.
             applicationIdSuffix = ".debug"
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = true
@@ -34,6 +54,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // Vorerst ebenfalls mit dem Testschlüssel, damit die APK ohne
+            // weitere Einrichtung installierbar ist.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

@@ -1,0 +1,100 @@
+name: APK bauen
+
+# Baut die App und hängt die fertigen APKs an ein GitHub-Release, sodass
+# sie direkt auf dem Fire TV Stick heruntergeladen werden können.
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+  workflow_dispatch:
+
+permissions:
+  # Wird gebraucht, um das Release anzulegen und die APKs anzuhängen.
+  contents: write
+
+concurrency:
+  # Ein neuer Push macht einen noch laufenden Build überflüssig.
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v4
+
+      - name: JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Android SDK einrichten
+        uses: android-actions/setup-android@v3
+
+      - name: Unit-Tests
+        run: ./gradlew test --stacktrace
+
+      - name: Debug-APK bauen
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Release-APK bauen
+        run: ./gradlew assembleRelease --stacktrace
+
+      # Die Dateinamen bekommen die Build-Nummer, damit im Download-Ordner
+      # des Sticks erkennbar bleibt, welche Version welche ist.
+      - name: APKs umbenennen
+        id: rename
+        run: |
+          mkdir -p out
+          VERSION="v1.0.${{ github.run_number }}"
+          cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-$VERSION.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "out/9elf-Player-$VERSION-debug.apk"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          ls -lh out/
+
+      - name: APKs als Workflow-Artefakt sichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ steps.rename.outputs.version }}
+          path: out/*.apk
+          retention-days: 30
+
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.rename.outputs.version }}"
+          # --clobber überschreibt die Dateien, falls das Tag schon existiert.
+          gh release create "$VERSION" out/*.apk \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "9elf Player $VERSION" \
+            --notes "Testbuild vom Branch \`${{ github.ref_name }}\`.
+
+          **Zum Installieren auf dem Fire TV Stick**
+
+          1. In den Einstellungen unter *Mein Fire TV → Entwickleroptionen* die
+             Installation unbekannter Apps für den Downloader erlauben.
+          2. Die App *Downloader* öffnen und die URL der Datei
+             \`9elf-Player-$VERSION.apk\` von dieser Seite eingeben.
+          3. Nach dem Download auf *Installieren* gehen.
+
+          \`9elf-Player-$VERSION.apk\` ist der optimierte Build – den nehmen.
+          \`…-debug.apk\` ist nur für die Fehlersuche gedacht und läuft langsamer.
+
+          Beide sind mit einem öffentlichen Testschlüssel signiert, nicht mit
+          einem Veröffentlichungsschlüssel." \
+            || gh release upload "$VERSION" out/*.apk --repo "${{ github.repository }}" --clobber
+
+      - name: Download-Adresse ausgeben
+        run: |
+          echo "### APK fertig :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "https://github.com/${{ github.repository }}/releases/tag/${{ steps.rename.outputs.version }}" >> $GITHUB_STEP_SUMMARY
