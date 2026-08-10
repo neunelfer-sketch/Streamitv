@@ -120,13 +120,13 @@ class HomeViewModel @Inject constructor(
     )
 
     /**
-     * Tickt im Minutentakt. Ohne diesen Takt würden Fortschrittsbalken und
+     * Tickt alle 15 Sekunden. Ohne diesen Takt würden Fortschrittsbalken und
      * "läuft jetzt"-Markierungen einfrieren, solange der Nutzer nichts drückt.
      */
     private val nowTicker: StateFlow<Long> = flow {
         while (true) {
             emit(System.currentTimeMillis())
-            kotlinx.coroutines.delay(TimeUnit.SECONDS.toMillis(30))
+            kotlinx.coroutines.delay(TimeUnit.SECONDS.toMillis(15))
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), System.currentTimeMillis())
 

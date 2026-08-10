@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,6 +50,7 @@ import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.EpgProgram
 import de.neunelf.player.ui.components.ChannelLogo
+import de.neunelf.player.ui.components.ProgramProgressBar
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvBackground
 import de.neunelf.player.ui.theme.TvLive
@@ -99,72 +101,195 @@ fun GuideScreen(
     val rowsState = rememberLazyListState()
     val density = LocalDensity.current
 
+    // Treibt die Vorschau rechts an: ohne diesen Takt bliebe "läuft noch X
+    // Min." stehen bleiben, solange der Nutzer nicht selbst navigiert.
+    val now by produceState(initialValue = System.currentTimeMillis()) {
+        while (true) {
+            kotlinx.coroutines.delay(15_000L)
+            value = System.currentTimeMillis()
+        }
+    }
+
     // Beim Öffnen auf "jetzt" scrollen – nicht auf den Anfang des Fensters.
     LaunchedEffect(state.window.start) {
-        val now = System.currentTimeMillis()
-        if (state.window.contains(now)) {
-            val offsetMinutes = (now - state.window.start) / 60_000f
+        val opened = System.currentTimeMillis()
+        if (state.window.contains(opened)) {
+            val offsetMinutes = (opened - state.window.start) / 60_000f
             val targetPx = with(density) { (MINUTE_WIDTH * offsetMinutes).toPx() }
             // Etwas Vorlauf, damit die laufende Sendung nicht am Rand klebt.
             timelineScroll.scrollTo((targetPx - 200f).roundToInt().coerceAtLeast(0))
         }
     }
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxSize()
             .background(TvBackground),
     ) {
-        GuideHeader(
-            dayLabel = state.dayLabel,
-            selectedProgram = state.selectedProgram,
-            onPreviousDay = viewModel::previousDay,
-            onNextDay = viewModel::nextDay,
-            onJumpToNow = viewModel::jumpToNow,
+        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            GuideHeader(
+                dayLabel = state.dayLabel,
+                selectedProgram = state.selectedProgram,
+                onPreviousDay = viewModel::previousDay,
+                onNextDay = viewModel::nextDay,
+                onJumpToNow = viewModel::jumpToNow,
+            )
+
+            // --- Zeitleiste ------------------------------------------------
+            Row(modifier = Modifier.fillMaxWidth()) {
+                // Platzhalter über der Senderspalte, damit die Achse passt.
+                Box(
+                    modifier = Modifier
+                        .width(CHANNEL_COLUMN_WIDTH)
+                        .height(TIMELINE_HEIGHT)
+                        .background(TvSurface),
+                )
+                TimeRuler(
+                    windowStart = state.window.start,
+                    windowMinutes = state.window.durationMinutes,
+                    scrollState = timelineScroll,
+                )
+            }
+
+            // --- Rasterzeilen -------------------------------------------------
+            if (state.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Lade Programmzeitschrift…", color = TvOnSurfaceMuted)
+                }
+            } else {
+                LazyColumn(
+                    state = rowsState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = TvSpacing.large),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    items(state.channels, key = { it.streamId }) { channel ->
+                        GuideRow(
+                            channel = channel,
+                            programs = channel.epgChannelId
+                                ?.let { state.programsByChannel[it] }
+                                .orEmpty(),
+                            windowStart = state.window.start,
+                            windowEnd = state.window.end,
+                            scrollState = timelineScroll,
+                            onProgramFocused = { program -> viewModel.onProgramFocused(channel, program) },
+                            onProgramClick = { onPlayChannel(channel) },
+                        )
+                    }
+                }
+            }
+        }
+
+        // --- Vorschau: was läuft gerade auf dem fokussierten Sender --------
+        GuidePreviewPane(
+            channel = state.selectedChannel,
+            programs = state.selectedChannel?.epgChannelId
+                ?.let { state.programsByChannel[it] }
+                .orEmpty(),
+            now = now,
+            modifier = Modifier
+                .width(340.dp)
+                .fillMaxHeight()
+                .background(TvSurface)
+                .padding(TvSpacing.large),
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Vorschau-Spalte
+// ---------------------------------------------------------------------------
+
+/**
+ * Zeigt, was auf dem gerade fokussierten Sender *live* läuft – unabhängig
+ * davon, welche Rasterzelle der Nutzer gerade anvisiert (die kann auch in
+ * der Vergangenheit oder Zukunft liegen). Aktualisiert sich über [now]
+ * laufend, ohne dass der Nutzer etwas tun muss.
+ */
+@Composable
+private fun GuidePreviewPane(
+    channel: Channel?,
+    programs: List<EpgProgram>,
+    now: Long,
+    modifier: Modifier = Modifier,
+) {
+    if (channel == null) {
+        Box(modifier, contentAlignment = Alignment.Center) {
+            Text("Sender auswählen", color = TvOnSurfaceMuted)
+        }
+        return
+    }
+
+    val current = programs.firstOrNull { it.isLiveAt(now) }
+    val next = programs.firstOrNull { it.startAt > now }
+
+    Column(modifier = modifier) {
+        ChannelLogo(
+            logoUrl = channel.logoUrl,
+            contentDescription = channel.name,
+            modifier = Modifier.size(72.dp),
+        )
+        Spacer(Modifier.height(TvSpacing.medium))
+        Text(
+            text = channel.name,
+            style = MaterialTheme.typography.headlineSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
 
-        // --- Zeitleiste ----------------------------------------------------
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // Platzhalter über der Senderspalte, damit die Achse passt.
-            Box(
-                modifier = Modifier
-                    .width(CHANNEL_COLUMN_WIDTH)
-                    .height(TIMELINE_HEIGHT)
-                    .background(TvSurface),
+        if (current != null) {
+            Spacer(Modifier.height(TvSpacing.small))
+            Text(
+                text = current.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = TvAccent,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
-            TimeRuler(
-                windowStart = state.window.start,
-                windowMinutes = state.window.durationMinutes,
-                scrollState = timelineScroll,
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "${TimeFormat.range(current.startAt, current.endAt)} · ${TimeFormat.remaining(current.endAt, now)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TvOnSurfaceMuted,
+            )
+            Spacer(Modifier.height(TvSpacing.small))
+            ProgramProgressBar(
+                progress = current.progressAt(now),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            current.description?.let { description ->
+                Spacer(Modifier.height(TvSpacing.medium))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TvOnSurfaceMuted,
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        } else {
+            Spacer(Modifier.height(TvSpacing.small))
+            Text(
+                text = "Keine Programminformationen",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TvOnSurfaceMuted,
             )
         }
 
-        // --- Rasterzeilen ---------------------------------------------------
-        if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Lade Programmzeitschrift…", color = TvOnSurfaceMuted)
-            }
-        } else {
-            LazyColumn(
-                state = rowsState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = TvSpacing.large),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                items(state.channels, key = { it.streamId }) { channel ->
-                    GuideRow(
-                        channel = channel,
-                        programs = channel.epgChannelId
-                            ?.let { state.programsByChannel[it] }
-                            .orEmpty(),
-                        windowStart = state.window.start,
-                        windowEnd = state.window.end,
-                        scrollState = timelineScroll,
-                        onProgramFocused = { program -> viewModel.onProgramFocused(channel, program) },
-                        onProgramClick = { onPlayChannel(channel) },
-                    )
-                }
-            }
+        if (next != null) {
+            Spacer(Modifier.height(TvSpacing.large))
+            Text(
+                text = "Danach",
+                style = MaterialTheme.typography.titleMedium,
+                color = TvOnSurfaceMuted,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "${TimeFormat.clock(next.startAt)}  ${next.title}",
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
