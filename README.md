@@ -140,6 +140,26 @@ Dafür sind zwei Dinge nötig:
 Fehlt das Secret, überspringt der Workflow die Spiegelung und der Build
 bleibt trotzdem grün.
 
+### Aktualisierung aus der App heraus
+
+Die App schaut beim Start still bei `releases/latest` des öffentlichen
+Repositories nach einer neueren Ausgabe und zeigt einen Hinweis in der
+Kopfzeile. Unter *Einstellungen → App → Aktualisierung* läuft der ganze
+Ablauf über eine Taste: prüfen, herunterladen, installieren.
+
+Zwei Voraussetzungen, die leicht übersehen werden:
+
+- **Gleicher Signaturschlüssel.** Alle Builds werden mit dem Schlüssel aus
+  `keystore/` signiert. Mit einem anderen Schlüssel lehnt Android die
+  Installation über die bestehende Fassung ab.
+- **Versionsnummer aus dem CI-Lauf.** `versionName`/`versionCode` kommen
+  über `-PappVersionName` bzw. `-PappVersionCode` herein und müssen zum
+  Release-Tag passen (`v1.0.<Lauf>`). Ein lokaler Build ohne diese Angaben
+  meldet sich als `1.0.0` und hielte damit jede Veröffentlichung für neuer.
+
+Beim ersten Mal fragt Android, ob die App Installationen vornehmen darf;
+die App führt dafür direkt in die passende Systemeinstellung.
+
 ## Bauen
 
 ```bash

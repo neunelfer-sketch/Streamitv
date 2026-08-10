@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Freigegebene Pfade des FileProviders (siehe AndroidManifest).
+
+  Nur der Ordner mit den heruntergeladenen Aktualisierungen ist enthalten –
+  bewusst kein weiterer: Ein FileProvider gibt genau das preis, was hier
+  steht, und die Datenbank mit den Zugangsdaten hat darin nichts verloren.
+-->
+<paths>
+    <!-- Bevorzugter Ablageort: app-eigener Bereich auf dem externen Speicher. -->
+    <external-files-path
+        name="updates"
+        path="updates/" />
+    <!-- Ausweichpfad für Geräte ohne externen Speicher. -->
+    <files-path
+        name="internal_updates"
+        path="updates/" />
+</paths>

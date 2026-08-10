@@ -6,11 +6,14 @@ import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.AspectRatioMode
 import de.neunelf.player.data.prefs.AppSettings
 import de.neunelf.player.data.prefs.SettingsStore
+import de.neunelf.player.data.repository.DownloadProgress
 import de.neunelf.player.data.repository.EpgSyncProgress
 import de.neunelf.player.data.repository.EpgRepository
 import de.neunelf.player.data.repository.IptvRepository
 import de.neunelf.player.data.repository.PlaylistSyncer
 import de.neunelf.player.data.repository.SyncProgress
+import de.neunelf.player.data.repository.UpdateInfo
+import de.neunelf.player.data.repository.UpdateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +22,19 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
+
+/** Stand der eingebauten Aktualisierung. */
+sealed interface UpdateUiState {
+    data object Unknown : UpdateUiState
+    data object Checking : UpdateUiState
+    data object UpToDate : UpdateUiState
+    data class Available(val info: UpdateInfo) : UpdateUiState
+    data class Downloading(val percent: Int) : UpdateUiState
+    data class ReadyToInstall(val file: File, val versionName: String) : UpdateUiState
+    data class Failed(val message: String) : UpdateUiState
+}
 
 data class SettingsUiState(
     val settings: AppSettings = AppSettings(),
@@ -28,6 +43,8 @@ data class SettingsUiState(
     val lastEpgSyncLabel: String = "Nie",
     val programCount: Int = 0,
     val message: String? = null,
+    val currentVersion: String = "",
+    val update: UpdateUiState = UpdateUiState.Unknown,
 )
 
 @HiltViewModel
@@ -36,17 +53,20 @@ class SettingsViewModel @Inject constructor(
     private val epgRepository: EpgRepository,
     private val syncer: PlaylistSyncer,
     private val settingsStore: SettingsStore,
+    private val updateRepository: UpdateRepository,
 ) : ViewModel() {
 
     private val message = MutableStateFlow<String?>(null)
     private val programCount = MutableStateFlow(0)
+    private val update = MutableStateFlow<UpdateUiState>(UpdateUiState.Unknown)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsStore.settings,
         repository.observeActivePlaylist(),
         message,
         programCount,
-    ) { settings, playlist, statusMessage, count ->
+        update,
+    ) { settings, playlist, statusMessage, count, updateState ->
         SettingsUiState(
             settings = settings,
             playlistName = playlist?.name,
@@ -54,6 +74,8 @@ class SettingsViewModel @Inject constructor(
             lastEpgSyncLabel = playlist?.lastEpgSyncAt.toLabel(),
             programCount = count,
             message = statusMessage,
+            currentVersion = updateRepository.currentVersion,
+            update = updateState,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -62,6 +84,64 @@ class SettingsViewModel @Inject constructor(
             repository.getActivePlaylist()?.let {
                 programCount.value = epgRepository.programCount(it.id)
             }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Aktualisierung der App
+    // -----------------------------------------------------------------------
+
+    /**
+     * Eine Taste für den ganzen Ablauf: prüfen, laden, installieren.
+     *
+     * Auf einer Fernbedienung ist das angenehmer als drei getrennte
+     * Einträge – der Nutzer drückt schlicht so lange OK, bis die neue
+     * Fassung läuft, und der Text darunter sagt, was gerade passiert.
+     */
+    fun onUpdateRowClick() {
+        when (val state = update.value) {
+            is UpdateUiState.Available -> downloadUpdate(state.info)
+            is UpdateUiState.ReadyToInstall -> installUpdate(state.file)
+            // Während Prüfung und Download passiert auf Tastendruck nichts.
+            UpdateUiState.Checking, is UpdateUiState.Downloading -> Unit
+            else -> checkForUpdate()
+        }
+    }
+
+    fun checkForUpdate() {
+        viewModelScope.launch {
+            update.value = UpdateUiState.Checking
+            update.value = runCatching { updateRepository.check() }
+                .fold(
+                    onSuccess = { info ->
+                        if (info == null) UpdateUiState.UpToDate else UpdateUiState.Available(info)
+                    },
+                    onFailure = { UpdateUiState.Failed(it.message ?: "Prüfung fehlgeschlagen") },
+                )
+        }
+    }
+
+    private fun downloadUpdate(info: UpdateInfo) {
+        viewModelScope.launch {
+            updateRepository.cleanUp()
+            updateRepository.download(info).collect { progress ->
+                update.value = when (progress) {
+                    is DownloadProgress.Running -> UpdateUiState.Downloading(progress.percent)
+                    is DownloadProgress.Finished ->
+                        UpdateUiState.ReadyToInstall(progress.file, info.versionName)
+
+                    is DownloadProgress.Failed -> UpdateUiState.Failed(progress.message)
+                }
+            }
+        }
+    }
+
+    private fun installUpdate(file: File) {
+        // Fehlt die Erlaubnis, öffnet das Repository die Systemeinstellung;
+        // der Hinweis erklärt, warum gerade nichts installiert wurde.
+        val started = updateRepository.install(file)
+        if (!started) {
+            message.value = "Bitte die Installation für 9elf Player erlauben und erneut OK drücken"
         }
     }
 

@@ -15,6 +15,7 @@ import de.neunelf.player.data.repository.EpgRepository
 import de.neunelf.player.data.repository.IptvRepository
 import de.neunelf.player.data.repository.PlaylistSyncer
 import de.neunelf.player.data.repository.SyncProgress
+import de.neunelf.player.data.repository.UpdateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,6 +90,8 @@ data class HomeUiState(
     val syncMessage: String? = null,
     val errorMessage: String? = null,
     val searchQuery: String = "",
+    /** Versionsnummer einer verfügbaren Aktualisierung, sonst `null`. */
+    val updateVersion: String? = null,
 ) {
     val hasPlaylist: Boolean get() = playlist != null
     val isEmpty: Boolean get() = !isLoading && channels.isEmpty()
@@ -101,6 +104,7 @@ class HomeViewModel @Inject constructor(
     private val epgRepository: EpgRepository,
     private val syncer: PlaylistSyncer,
     private val settingsStore: SettingsStore,
+    private val updateRepository: UpdateRepository,
 ) : ViewModel() {
 
     /** Ausgewählte Kategorie. Startwert: "Alle Sender". */
@@ -110,6 +114,7 @@ class HomeViewModel @Inject constructor(
     private val syncMessage = MutableStateFlow<String?>(null)
     private val errorMessage = MutableStateFlow<String?>(null)
     private val upcoming = MutableStateFlow<List<EpgProgram>>(emptyList())
+    private val updateVersion = MutableStateFlow<String?>(null)
 
     /** Sammelt die Nebenzustände, damit `combine` unter fünf Quellen bleibt. */
     private data class AuxState(
@@ -117,6 +122,7 @@ class HomeViewModel @Inject constructor(
         val syncMessage: String?,
         val errorMessage: String?,
         val upcoming: List<EpgProgram>,
+        val updateVersion: String?,
     )
 
     /**
@@ -173,7 +179,7 @@ class HomeViewModel @Inject constructor(
         categories,
         channels,
         combine(selectedCategory, focusedChannelId, searchQuery) { c, f, q -> Triple(c, f, q) },
-        combine(settingsStore.settings, syncMessage, errorMessage, upcoming, ::AuxState),
+        combine(settingsStore.settings, syncMessage, errorMessage, upcoming, updateVersion, ::AuxState),
     ) { playlist, categoryList, channelList, (category, focusedId, query), aux ->
         val focused = channelList.firstOrNull { it.channel.streamId == focusedId }
             ?: channelList.firstOrNull()
@@ -190,6 +196,7 @@ class HomeViewModel @Inject constructor(
             syncMessage = aux.syncMessage,
             errorMessage = aux.errorMessage,
             searchQuery = query,
+            updateVersion = aux.updateVersion,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -198,6 +205,17 @@ class HomeViewModel @Inject constructor(
         repository.observeActivePlaylist()
             .onEach { playlist -> playlist?.let { maybeAutoRefresh(it) } }
             .launchIn(viewModelScope)
+
+        // Beiläufig nach einer neuen Fassung sehen. Das Ergebnis erscheint
+        // nur als Hinweis in der Kopfzeile – ein Dialog beim Start wäre auf
+        // einem Fernseher aufdringlich, und ein Fehlschlag (kein Netz)
+        // bleibt bewusst still: Wer aktiv sucht, tut das in den
+        // Einstellungen und bekommt dort auch die Fehlermeldung.
+        viewModelScope.launch {
+            updateVersion.value = runCatching { updateRepository.check() }
+                .getOrNull()
+                ?.versionName
+        }
     }
 
     // -----------------------------------------------------------------------

@@ -67,7 +67,14 @@ jobs:
         if: ${{ !inputs.nur_veroeffentlichen }}
         run: |
           set -o pipefail
-          ./gradlew test assembleDebug assembleRelease 2>&1 | tee /tmp/build.log
+          # Die Versionsnummer wird hineingereicht, damit die App weiß,
+          # welche Ausgabe sie ist - ohne das kann die eingebaute
+          # Aktualisierung nicht erkennen, ob eine neuere vorliegt.
+          # Muss zum Release-Tag weiter unten passen (v1.0.<Lauf>).
+          ./gradlew test assembleDebug assembleRelease \
+            -PappVersionCode=${{ github.run_number }} \
+            -PappVersionName=1.0.${{ github.run_number }} \
+            2>&1 | tee /tmp/build.log
 
       # Läuft nur bei einem Fehlschlag und hebt die eigentlichen Meldungen
       # ans Ende des Protokolls, wo sie ohne Scrollen zu finden sind.

@@ -151,11 +151,18 @@ fun SettingsScreen(
                 )
             }
 
-            item { SettingsSection("Über") }
+            item { SettingsSection("App") }
+            item {
+                SettingsRow(
+                    title = "Aktualisierung",
+                    value = state.update.describe(),
+                    onClick = viewModel::onUpdateRowClick,
+                )
+            }
             item {
                 SettingsRow(
                     title = "9elf Player",
-                    value = "Version 1.0.0 · ${state.programCount} EPG-Einträge im Cache",
+                    value = "Version ${state.currentVersion} · ${state.programCount} EPG-Einträge im Cache",
                     onClick = onBack,
                 )
             }
@@ -164,6 +171,17 @@ fun SettingsScreen(
             item { DeveloperCredit(textAlign = TextAlign.Start) }
         }
     }
+}
+
+/** Beschriftung der Aktualisierungs-Zeile – sagt zugleich, was OK bewirkt. */
+private fun UpdateUiState.describe(): String = when (this) {
+    UpdateUiState.Unknown -> "OK drücken, um nach einer neuen Fassung zu suchen"
+    UpdateUiState.Checking -> "Suche…"
+    UpdateUiState.UpToDate -> "Diese Fassung ist aktuell"
+    is UpdateUiState.Available -> "Version ${info.versionName} verfügbar · OK zum Laden"
+    is UpdateUiState.Downloading -> "Wird geladen… $percent %"
+    is UpdateUiState.ReadyToInstall -> "Version $versionName geladen · OK zum Installieren"
+    is UpdateUiState.Failed -> "Fehlgeschlagen: $message · OK für erneuten Versuch"
 }
 
 @Composable

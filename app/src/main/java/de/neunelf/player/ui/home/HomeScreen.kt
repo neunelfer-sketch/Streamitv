@@ -111,7 +111,11 @@ fun HomeScreen(
     ) {
         HomeTopBar(
             playlistName = state.playlist?.name.orEmpty(),
-            statusMessage = state.syncMessage ?: state.errorMessage,
+            // Der Update-Hinweis steht hinten an: Was gerade lädt oder
+            // schiefging, ist dringlicher als eine verfügbare neue Fassung.
+            statusMessage = state.syncMessage
+                ?: state.errorMessage
+                ?: state.updateVersion?.let { "Version $it verfügbar – siehe Einstellungen" },
             isError = state.errorMessage != null,
             onOpenGuide = onOpenGuide,
             onOpenMovies = onOpenMovies,

@@ -7,6 +7,19 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Version aus Gradle-Eigenschaften, damit der CI-Lauf seine Nummer
+// einsetzen kann (siehe .github/workflows/build-apk.yml). Ohne Angabe –
+// also bei einem lokalen Build – bleibt es bei 1.0.0.
+//
+// Das ist die Grundlage der In-App-Aktualisierung: Vorher standen hier
+// feste Werte, die App hätte sich also nie von einer neueren Ausgabe
+// unterscheiden können.
+val appVersionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 1
+val appVersionName = (findProperty("appVersionName") as String?) ?: "1.0.0"
+
+// Öffentliches Repository, aus dem die App ihre Aktualisierungen bezieht.
+val updateRepo = (findProperty("updateRepo") as String?) ?: "neunelfer-sketch/9elf-Player"
+
 android {
     namespace = "de.neunelf.player"
     compileSdk = 35
@@ -16,8 +29,10 @@ android {
         // minSdk 22 deckt Fire OS 5 (Fire TV Stick 2. Gen) sowie Android TV 5.1 ab.
         minSdk = 22
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
+
+        buildConfigField("String", "UPDATE_REPO", "\"$updateRepo\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

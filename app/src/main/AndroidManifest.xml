@@ -9,6 +9,15 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <!--
+      Für die eingebaute Aktualisierung: Die App lädt die neue Fassung
+      selbst herunter und übergibt sie dem System-Installationsprogramm.
+      Ab Android 8 muss das Recht zusätzlich vom Nutzer bestätigt werden
+      ("Apps aus unbekannten Quellen") – die App führt ihn bei Bedarf
+      direkt dorthin, siehe UpdateRepository.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
       TV-Geräte besitzen kein Touchscreen und keine Telefonie-Hardware.
       "android.software.leanback" required=true sorgt dafür, dass die App
       im Google-Play-/Amazon-TV-Store als TV-App erkannt wird.
@@ -58,6 +67,23 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          Reicht die heruntergeladene APK an das Installationsprogramm
+          weiter. Ab Android 7 lehnt das System `file://`-Adressen zwischen
+          Apps ab; der Umweg über einen FileProvider ist der vorgesehene Weg.
+          Die Kennung trägt die Anwendungs-ID, damit sich Test- und
+          Release-Build nicht in die Quere kommen.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- Hintergrund-Wiedergabe / Medien-Session für PiP und TV-Fernbedienungstasten -->
         <service
