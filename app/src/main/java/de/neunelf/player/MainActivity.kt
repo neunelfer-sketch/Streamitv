@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import de.neunelf.player.data.model.Playlist
 import de.neunelf.player.data.repository.IptvRepository
 import de.neunelf.player.player.PlayerManager
 import de.neunelf.player.ui.navigation.NeunelfPlayerNavHost
@@ -46,9 +47,17 @@ class MainActivity : ComponentActivity() {
         // gehören dem Inhalt (Overscan wird im Layout berücksichtigt).
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
+        // Nullable statt Boolean: `null` heißt "die Datenbankabfrage läuft
+        // noch". Ohne diese Unterscheidung würde der Navigationsgraph beim
+        // Start immer mit "keine Playlist" beginnen – die Room-Abfrage
+        // braucht ein paar Millisekunden –, einen wiederkehrenden Nutzer kurz
+        // auf den Einrichtungsbildschirm werfen und dort steckenbleiben,
+        // sobald der echte Wert eintrifft: dieser Bildschirm reagiert nur auf
+        // den Abschluss der eigenen Einrichtung, nicht auf Datenbankänderungen
+        // von außen.
         val hasPlaylistFlow = repository.observeActivePlaylist()
-            .map { it != null }
-            .stateIn(lifecycleScope, SharingStarted.Eagerly, false)
+            .map<Playlist?, Boolean?> { it != null }
+            .stateIn(lifecycleScope, SharingStarted.Eagerly, null)
 
         setContent {
             val hasPlaylist by hasPlaylistFlow.collectAsState()
@@ -59,10 +68,15 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(TvBackground),
                 ) {
-                    NeunelfPlayerNavHost(
-                        hasPlaylist = hasPlaylist,
-                        onEnterPip = ::enterPipMode,
-                    )
+                    // Erst rendern, wenn der echte Wert da ist – sonst baut
+                    // sich der Navigationsgraph mit dem falschen Startziel auf,
+                    // und niemand korrigiert das mehr (siehe NeunelfPlayerNavHost).
+                    hasPlaylist?.let { resolved ->
+                        NeunelfPlayerNavHost(
+                            hasPlaylist = resolved,
+                            onEnterPip = ::enterPipMode,
+                        )
+                    }
                 }
             }
         }

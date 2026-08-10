@@ -1,7 +1,6 @@
 package de.neunelf.player.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +37,21 @@ object Routes {
  * geschleust, sondern in einem gemeinsamen Zustand gehalten. Grund: das
  * Channel-Objekt enthält URLs mit Zugangsdaten – die haben in einer
  * Navigations-URL (und damit potenziell im Backstack-Log) nichts verloren.
+ *
+ * `hasPlaylist` bestimmt hier **nur** das Startziel der allerersten
+ * Komposition. Es gibt bewusst keine reaktive `LaunchedEffect`, die bei
+ * jeder Änderung automatisch navigiert: Beim Speichern einer neuen Playlist
+ * wird sie sofort aktiv (siehe `PlaylistDao.insertAndActivate`), lange bevor
+ * der Erstimport fertig ist. Eine reaktive Navigation würde in genau diesem
+ * Moment von der Einrichtung wegspringen, deren Rückstapel-Eintrag entfernen
+ * und damit `LoginViewModel` samt der noch laufenden Synchronisierung
+ * abbrechen. Beide echten Übergänge werden deshalb explizit an ihrer
+ * Quelle ausgelöst: [de.neunelf.player.ui.login.LoginScreen] navigiert erst,
+ * wenn der Import wirklich abgeschlossen ist, und
+ * [de.neunelf.player.ui.settings.SettingsScreen] navigiert beim Löschen der
+ * Playlist sofort selbst. Das Aufsplitten des Kaltstart-Sonderfalls
+ * (Datenbankwert noch nicht geladen) übernimmt bereits `MainActivity`, indem
+ * sie diesen Graphen erst komponiert, sobald der echte Wert vorliegt.
  */
 @Composable
 fun NeunelfPlayerNavHost(
@@ -49,17 +63,6 @@ fun NeunelfPlayerNavHost(
     var pendingChannel by remember { mutableStateOf<Channel?>(null) }
 
     val startDestination = if (hasPlaylist) Routes.HOME else Routes.LOGIN
-
-    // Wird die Playlist gelöscht oder neu eingerichtet, muss der Graph neu
-    // starten – sonst bliebe der Nutzer auf einem leeren Hauptbildschirm.
-    LaunchedEffect(hasPlaylist) {
-        val target = if (hasPlaylist) Routes.HOME else Routes.LOGIN
-        if (navController.currentDestination?.route !in listOf(target, Routes.PLAYER)) {
-            navController.navigate(target) {
-                popUpTo(navController.graph.id) { inclusive = true }
-            }
-        }
-    }
 
     NavHost(navController = navController, startDestination = startDestination) {
 
