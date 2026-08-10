@@ -127,7 +127,20 @@ class VodViewModel @Inject constructor(
         }
             .flatMapLatest { (streamKind, categoryId, order) ->
                 if (categoryId == RECENT_CATEGORY_ID) {
-                    recentItems
+                    // "Neu hinzugefügt" ergibt hier keinen Sinn – die Liste ist
+                    // schon nach zuletzt geschaut sortiert, das ist ihr Zweck.
+                    // A-Z/Z-A gilt aber auch hier: der Drei-Punkte-Knopf soll
+                    // nicht ausgerechnet auf dem Bildschirm wirkungslos sein,
+                    // der beim Öffnen von Filme/Serien zuerst zu sehen ist.
+                    recentItems.map { list ->
+                        when (order) {
+                            VodSort.RECENT -> list
+                            VodSort.NAME_ASC ->
+                                list.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+                            VodSort.NAME_DESC ->
+                                list.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title })
+                        }
+                    }
                 } else if (streamKind == StreamKind.SERIES) {
                     repository.observeSeries(categoryId).map { list ->
                         list.sortedFor(order, recentKey = { it.lastModified }, name = { it.name })
