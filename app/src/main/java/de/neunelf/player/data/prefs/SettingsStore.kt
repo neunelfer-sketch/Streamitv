@@ -9,9 +9,12 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import de.neunelf.player.data.model.AspectRatioMode
+import de.neunelf.player.data.model.Playlist
+import de.neunelf.player.data.model.PlaylistType
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.model.VodSort
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "neunelf_player_settings")
@@ -89,6 +92,74 @@ class SettingsStore(
         it[key] = value.name
     }
 
+    // -----------------------------------------------------------------------
+    // Hinterlegte Verbindung
+    // -----------------------------------------------------------------------
+
+    /**
+     * Sichert die Zugangsdaten der Playlist **außerhalb** der Datenbank.
+     *
+     * Die Datenbank ist ein reiner Zwischenspeicher und wird bei jeder
+     * Schemaänderung verworfen (`fallbackToDestructiveMigration`). Bis hierher
+     * lag die eingerichtete Verbindung aber ebenfalls dort – nach jedem
+     * Update mit geändertem Schema musste sie also neu eingegeben werden.
+     * Hier überlebt sie das, weil DataStore von den Datenbankversionen
+     * unberührt bleibt.
+     *
+     * Zur Ablage im Klartext: Das war in der Datenbank nicht anders, beide
+     * liegen im app-eigenen Bereich. Es entsteht also kein neues Risiko –
+     * verschlüsseln müsste man dann beides.
+     */
+    suspend fun rememberPlaylist(playlist: Playlist) = edit { prefs ->
+        prefs[KEY_PL_NAME] = playlist.name
+        prefs[KEY_PL_TYPE] = playlist.type.name
+        prefs[KEY_PL_SERVER] = playlist.serverUrl
+        prefs[KEY_PL_USER] = playlist.username
+        prefs[KEY_PL_PASS] = playlist.password
+        prefs[KEY_PL_M3U] = playlist.m3uUrl
+        prefs[KEY_PL_EPG] = playlist.epgUrl
+    }
+
+    /** Vergisst die Verbindung – beim Entfernen der Playlist. */
+    suspend fun forgetPlaylist() = edit { prefs ->
+        listOf(
+            KEY_PL_NAME, KEY_PL_TYPE, KEY_PL_SERVER,
+            KEY_PL_USER, KEY_PL_PASS, KEY_PL_M3U, KEY_PL_EPG,
+        ).forEach { prefs.remove(it) }
+    }
+
+    /** Die gesicherte Verbindung, oder `null` wenn keine hinterlegt ist. */
+    suspend fun rememberedPlaylist(): Playlist? {
+        val prefs = context.dataStore.data.first()
+        val type = prefs[KEY_PL_TYPE]
+            ?.let { name -> runCatching { PlaylistType.valueOf(name) }.getOrNull() }
+            ?: return null
+
+        val serverUrl = prefs[KEY_PL_SERVER].orEmpty()
+        val m3uUrl = prefs[KEY_PL_M3U].orEmpty()
+        // Ohne Adresse ist der Eintrag wertlos – dann lieber neu einrichten
+        // lassen, als mit einer leeren Verbindung in einen Fehler zu laufen.
+        val hasSource = when (type) {
+            PlaylistType.XTREAM -> serverUrl.isNotBlank()
+            PlaylistType.M3U -> m3uUrl.isNotBlank()
+        }
+        if (!hasSource) return null
+
+        return Playlist(
+            name = prefs[KEY_PL_NAME].orEmpty().ifBlank { "Meine Playlist" },
+            type = type,
+            serverUrl = serverUrl,
+            username = prefs[KEY_PL_USER].orEmpty(),
+            password = prefs[KEY_PL_PASS].orEmpty(),
+            m3uUrl = m3uUrl,
+            epgUrl = prefs[KEY_PL_EPG].orEmpty(),
+            // Bewusst 0: Der Zwischenspeicher ist weg, also soll der
+            // Hauptbildschirm sofort neu laden statt eine leere Liste zeigen.
+            lastSyncAt = 0L,
+            lastEpgSyncAt = 0L,
+        )
+    }
+
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
     }
@@ -105,6 +176,16 @@ class SettingsStore(
         private val KEY_SHOW_PREVIEW = booleanPreferencesKey("show_preview_player")
         private val KEY_MOVIE_SORT = stringPreferencesKey("movie_sort")
         private val KEY_SERIES_SORT = stringPreferencesKey("series_sort")
+
+        // Die eingerichtete Verbindung – liegt hier, damit sie das Verwerfen
+        // der Datenbank bei Schemaänderungen übersteht.
+        private val KEY_PL_NAME = stringPreferencesKey("playlist_name")
+        private val KEY_PL_TYPE = stringPreferencesKey("playlist_type")
+        private val KEY_PL_SERVER = stringPreferencesKey("playlist_server_url")
+        private val KEY_PL_USER = stringPreferencesKey("playlist_username")
+        private val KEY_PL_PASS = stringPreferencesKey("playlist_password")
+        private val KEY_PL_M3U = stringPreferencesKey("playlist_m3u_url")
+        private val KEY_PL_EPG = stringPreferencesKey("playlist_epg_url")
 
         /**
          * Auswählbare Puffergrößen.

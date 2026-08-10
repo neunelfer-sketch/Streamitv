@@ -93,16 +93,25 @@ class PlayerFactory @Inject constructor(
      * er bestimmt, wie viele Millisekunden Daten vorliegen müssen, bevor
      * das Bild erscheint. 1,5 s ist der niedrigste Wert, mit dem TS-Streams
      * auf schwachen Sticks noch zuverlässig anlaufen.
+     *
+     * Die beiden Startschwellen werden am Zielpuffer gedeckelt, und das ist
+     * keine Vorsichtsmaßnahme, sondern Pflicht: `DefaultLoadControl` prüft
+     * beim Bauen, dass der Zielpuffer nicht *kleiner* ist als sie, und wirft
+     * sonst. Mit dem festen Wert von 3 s reichte ein Zielpuffer von 2 s –
+     * wie ihn die Vorschau anfordert –, um die App beim Erzeugen des
+     * Players zu beenden.
      */
     private fun buildLoadControl(bufferMs: Int): LoadControl {
         val minBuffer = bufferMs.coerceIn(2_000, 60_000)
         val maxBuffer = (minBuffer * 2).coerceAtMost(120_000)
+        val forPlayback = 1_500.coerceAtMost(minBuffer)
+        val forPlaybackAfterRebuffer = 3_000.coerceAtMost(minBuffer)
         return DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 /* minBufferMs = */ minBuffer,
                 /* maxBufferMs = */ maxBuffer,
-                /* bufferForPlaybackMs = */ 1_500,
-                /* bufferForPlaybackAfterRebufferMs = */ 3_000,
+                /* bufferForPlaybackMs = */ forPlayback,
+                /* bufferForPlaybackAfterRebufferMs = */ forPlaybackAfterRebuffer,
             )
             .setPrioritizeTimeOverSizeThresholds(true)
             // 32 MB Ziel: reicht für HD-Streams, ohne auf 1-GB-Geräten

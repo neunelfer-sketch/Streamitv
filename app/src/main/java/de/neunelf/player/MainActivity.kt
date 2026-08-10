@@ -21,6 +21,8 @@ import de.neunelf.player.ui.theme.NeunelfPlayerTheme
 import de.neunelf.player.ui.theme.TvBackground
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -55,9 +57,17 @@ class MainActivity : ComponentActivity() {
         // sobald der echte Wert eintrifft: dieser Bildschirm reagiert nur auf
         // den Abschluss der eigenen Einrichtung, nicht auf Datenbankänderungen
         // von außen.
-        val hasPlaylistFlow = repository.observeActivePlaylist()
-            .map<Playlist?, Boolean?> { it != null }
-            .stateIn(lifecycleScope, SharingStarted.Eagerly, null)
+        // Vor der ersten Antwort wird die hinterlegte Verbindung
+        // wiederhergestellt, falls die Datenbank keine mehr kennt – etwa
+        // nachdem ein Update ihr Schema geändert hat und sie deshalb neu
+        // angelegt wurde. Die Reihenfolge ist wesentlich: Der
+        // Navigationsgraph legt sein Startziel einmalig fest, käme die
+        // Wiederherstellung danach, bliebe der Nutzer trotz vorhandener
+        // Zugangsdaten auf der Einrichtungsseite stehen.
+        val hasPlaylistFlow = flow {
+            repository.restorePlaylistIfMissing()
+            emitAll(repository.observeActivePlaylist().map<Playlist?, Boolean?> { it != null })
+        }.stateIn(lifecycleScope, SharingStarted.Eagerly, null)
 
         setContent {
             val hasPlaylist by hasPlaylistFlow.collectAsState()

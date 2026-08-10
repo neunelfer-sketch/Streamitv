@@ -16,6 +16,7 @@ import de.neunelf.player.data.model.Playlist
 import de.neunelf.player.data.model.PlaylistType
 import de.neunelf.player.data.model.Series
 import de.neunelf.player.data.model.StreamKind
+import de.neunelf.player.data.prefs.SettingsStore
 import de.neunelf.player.data.remote.xtream.XtreamApi
 import de.neunelf.player.data.remote.xtream.XtreamCredentials
 import de.neunelf.player.data.remote.xtream.XtreamMapper
@@ -58,6 +59,7 @@ class IptvRepository @Inject constructor(
     private val userDataDao: UserDataDao,
     private val xtreamApi: XtreamApi,
     private val json: Json,
+    private val settingsStore: SettingsStore,
 ) {
 
     // -----------------------------------------------------------------------
@@ -73,12 +75,39 @@ class IptvRepository @Inject constructor(
     suspend fun getActivePlaylist(): Playlist? = playlistDao.getActive()?.toModel()
 
     /** Legt eine Playlist an und macht sie zur aktiven. Gibt die neue ID zurück. */
-    suspend fun savePlaylist(playlist: Playlist): Long =
-        playlistDao.insertAndActivate(playlist.toEntity(isActive = true))
+    suspend fun savePlaylist(playlist: Playlist): Long {
+        // Zusätzlich außerhalb der Datenbank sichern – siehe
+        // [restorePlaylistIfMissing].
+        settingsStore.rememberPlaylist(playlist)
+        return playlistDao.insertAndActivate(playlist.toEntity(isActive = true))
+    }
 
     suspend fun setActivePlaylist(id: Long) = playlistDao.setActive(id)
 
-    suspend fun deletePlaylist(id: Long) = playlistDao.delete(id)
+    suspend fun deletePlaylist(id: Long) {
+        playlistDao.delete(id)
+        settingsStore.forgetPlaylist()
+    }
+
+    /**
+     * Stellt die eingerichtete Verbindung wieder her, falls die Datenbank
+     * keine mehr kennt.
+     *
+     * Nötig, weil die Datenbank ein reiner Zwischenspeicher ist und bei
+     * jeder Schemaänderung verworfen wird. Bis hierher verschwand damit auch
+     * die Playlist selbst – nach einem Update stand der Nutzer wieder vor
+     * der Ersteinrichtung und musste Server, Benutzername und Passwort neu
+     * eintippen. Das ist auf einer Fernbedienung besonders ärgerlich.
+     *
+     * Muss **vor** dem ersten Auswerten von `observeActivePlaylist` laufen:
+     * Der Navigationsgraph legt sein Startziel einmalig fest und korrigiert
+     * es später nicht mehr (siehe `NeunelfPlayerNavHost`).
+     */
+    suspend fun restorePlaylistIfMissing() {
+        if (playlistDao.getActive() != null) return
+        val remembered = settingsStore.rememberedPlaylist() ?: return
+        playlistDao.insertAndActivate(remembered.toEntity(isActive = true))
+    }
 
     // -----------------------------------------------------------------------
     // Kategorien & Sender
