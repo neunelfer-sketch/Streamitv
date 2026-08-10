@@ -46,6 +46,7 @@ import de.neunelf.player.ui.theme.TvSurfaceVariant
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onOpenContact: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -152,6 +153,13 @@ fun SettingsScreen(
             }
 
             item { SettingsSection("App") }
+            item {
+                SettingsRow(
+                    title = "Zugang verlängern",
+                    value = "QR-Code zum Chat auf Telegram",
+                    onClick = onOpenContact,
+                )
+            }
             item {
                 SettingsRow(
                     title = "Aktualisierung",

@@ -160,6 +160,33 @@ Zwei Voraussetzungen, die leicht übersehen werden:
 Beim ersten Mal fragt Android, ob die App Installationen vornehmen darf;
 die App führt dafür direkt in die passende Systemeinstellung.
 
+## QR-Codes zum Verlängern
+
+Unter *Einstellungen → App → Zugang verlängern* zeigt die App zwei
+QR-Codes, über die der Zuschauer den Telegram-Chat erreicht. Auf einem
+Fernseher ist das der einzige bequeme Weg – anklicken lässt sich dort
+nichts, und eine Adresse mit der Fernbedienung abzutippen ist mühsam.
+
+Die Codes liegen doppelt vor:
+
+| Datei | Zweck |
+|---|---|
+| `app/src/main/res/drawable/qr_telegram_*.xml` | Vektorgrafik für die App, auf jeder Bildschirmgröße scharf |
+| `docs/qr/qr_telegram_*.png` | zum Ausdrucken oder für Werbung außerhalb der App |
+
+Beide entstehen aus `scripts/generate_qr.py`. Ändert sich eine Adresse
+oder kommt ein Kanal dazu, wird `TARGETS` im Skript angepasst und es neu
+ausgeführt – die Dateien nicht von Hand bearbeiten:
+
+```bash
+pip install segno
+python3 scripts/generate_qr.py app/src/main/res/drawable docs/qr
+```
+
+Die weiße Fläche samt Ruhezone steckt in der Grafik. Das ist Absicht: Ein
+QR-Code direkt auf dunklem Untergrund wird von vielen Handykameras nicht
+erkannt.
+
 ## Bauen
 
 ```bash

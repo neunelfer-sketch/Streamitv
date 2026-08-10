@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.StreamKind
+import de.neunelf.player.ui.contact.ContactScreen
 import de.neunelf.player.ui.guide.GuideScreen
 import de.neunelf.player.ui.home.HomeScreen
 import de.neunelf.player.ui.login.LoginScreen
@@ -32,6 +33,7 @@ object Routes {
     const val MOVIES = "movies"
     const val SERIES = "series"
     const val SETTINGS = "settings"
+    const val CONTACT = "contact"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
     const val MOVIE_PLAYER = "movie_player/{streamId}"
@@ -163,12 +165,17 @@ fun NeunelfPlayerNavHost(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
+                onOpenContact = { navController.navigate(Routes.CONTACT) },
                 onPlaylistRemoved = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
             )
+        }
+
+        composable(Routes.CONTACT) {
+            ContactScreen(onBack = { navController.popBackStack() })
         }
     }
 }
