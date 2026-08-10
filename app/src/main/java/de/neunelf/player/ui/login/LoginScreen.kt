@@ -240,6 +240,16 @@ private fun TvTextField(
     imeAction: ImeAction = ImeAction.Next,
 ) {
     var isEditing by remember { mutableStateOf(false) }
+    // `onFocusChanged` meldet beim ersten Komponieren des neuen Feldes einmal
+    // "nicht fokussiert" – das ist der Ausgangszustand, bevor `requestFocus()`
+    // überhaupt laufen konnte, nicht ein echter Fokusverlust. Ohne diese
+    // Unterscheidung schaltete der Bearbeitungsmodus sofort wieder zurück in
+    // den Ruhezustand, bevor die Tastatur aufgehen konnte. Erst nachdem das
+    // Feld wirklich einmal den Fokus hatte, zählt ein "nicht fokussiert" als
+    // Verlassen des Feldes. Mit `isEditing` als Schlüssel neu erzeugt, damit
+    // jeder neue Bearbeitungsdurchgang wieder bei "noch nicht fokussiert"
+    // startet.
+    var hasBeenFocused by remember(isEditing) { mutableStateOf(false) }
     val editFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -283,13 +293,22 @@ private fun TvTextField(
                 .fillMaxWidth()
                 .padding(vertical = 6.dp)
                 .focusRequester(editFocusRequester)
-                // Jeder Fokusverlust – Weiterspringen, Zurück-Taste,
+                // Jeder echte Fokusverlust – Weiterspringen, Zurück-Taste,
                 // Antippen woanders – kehrt zuverlässig in den Ruhezustand
-                // zurück, unabhängig vom Auslöser.
-                .onFocusChanged { if (!it.isFocused) isEditing = false },
+                // zurück, unabhängig vom Auslöser. Der allererste Aufruf mit
+                // `isFocused = false` (vor `requestFocus()`) zählt bewusst
+                // nicht mit, siehe Kommentar bei `hasBeenFocused` oben.
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        hasBeenFocused = true
+                    } else if (hasBeenFocused) {
+                        isEditing = false
+                    }
+                },
         )
         LaunchedEffect(Unit) {
             runCatching { editFocusRequester.requestFocus() }
+            keyboardController?.show()
         }
     } else {
         Surface(
