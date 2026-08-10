@@ -36,8 +36,17 @@ class PreviewPlayer @Inject constructor(
     fun getOrCreate(): ExoPlayer =
         player ?: playerFactory.create(bufferMs = PREVIEW_BUFFER_MS).also { created ->
             // Ton aus: Beim Durchblättern der Senderliste wäre er nur störend,
-            // und beim schnellen Wechseln entstünde ein Tonsalat.
+            // und beim schnellen Wechseln entstünde ein Tonsalat. Zusätzlich
+            // zur Lautstärke wird die Tonspur ganz abgeschaltet – nicht nur
+            // stumm, sondern gar nicht erst dekodiert. Das schließt auch
+            // Geräte ein, bei denen `volume = 0f` allein nicht zuverlässig
+            // greift, und spart nebenbei Rechenleistung für eine Fläche, die
+            // ohnehin nie zu hören sein soll.
             created.volume = 0f
+            created.trackSelectionParameters = created.trackSelectionParameters
+                .buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
+                .build()
             // Kein Wake-Lock für eine Vorschau: Die läuft ausschließlich,
             // während der Hauptbildschirm vorne ist – CPU und WLAN sind dann
             // ohnehin wach. Den Lock hält allein der Vollbild-Player.

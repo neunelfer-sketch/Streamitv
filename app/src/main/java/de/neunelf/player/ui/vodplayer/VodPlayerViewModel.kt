@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.exoplayer.ExoPlayer
+import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.prefs.SettingsStore
 import de.neunelf.player.data.repository.IptvRepository
@@ -86,9 +87,8 @@ class VodPlayerViewModel @Inject constructor(
                 subtitlesOn = settings.subtitlesEnabled,
             )
 
-            val resolved = resolveSource()
-            if (resolved == null) {
-                loadError.value = "Inhalt konnte nicht geladen werden"
+            val resolved = resolveSource().getOrElse { error ->
+                loadError.value = "Inhalt konnte nicht geladen werden".withErrorCode(error.message ?: "UNKNOWN")
                 return@launch
             }
             source = resolved
@@ -170,30 +170,47 @@ class VodPlayerViewModel @Inject constructor(
         val kind: StreamKind,
     )
 
-    private suspend fun resolveSource(): ResolvedSource? {
+    /**
+     * Löst Film oder Episode auf.
+     *
+     * Der jeweilige Fehlschlag trägt einen eigenen, kurzen Code im
+     * [Result] – so lässt sich aus der Ferne genau sagen, an welcher
+     * Stelle es hakte, statt nur "Inhalt konnte nicht geladen werden" zu
+     * sehen.
+     */
+    private suspend fun resolveSource(): Result<ResolvedSource> {
         movieStreamId?.let { id ->
-            val movie = repository.getMovie(id) ?: return null
-            val url = repository.resolveMovieUrl(movie) ?: return null
-            return ResolvedSource(
-                url = url,
-                title = movie.name,
-                playlistId = movie.playlistId,
-                streamId = movie.streamId,
-                kind = StreamKind.VOD,
+            val movie = repository.getMovie(id)
+                ?: return Result.failure(IllegalStateException("MOVIE_NOT_FOUND"))
+            val url = repository.resolveMovieUrl(movie)
+                ?: return Result.failure(IllegalStateException("MOVIE_NO_URL"))
+            return Result.success(
+                ResolvedSource(
+                    url = url,
+                    title = movie.name,
+                    playlistId = movie.playlistId,
+                    streamId = movie.streamId,
+                    kind = StreamKind.VOD,
+                ),
             )
         }
         episodeId?.let { id ->
-            val episode = repository.getEpisode(id) ?: return null
-            val playlist = repository.getActivePlaylist() ?: return null
-            val url = repository.resolveEpisodeUrl(playlist.id, episode) ?: return null
-            return ResolvedSource(
-                url = url,
-                title = "S${episode.season}E${episode.episodeNumber} · ${episode.title}",
-                playlistId = playlist.id,
-                streamId = episode.episodeId,
-                kind = StreamKind.SERIES,
+            val episode = repository.getEpisode(id)
+                ?: return Result.failure(IllegalStateException("EPISODE_NOT_FOUND"))
+            val playlist = repository.getActivePlaylist()
+                ?: return Result.failure(IllegalStateException("NO_PLAYLIST"))
+            val url = repository.resolveEpisodeUrl(playlist.id, episode)
+                ?: return Result.failure(IllegalStateException("EPISODE_NO_URL"))
+            return Result.success(
+                ResolvedSource(
+                    url = url,
+                    title = "S${episode.season}E${episode.episodeNumber} · ${episode.title}",
+                    playlistId = playlist.id,
+                    streamId = episode.episodeId,
+                    kind = StreamKind.SERIES,
+                ),
             )
         }
-        return null
+        return Result.failure(IllegalStateException("NO_SOURCE_ARGUMENT"))
     }
 }

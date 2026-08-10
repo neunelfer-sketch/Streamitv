@@ -1,6 +1,8 @@
 package de.neunelf.player.data.repository
 
 import android.util.Log
+import de.neunelf.player.core.toErrorCode
+import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.local.ChannelDao
 import de.neunelf.player.data.local.EpgDao
 import de.neunelf.player.data.local.EpgProgramEntity
@@ -197,11 +199,11 @@ class EpgRepository @Inject constructor(
         val count = try {
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    emit(EpgSyncProgress.Failed("Server antwortete mit HTTP ${response.code}"))
+                    emit(EpgSyncProgress.Failed("Server antwortete mit HTTP ${response.code}".withErrorCode("HTTP-${response.code}")))
                     return@flow
                 }
                 val body = response.body ?: run {
-                    emit(EpgSyncProgress.Failed("Leere Antwort"))
+                    emit(EpgSyncProgress.Failed("Leere Antwort".withErrorCode("EMPTY_BODY")))
                     return@flow
                 }
 
@@ -210,7 +212,7 @@ class EpgRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "EPG-Import fehlgeschlagen", e)
-            emit(EpgSyncProgress.Failed(e.message ?: "Unbekannter Fehler"))
+            emit(EpgSyncProgress.Failed((e.message ?: "Unbekannter Fehler").withErrorCode(e.toErrorCode())))
             return@flow
         }
 

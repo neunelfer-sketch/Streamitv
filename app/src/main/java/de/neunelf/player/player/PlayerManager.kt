@@ -12,6 +12,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
+import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.model.AspectRatioMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -388,23 +389,33 @@ class PlayerManager @Inject constructor(
         )
     }
 
-    /** Übersetzt ExoPlayer-Fehlercodes in Klartext für die Oberfläche. */
-    private fun describeError(error: PlaybackException): String = when (error.errorCode) {
-        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
-        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
-        -> "Keine Verbindung zum Server"
+    /**
+     * Übersetzt ExoPlayer-Fehlercodes in Klartext für die Oberfläche.
+     *
+     * Der angehängte Code ([PlaybackException.errorCodeName]) ist bei
+     * ExoPlayer stabil und dokumentiert – der Nutzer kann ihn 1:1 melden,
+     * und wir wissen aus der Ferne sofort, welcher Fall genau vorlag, statt
+     * aus einer der vier deutschen Kurzmeldungen raten zu müssen.
+     */
+    private fun describeError(error: PlaybackException): String {
+        val message = when (error.errorCode) {
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+            -> "Keine Verbindung zum Server"
 
-        PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ->
-            "Der Server hat den Stream abgelehnt (evtl. zu viele Verbindungen)"
+            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ->
+                "Der Server hat den Stream abgelehnt (evtl. zu viele Verbindungen)"
 
-        PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ->
-            "Dieser Sender ist derzeit nicht verfügbar"
+            PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ->
+                "Dieser Sender ist derzeit nicht verfügbar"
 
-        PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
-        PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
-        -> "Format wird von diesem Gerät nicht unterstützt"
+            PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+            -> "Format wird von diesem Gerät nicht unterstützt"
 
-        else -> "Wiedergabe fehlgeschlagen (${error.errorCodeName})"
+            else -> "Wiedergabe fehlgeschlagen"
+        }
+        return message.withErrorCode("${error.errorCode} ${error.errorCodeName}")
     }
 
     // -----------------------------------------------------------------------

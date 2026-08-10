@@ -1,6 +1,8 @@
 package de.neunelf.player.data.repository
 
 import android.util.Log
+import de.neunelf.player.core.toErrorCode
+import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.local.CategoryDao
 import de.neunelf.player.data.local.ChannelDao
 import de.neunelf.player.data.local.PlaylistDao
@@ -11,6 +13,7 @@ import de.neunelf.player.data.model.PlaylistType
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.remote.m3u.M3uParser
 import de.neunelf.player.data.remote.xtream.XtreamApi
+import de.neunelf.player.data.remote.xtream.XtreamCredentials
 import de.neunelf.player.data.remote.xtream.XtreamMapper
 import de.neunelf.player.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import javax.inject.Inject
@@ -77,7 +81,7 @@ class PlaylistSyncer @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Playlist-Sync fehlgeschlagen für '${playlist.name}'", e)
-            emit(SyncProgress.Failed(e.message ?: "Unbekannter Fehler", e))
+            emit(SyncProgress.Failed((e.message ?: "Unbekannter Fehler").withErrorCode(e.toErrorCode()), e))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -198,14 +202,23 @@ class PlaylistSyncer @Inject constructor(
         val channels = M3uParser.toChannels(parsed, playlist.id)
         val movies = M3uParser.toMovies(parsed, playlist.id)
 
-        // Enthält die Playlist eine EPG-Quelle und der Nutzer hat keine
-        // eigene eingetragen, übernehmen wir sie automatisch – noch vor
-        // LiveReady, damit der automatische EPG-Import auf dem
-        // Hauptbildschirm (der direkt danach anläuft) sie schon kennt.
-        if (playlist.epgUrl.isBlank() && parsed.epgUrls.isNotEmpty()) {
-            playlistDao.insert(
-                playlist.copy(epgUrl = parsed.epgUrls.first()).toEntity(isActive = true),
-            )
+        // Eine EPG-Quelle wird automatisch hinterlegt, wenn der Nutzer keine
+        // eigene eingetragen hat – noch vor LiveReady, damit der automatische
+        // EPG-Import auf dem Hauptbildschirm (der direkt danach anläuft) sie
+        // schon kennt. Zwei Quellen, in der Reihenfolge, wie sie
+        // zuverlässiger sind:
+        // 1. eine im Kopf der Datei angegebene `url-tvg`,
+        // 2. sonst, falls der "M3U"-Link in Wahrheit ein Xtream-Codes-Export
+        //    ist (`get.php?username=…&password=…`), die zu denselben
+        //    Zugangsdaten gehörende `xmltv.php` – genau das, was TiviMate
+        //    hier automatisch findet.
+        if (playlist.epgUrl.isBlank()) {
+            val detectedEpgUrl = parsed.epgUrls.firstOrNull() ?: deriveXtreamEpgUrl(playlist.m3uUrl)
+            if (detectedEpgUrl != null) {
+                playlistDao.insert(
+                    playlist.copy(epgUrl = detectedEpgUrl).toEntity(isActive = true),
+                )
+            }
         }
 
         emit(SyncProgress.Step("Speichere ${channels.size} Sender…", 75))
@@ -264,6 +277,22 @@ class PlaylistSyncer @Inject constructor(
 
         emit(SyncProgress.Step("Fertig", 100))
         emit(SyncProgress.Done(channels.size, movies.size, series.size))
+    }
+
+    /**
+     * Viele als "M3U" eingerichtete Playlists sind in Wahrheit der
+     * Xtream-Codes-Export desselben Panels (`get.php?username=…&password=…`).
+     * Ohne eigene `url-tvg` im Dateikopf lässt sich die zugehörige
+     * `xmltv.php` trotzdem aus genau diesen Zugangsdaten ableiten – dieselbe
+     * Adresse, die bei einer direkt als Xtream eingerichteten Playlist
+     * automatisch verwendet würde. `null`, wenn der Link kein solches Muster
+     * zeigt (z. B. eine echte, statische M3U-Datei ohne Zugangsdaten).
+     */
+    private fun deriveXtreamEpgUrl(m3uUrl: String): String? {
+        val url = m3uUrl.toHttpUrlOrNull() ?: return null
+        val username = url.queryParameter("username")?.takeIf { it.isNotBlank() } ?: return null
+        val password = url.queryParameter("password")?.takeIf { it.isNotBlank() } ?: return null
+        return xtreamApi.buildXmltvUrl(XtreamCredentials(baseUrl = m3uUrl, username = username, password = password))
     }
 
     companion object {
