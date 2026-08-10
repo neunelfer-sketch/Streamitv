@@ -174,6 +174,25 @@ class PlayerManager @Inject constructor(
     }
 
     /**
+     * Löscht eine noch angezeigte Fehlermeldung, ohne sonst etwas zu ändern.
+     *
+     * Player und Zustand sind über den ganzen Prozess hinweg ein einziger
+     * Singleton – Live-TV und VOD-Player teilen ihn sich. Ohne diesen
+     * Aufruf bliebe eine Fehlermeldung des zuvor gesehenen Senders oder
+     * Films kurz sichtbar, bis [play] sie ohnehin überschreibt: Zwischen
+     * dem Öffnen eines neuen Bildschirms und dem eigentlichen `play()`-Aufruf
+     * liegt ein Datenbankzugriff, und genau in dieser Lücke würde die alte
+     * Meldung sonst aufblitzen, obwohl die neue Wiedergabe längst sauber
+     * anläuft. Wird deshalb synchron beim Öffnen des Bildschirms aufgerufen,
+     * noch bevor die eigentliche Quelle aufgelöst ist.
+     */
+    fun clearError() {
+        if (_state.value.error != null || _state.value.retryCount != 0) {
+            _state.value = _state.value.copy(error = null, retryCount = 0)
+        }
+    }
+
+    /**
      * Startet die Medien-Session.
      *
      * Sie war zwar von Anfang an vorhanden, wurde aber nie gestartet – und

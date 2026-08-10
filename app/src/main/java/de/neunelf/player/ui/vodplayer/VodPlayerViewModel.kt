@@ -73,6 +73,11 @@ class VodPlayerViewModel @Inject constructor(
     fun player(): ExoPlayer = playerManager.getOrCreate()
 
     init {
+        // Sofort und ohne auf die Quellenauflösung zu warten: sonst bliebe
+        // eine Fehlermeldung des zuvor gesehenen Senders oder Films kurz
+        // sichtbar, obwohl dieser neue Titel einwandfrei anläuft – siehe
+        // [PlayerManager.clearError].
+        playerManager.clearError()
         viewModelScope.launch {
             val settings = settingsStore.settings.first()
             playerManager.setPreferredLanguages(

@@ -148,6 +148,11 @@ class PlayerViewModel @Inject constructor(
     /** Startet einen Sender. Wird auch beim Zappen aufgerufen. */
     fun playChannel(channel: Channel) {
         currentChannelId.value = channel.streamId
+        // Sofort, nicht erst nach der Quellenauflösung: sonst bliebe die
+        // Fehlermeldung des vorigen Senders (oder eines zuvor gesehenen
+        // Films – derselbe Player wird geteilt) kurz sichtbar, obwohl
+        // dieser Sender einwandfrei anläuft. Siehe [PlayerManager.clearError].
+        playerManager.clearError()
         viewModelScope.launch {
             val settings = settingsStore.settings.first()
 
