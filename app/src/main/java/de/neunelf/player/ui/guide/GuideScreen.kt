@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +62,7 @@ import de.neunelf.player.ui.theme.TvSpacing
 import de.neunelf.player.ui.theme.TvSurface
 import de.neunelf.player.ui.theme.TvSurfaceElevated
 import de.neunelf.player.ui.theme.TvSurfaceVariant
+import kotlinx.coroutines.flow.distinctUntilChanged
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
@@ -110,6 +112,19 @@ fun GuideScreen(
             kotlinx.coroutines.delay(15_000L)
             value = System.currentTimeMillis()
         }
+    }
+
+    // Dem ViewModel melden, welche Zeilen sichtbar sind – nur für die
+    // werden Programmdaten geholt. Ohne das müsste für einen ganzen Tag
+    // das Programm *aller* Sender im Speicher liegen; bei einer großen
+    // Playlist sprengt das den Arbeitsspeicher eines Fire TV Sticks.
+    LaunchedEffect(rowsState) {
+        snapshotFlow {
+            val info = rowsState.layoutInfo.visibleItemsInfo
+            (info.firstOrNull()?.index ?: 0) to (info.lastOrNull()?.index ?: 0)
+        }
+            .distinctUntilChanged()
+            .collect { (first, last) -> viewModel.onVisibleRowsChanged(first, last) }
     }
 
     // Beim Öffnen auf "jetzt" scrollen – nicht auf den Anfang des Fensters.

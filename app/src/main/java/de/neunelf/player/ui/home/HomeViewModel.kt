@@ -321,7 +321,7 @@ class HomeViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val cached = epgRepository.getUpcoming(epgId)
+            val cached = epgRepository.getUpcoming(channel.playlistId, epgId)
             upcoming.value = cached.ifEmpty {
                 // Nichts im Cache: einmalig beim Panel nachfragen.
                 repository.getActivePlaylist()

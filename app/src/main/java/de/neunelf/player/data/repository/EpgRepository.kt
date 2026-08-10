@@ -6,6 +6,7 @@ import de.neunelf.player.data.local.EpgDao
 import de.neunelf.player.data.local.EpgProgramEntity
 import de.neunelf.player.data.local.PlaylistDao
 import de.neunelf.player.data.local.toEntity
+import de.neunelf.player.data.local.toModel
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.ChannelWithProgram
 import de.neunelf.player.data.model.EpgProgram
@@ -77,28 +78,55 @@ class EpgRepository @Inject constructor(
     }
 
     /**
-     * Sender mit der gerade laufenden und der folgenden Sendung –
-     * genau die Daten, die die Senderliste im TiviMate-Stil braucht.
+     * Sender mit der gerade laufenden Sendung – genau das, was die
+     * Senderliste im TiviMate-Stil anzeigt.
+     *
+     * `next` bleibt hier bewusst leer: Die Senderliste zeigt es nicht, und
+     * es mitzuladen hieße, statt einer Sendung je Sender ein ganzes
+     * Zeitfenster zu holen. Wer "Danach" braucht – die Info-Leiste des
+     * Players –, holt es über [observeCurrentAndNext] für den einen
+     * betroffenen Sender.
+     *
+     * Die Zuordnung passiert im Speicher statt über ein `IN (…)` mit
+     * tausenden Sender-IDs; Begründung siehe
+     * [de.neunelf.player.data.local.EpgDao.observeCurrentPrograms].
      */
     fun observeChannelsWithProgram(channels: List<Channel>, now: Long): Flow<List<ChannelWithProgram>> {
-        val channelIds = channels.mapNotNull { it.epgChannelId }.distinct()
-        if (channelIds.isEmpty()) {
+        if (channels.none { it.epgChannelId != null }) {
             return flowOf(channels.map { ChannelWithProgram(it) })
         }
 
-        // Fenster: von jetzt bis in 12 Stunden. Damit ist "aktuell" und
-        // "als Nächstes" abgedeckt, ohne die ganze Woche zu laden.
-        val windowEnd = now + TimeUnit.HOURS.toMillis(12)
-        return observeWindow(channels.first().playlistId, channelIds, now, windowEnd).map { rows ->
-            val byChannel = rows.map { it.toModel() }.groupBy { it.epgChannelId }
+        return epgDao.observeCurrentPrograms(
+            playlistId = channels.first().playlistId,
+            now = now,
+            // Keine Sendung dauert länger als einen Tag – ein Rückblick von
+            // 24 Stunden findet also jede gerade laufende und hält zugleich
+            // die gelesene Datenmenge klein.
+            earliestStart = now - TimeUnit.HOURS.toMillis(24),
+        ).map { rows ->
+            val byChannel = rows.associateBy { it.epgChannelId }
             channels.map { channel ->
-                val programs = channel.epgChannelId?.let { byChannel[it] }.orEmpty()
                 ChannelWithProgram(
                     channel = channel,
-                    current = programs.firstOrNull { it.isLiveAt(now) },
-                    next = programs.firstOrNull { it.startAt > now },
+                    current = channel.epgChannelId?.let { byChannel[it] }?.toModel(),
                 )
             }
+        }
+    }
+
+    /**
+     * Laufende und folgende Sendung eines einzelnen Senders – für die
+     * Info-Leiste des Players.
+     */
+    fun observeCurrentAndNext(
+        playlistId: Long,
+        epgChannelId: String?,
+        now: Long,
+    ): Flow<Pair<EpgProgram?, EpgProgram?>> {
+        if (epgChannelId == null) return flowOf(null to null)
+        return epgDao.observeAroundNow(playlistId, epgChannelId, now).map { rows ->
+            val programs = rows.map { it.toModel() }
+            programs.firstOrNull { it.isLiveAt(now) } to programs.firstOrNull { it.startAt > now }
         }
     }
 
@@ -128,8 +156,13 @@ class EpgRepository @Inject constructor(
         ) { parts -> parts.flatMap { it } }
     }
 
-    suspend fun getUpcoming(epgChannelId: String, limit: Int = 12): List<EpgProgram> =
-        epgDao.getUpcoming(epgChannelId, System.currentTimeMillis(), limit).map { it.toModel() }
+    suspend fun getUpcoming(
+        playlistId: Long,
+        epgChannelId: String,
+        limit: Int = 12,
+    ): List<EpgProgram> =
+        epgDao.getUpcoming(playlistId, epgChannelId, System.currentTimeMillis(), limit)
+            .map { it.toModel() }
 
     // -----------------------------------------------------------------------
     // XMLTV-Import

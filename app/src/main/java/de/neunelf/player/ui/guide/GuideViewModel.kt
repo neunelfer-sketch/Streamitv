@@ -72,6 +72,13 @@ class GuideViewModel @Inject constructor(
     private val dayOffset = MutableStateFlow(0)
     private val selection = MutableStateFlow<Pair<Channel, EpgProgram?>?>(null)
 
+    /**
+     * Sichtbarer Ausschnitt der Senderliste, vom Bildschirm gemeldet.
+     *
+     * Nur für diese Sender werden Programmdaten geholt – siehe [programs].
+     */
+    private val visibleRows = MutableStateFlow(0 until VISIBLE_ROW_BUFFER)
+
     /** Sender des Rasters – aktuell alle; die Kategorie-Auswahl folgt später. */
     private val channels: StateFlow<List<Channel>> =
         repository.observeChannels(ChannelFilter.All)
@@ -81,11 +88,25 @@ class GuideViewModel @Inject constructor(
         .map { offset -> currentWindow(offset) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, currentWindow(0))
 
-    /** Die eigentlichen Rasterdaten: reagiert auf Senderliste *und* Zeitfenster. */
-    private val programs = combine(channels, window) { channelList, guideWindow ->
-        channelList to guideWindow
-    }.flatMapLatest { (channelList, guideWindow) ->
-        epgRepository.observeGuide(channelList, guideWindow.start, guideWindow.end)
+    /**
+     * Die eigentlichen Rasterdaten – **nur für die sichtbaren Zeilen**.
+     *
+     * Ein voller Tag für alle Sender wäre nicht tragbar: Bei 30.000 Sendern
+     * und einem Dutzend Sendungen je Sender und Tag sind das mehrere
+     * hunderttausend Zeilen samt Beschreibungstexten, also weit mehr
+     * Speicher, als ein Fire TV Stick hat. Sichtbar sind aber immer nur rund
+     * 15 Zeilen; mit Puffer landet man bei einigen hundert Sendungen.
+     *
+     * Der Puffer ober- und unterhalb sorgt dafür, dass beim Scrollen schon
+     * Daten bereitstehen, statt erst nachgeladen zu werden.
+     */
+    private val programs = combine(channels, window, visibleRows) { channelList, guideWindow, rows ->
+        Triple(channelList, guideWindow, rows)
+    }.flatMapLatest { (channelList, guideWindow, rows) ->
+        val from = (rows.first - VISIBLE_ROW_BUFFER).coerceAtLeast(0)
+        val to = (rows.last + VISIBLE_ROW_BUFFER).coerceAtMost(channelList.lastIndex)
+        val slice = if (from <= to) channelList.subList(from, to + 1) else emptyList()
+        epgRepository.observeGuide(slice, guideWindow.start, guideWindow.end)
     }
 
     val uiState: StateFlow<GuideUiState> = combine(
@@ -127,6 +148,19 @@ class GuideViewModel @Inject constructor(
     }
 
     /**
+     * Meldet, welche Zeilen gerade sichtbar sind. Nur für diese (plus
+     * Puffer) werden Programmdaten geladen.
+     */
+    fun onVisibleRowsChanged(firstIndex: Int, lastIndex: Int) {
+        // Auf Blöcke gerundet: Ohne das löste jede einzelne vorbeigescrollte
+        // Zeile eine neue Datenbankabfrage aus.
+        val from = (firstIndex / ROW_BLOCK) * ROW_BLOCK
+        val to = ((lastIndex / ROW_BLOCK) + 1) * ROW_BLOCK
+        val range = from..to
+        if (visibleRows.value != range) visibleRows.value = range
+    }
+
+    /**
      * Erzeugt das Zeitfenster für einen Tagesversatz.
      *
      * Für "heute" beginnt das Raster bei der laufenden halben Stunde – so
@@ -149,5 +183,16 @@ class GuideViewModel @Inject constructor(
 
         private const val MAX_DAYS_FORWARD = 7
         private const val MAX_DAYS_BACK = 1
+
+        /**
+         * Zusätzlich geladene Zeilen ober- und unterhalb des sichtbaren
+         * Bereichs. Groß genug, dass zügiges Scrollen nicht auf leere Zeilen
+         * trifft, klein genug, dass die Datenmenge unabhängig von der Größe
+         * der Playlist bleibt.
+         */
+        private const val VISIBLE_ROW_BUFFER = 15
+
+        /** Rundungsblock für den gemeldeten Sichtbereich (siehe [onVisibleRowsChanged]). */
+        private const val ROW_BLOCK = 10
     }
 }

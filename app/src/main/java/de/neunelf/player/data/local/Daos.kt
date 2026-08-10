@@ -89,6 +89,21 @@ interface CategoryDao {
     }
 }
 
+/**
+ * Schlanke Projektion für "was läuft gerade" in der Senderliste
+ * (siehe [EpgDao.observeCurrentPrograms]).
+ *
+ * Bewusst kein [EpgProgramEntity]: Dessen `description` ist das größte Feld
+ * und wird in der Senderliste nie angezeigt. Bei 30.000 Sendern entscheidet
+ * das über hunderte Megabyte.
+ */
+data class CurrentProgramRow(
+    val epgChannelId: String,
+    val startAt: Long,
+    val endAt: Long,
+    val title: String,
+)
+
 /** Kategorie plus berechnete Senderanzahl (siehe [CategoryDao.observeWithCounts]). */
 data class CategoryWithCount(
     val playlistId: Long,
@@ -316,16 +331,86 @@ interface EpgDao {
         windowEnd: Long,
     ): Flow<List<EpgProgramEntity>>
 
-    /** Die nächsten Sendungen eines einzelnen Senders (für das Info-Overlay). */
+    /**
+     * Was auf den Sendern der Playlist **gerade jetzt** läuft – eine Zeile
+     * je Sender, und nur die vier Spalten, die die Senderliste anzeigt.
+     *
+     * Das ist die tragende Abfrage für den Hauptbildschirm, und die Form ist
+     * bewusst so eng gewählt:
+     *
+     * - **Kein `IN (:channelIds)`.** Damit gibt es keine Grenze durch die
+     *   999 SQL-Variablen von SQLite und kein Aufteilen in Blöcke. Der
+     *   Aufrufer ordnet die Zeilen im Speicher den Sendern zu.
+     * - **Nur der laufende Zeitpunkt statt eines Zwölf-Stunden-Fensters.**
+     *   Ein Fenster liefert je Sender rund ein Dutzend Sendungen; hier ist es
+     *   höchstens eine. Bei 30.000 Sendern sind das 30.000 statt 360.000
+     *   Zeilen.
+     * - **Ohne `description`.** Beschreibungstexte sind das mit Abstand
+     *   größte Feld und werden in der Senderliste überhaupt nicht angezeigt.
+     *
+     * Zusammen ist das der Unterschied zwischen wenigen Megabyte und
+     * mehreren hundert – letzteres beendet die App auf einem Fire TV Stick
+     * mit `OutOfMemoryError`.
+     *
+     * [earliestStart] begrenzt zusätzlich die *gelesene* Datenmenge: Ohne
+     * untere Schranke müsste SQLite trotz Index alle Sendungen der Playlist
+     * ab dem ältesten Eintrag prüfen. Da keine Sendung länger als einen Tag
+     * dauert, genügt ein Rückblick von 24 Stunden, und der Index
+     * `(playlistId, startAt)` liest nur noch dieses schmale Band.
+     */
+    @Query(
+        """
+        SELECT epgChannelId, startAt, endAt, title FROM epg_programs
+        WHERE playlistId = :playlistId
+          AND startAt > :earliestStart AND startAt <= :now
+          AND endAt > :now
+        """,
+    )
+    fun observeCurrentPrograms(
+        playlistId: Long,
+        now: Long,
+        earliestStart: Long,
+    ): Flow<List<CurrentProgramRow>>
+
+    /**
+     * Laufende und folgende Sendung eines **einzelnen** Senders.
+     *
+     * Für die Info-Leiste des Players: Die zeigt zusätzlich "Danach", das
+     * die schlanke [observeCurrentPrograms] bewusst nicht mitliefert. Weil
+     * es nur um den gerade laufenden Sender geht, sind vier Zeilen genug.
+     */
     @Query(
         """
         SELECT * FROM epg_programs
-        WHERE epgChannelId = :channelId AND endAt > :now
+        WHERE playlistId = :playlistId AND epgChannelId = :channelId AND endAt > :now
+        ORDER BY startAt
+        LIMIT 4
+        """,
+    )
+    fun observeAroundNow(playlistId: Long, channelId: String, now: Long): Flow<List<EpgProgramEntity>>
+
+    /**
+     * Die nächsten Sendungen eines einzelnen Senders (für das Info-Overlay).
+     *
+     * `playlistId` gehört in die Bedingung: EPG-Kennungen sind nicht
+     * eindeutig, zwei Playlists tragen für denselben Sender problemlos
+     * beide "rtl.de". Ohne die Einschränkung mischten sich die Sendungen
+     * einer gar nicht aktiven Playlist in die Anzeige.
+     */
+    @Query(
+        """
+        SELECT * FROM epg_programs
+        WHERE playlistId = :playlistId AND epgChannelId = :channelId AND endAt > :now
         ORDER BY startAt
         LIMIT :limit
         """,
     )
-    suspend fun getUpcoming(channelId: String, now: Long, limit: Int): List<EpgProgramEntity>
+    suspend fun getUpcoming(
+        playlistId: Long,
+        channelId: String,
+        now: Long,
+        limit: Int,
+    ): List<EpgProgramEntity>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(programs: List<EpgProgramEntity>)

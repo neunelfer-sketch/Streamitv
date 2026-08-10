@@ -32,7 +32,9 @@ import androidx.room.RoomDatabase
     // wirft Room die alte Datei weg und legt sie neu an.
     //
     // 2: `directUrl` in `movies` (Film-URLs aus M3U-Playlists)
-    version = 2,
+    // 3: Index `(playlistId, startAt)` auf `epg_programs` – trägt die
+    //    Abfrage "was läuft gerade" bei sehr großen Playlists
+    version = 3,
     // Kein Schema-Export: die Datenbank ist ein reiner Cache mit
     // fallbackToDestructiveMigration, es werden nie Migrationen von Hand
     // geschrieben. Der Export brachte hier nur einen Konflikt, weil die

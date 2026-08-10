@@ -143,6 +143,28 @@ automatisch als EPG-Quelle übernommen.
 läuft streamend und schreibt in Blöcken zu 1.000 Sendungen, damit auch
 Dateien jenseits von 100 MB auf einem Stick durchlaufen.
 
+## Sehr große Playlists (30.000+ Sender)
+
+Der begrenzende Faktor ist nicht die Senderzahl selbst, sondern **wie viel
+Programmzeitschrift gleichzeitig im Speicher liegt**. Drei Stellen sind
+dafür entscheidend:
+
+| Stelle | Regel |
+|---|---|
+| Senderliste (Hauptbildschirm, Player) | Nur die *gerade laufende* Sendung, nur vier Spalten – höchstens eine Zeile je Sender |
+| EPG-Raster (TV-Guide) | Nur die sichtbaren Zeilen plus Puffer, nicht die ganze Playlist |
+| Info-Leiste des Players ("Danach") | Eigene Abfrage für genau einen Sender |
+
+Zum Vergleich: Ein Zwölf-Stunden-Fenster über alle Sender samt
+Beschreibungstexten wären bei 30.000 Sendern rund 360.000 Sendungen –
+mehrere hundert Megabyte und damit ein sicherer `OutOfMemoryError` auf
+einem Fire TV Stick. Die laufende Sendung je Sender sind höchstens 30.000
+kurze Zeilen.
+
+Wer hier etwas ändert, sollte das im Blick behalten: Eine scheinbar
+harmlose Abfrage über *alle* Sender ist bei dieser Größenordnung der
+Unterschied zwischen "läuft" und "stürzt ab".
+
 ## Fertige APK laden
 
 Jeder Push auf `main` oder einen `claude/*`-Branch baut die App auf GitHub

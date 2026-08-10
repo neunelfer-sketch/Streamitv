@@ -330,6 +330,12 @@ fun Episode.toEntity(playlistId: Long) = EpisodeEntity(
         // wird – der Zeitraum grenzt anschließend nur noch ein.
         Index("epgChannelId", "startAt"),
         Index("endAt"),
+        // Trägt "was läuft gerade auf allen Sendern" (siehe
+        // EpgDao.observeCurrentPrograms). Ohne diesen Index müsste SQLite je
+        // Abfrage sämtliche Sendungen der Playlist durchgehen – auch die der
+        // kommenden Tage, die den weitaus größten Teil ausmachen. Mit ihm
+        // wird nur das schmale Zeitband um "jetzt" gelesen.
+        Index("playlistId", "startAt"),
         // Verhindert Doppeleinträge, wenn zusätzlich zum XMLTV-Import noch
         // das Kurz-EPG eines Senders nachgeladen wird. Zusammen mit
         // `OnConflictStrategy.IGNORE` wirkt das als Deduplizierung.
@@ -364,6 +370,20 @@ data class EpgProgramEntity(
         episode = episode,
     )
 }
+
+/**
+ * Wandelt die schlanke Projektion der Senderliste in das Domänenmodell.
+ *
+ * Die nicht geladenen Felder (Beschreibung, Kategorie, Bild, Staffel,
+ * Episode) bleiben leer – die Senderliste zeigt sie nicht an. Wer sie
+ * braucht, lädt die vollständige Sendung über den EpgDao.
+ */
+fun CurrentProgramRow.toModel() = EpgProgram(
+    epgChannelId = epgChannelId,
+    startAt = startAt,
+    endAt = endAt,
+    title = title,
+)
 
 fun EpgProgram.toEntity(playlistId: Long) = EpgProgramEntity(
     id = 0L,

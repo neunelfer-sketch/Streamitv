@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -83,19 +84,52 @@ class PlayerViewModel @Inject constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * Laufende und folgende Sendung des *gerade gespielten* Senders.
+     *
+     * Getrennt von [channels], weil die Senderliste aus Speichergründen nur
+     * die laufende Sendung mitbringt (siehe
+     * [de.neunelf.player.data.repository.EpgRepository.observeChannelsWithProgram]).
+     * Die Info-Leiste zeigt zusätzlich "Danach" – das lohnt eine eigene,
+     * winzige Abfrage für genau einen Sender.
+     */
+    private val currentAndNext: StateFlow<Pair<EpgProgram?, EpgProgram?>> =
+        combine(channels, currentChannelId) { channelList, channelId ->
+            channelList.firstOrNull { it.channel.streamId == channelId }?.channel
+        }
+            .flatMapLatest { channel ->
+                if (channel == null) {
+                    flowOf(null to null)
+                } else {
+                    epgRepository.observeCurrentAndNext(
+                        playlistId = channel.playlistId,
+                        epgChannelId = channel.epgChannelId,
+                        now = System.currentTimeMillis(),
+                    )
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null to null)
+
     val uiState: StateFlow<PlayerUiState> = combine(
         channels,
         currentChannelId,
         overlay,
-        playerManager.state,
-        settingsStore.settings,
-    ) { channelList, channelId, overlayMode, playback, settings ->
+        // Zwei Quellen gebündelt, damit die typsichere `combine`-Variante mit
+        // fünf Argumenten reicht – die Fassung darüber liefert nur ein
+        // `Array<Any?>` und erzwänge ungeprüfte Umwandlungen.
+        combine(playerManager.state, settingsStore.settings) { playback, settings ->
+            playback to settings
+        },
+        currentAndNext,
+    ) { channelList, channelId, overlayMode, (playback, settings), (current, next) ->
         val entry = channelList.firstOrNull { it.channel.streamId == channelId }
 
         PlayerUiState(
             currentChannel = entry?.channel,
-            currentProgram = entry?.current,
-            nextProgram = entry?.next,
+            // Die Einzelabfrage ist genauer als der Eintrag aus der Liste –
+            // fällt sie aus, bleibt die Liste als Rückfallebene.
+            currentProgram = current ?: entry?.current,
+            nextProgram = next,
             channels = channelList,
             playback = playback,
             overlay = overlayMode,
