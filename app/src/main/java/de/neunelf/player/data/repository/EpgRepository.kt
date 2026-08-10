@@ -16,6 +16,7 @@ import de.neunelf.player.data.remote.xtream.XtreamApi
 import de.neunelf.player.data.remote.xtream.XtreamMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -68,17 +69,11 @@ class EpgRepository @Inject constructor(
         windowStart: Long,
         windowEnd: Long,
     ): Flow<Map<String, List<EpgProgram>>> {
-        val relevantIds = channels.mapNotNull { it.epgChannelId }.toSet()
-        if (relevantIds.isEmpty()) return flowOf(emptyMap())
-        val playlistId = channels.first().playlistId
+        val channelIds = channels.mapNotNull { it.epgChannelId }.distinct()
+        if (channelIds.isEmpty()) return flowOf(emptyMap())
 
-        return epgDao.observeWindow(playlistId, windowStart, windowEnd).map { rows ->
-            rows.asSequence()
-                .filter { it.epgChannelId in relevantIds }
-                .map { it.toModel() }
-                .toList()
-                .groupBy { it.epgChannelId }
-        }
+        return observeWindow(channels.first().playlistId, channelIds, windowStart, windowEnd)
+            .map { rows -> rows.map { it.toModel() }.groupBy { it.epgChannelId } }
     }
 
     /**
@@ -86,21 +81,16 @@ class EpgRepository @Inject constructor(
      * genau die Daten, die die Senderliste im TiviMate-Stil braucht.
      */
     fun observeChannelsWithProgram(channels: List<Channel>, now: Long): Flow<List<ChannelWithProgram>> {
-        val relevantIds = channels.mapNotNull { it.epgChannelId }.toSet()
-        if (relevantIds.isEmpty()) {
+        val channelIds = channels.mapNotNull { it.epgChannelId }.distinct()
+        if (channelIds.isEmpty()) {
             return flowOf(channels.map { ChannelWithProgram(it) })
         }
-        val playlistId = channels.first().playlistId
 
         // Fenster: von jetzt bis in 12 Stunden. Damit ist "aktuell" und
         // "als Nächstes" abgedeckt, ohne die ganze Woche zu laden.
         val windowEnd = now + TimeUnit.HOURS.toMillis(12)
-        return epgDao.observeWindow(playlistId, now, windowEnd).map { rows ->
-            val byChannel = rows.asSequence()
-                .filter { it.epgChannelId in relevantIds }
-                .map { it.toModel() }
-                .toList()
-                .groupBy { it.epgChannelId }
+        return observeWindow(channels.first().playlistId, channelIds, now, windowEnd).map { rows ->
+            val byChannel = rows.map { it.toModel() }.groupBy { it.epgChannelId }
             channels.map { channel ->
                 val programs = channel.epgChannelId?.let { byChannel[it] }.orEmpty()
                 ChannelWithProgram(
@@ -110,6 +100,32 @@ class EpgRepository @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * Fragt das Zeitfenster in Blöcken ab und führt die Ergebnisse zusammen.
+     *
+     * SQLite erlaubt nur 999 gebundene Variablen je Statement – eine Playlist
+     * mit mehreren tausend Sendern sprengt ein einzelnes `IN (…)` also
+     * (`too many SQL variables`). Die Alternative, einfach die komplette
+     * Playlist zu laden und im Speicher zu filtern, ist keine: Der
+     * Hauptbildschirm fragt hier meist nur die Sender *einer Kategorie* an,
+     * würde dann aber bei jedem Takt die Sendungen aller Sender einlesen –
+     * auf einem Fire TV Stick mit 1 GB RAM schnell dreistellige Megabyte.
+     */
+    private fun observeWindow(
+        playlistId: Long,
+        channelIds: List<String>,
+        windowStart: Long,
+        windowEnd: Long,
+    ): Flow<List<EpgProgramEntity>> {
+        val chunks = channelIds.chunked(CHANNEL_ID_CHUNK)
+        if (chunks.size == 1) {
+            return epgDao.observeWindowChunk(playlistId, chunks.first(), windowStart, windowEnd)
+        }
+        return combine(
+            chunks.map { epgDao.observeWindowChunk(playlistId, it, windowStart, windowEnd) },
+        ) { parts -> parts.flatMap { it } }
     }
 
     suspend fun getUpcoming(epgChannelId: String, limit: Int = 12): List<EpgProgram> =
@@ -251,5 +267,12 @@ class EpgRepository @Inject constructor(
          * kaum ins Gewicht fällt, klein genug für ~1 MB Spitzenspeicher.
          */
         private const val BATCH_SIZE = 1_000
+
+        /**
+         * Sender-IDs je Abfrage. SQLite lässt 999 gebundene Variablen zu;
+         * die übrigen Parameter (Playlist, Fenstergrenzen) brauchen davon
+         * drei, der Rest ist Sicherheitsabstand.
+         */
+        private const val CHANNEL_ID_CHUNK = 900
     }
 }

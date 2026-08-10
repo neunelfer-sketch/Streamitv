@@ -93,9 +93,18 @@ class PlaylistSyncer @Inject constructor(
      * mitten drin abbrechen. Der zurückgegebene [Flow] ist deshalb ein
      * `SharedFlow`: Beobachter können jederzeit abspringen, ohne den
      * eigentlichen Import zu stoppen.
+     *
+     * Der Wiederholpuffer ist groß genug für einen kompletten Importlauf,
+     * und das ist keine Kosmetik: Der Import startet sofort, der Aufrufer
+     * hängt sich erst danach an. Ohne Puffer fällt alles in diese Lücke
+     * unter den Tisch – bei einer Playlist, die schon vor dem ersten
+     * Netzwerkaufruf scheitert (Tippfehler in der URL), auch die
+     * Fehlermeldung. Der Einrichtungsbildschirm bliebe dann dauerhaft auf
+     * "Verbinde…" stehen, und weil "Verbinden" währenddessen gesperrt ist,
+     * käme man ohne Neustart der App nicht mehr weiter.
      */
     fun syncInBackground(playlist: Playlist): Flow<SyncProgress> {
-        val progress = MutableSharedFlow<SyncProgress>(replay = 0, extraBufferCapacity = 8)
+        val progress = MutableSharedFlow<SyncProgress>(replay = SYNC_REPLAY, extraBufferCapacity = 8)
         appScope.launch {
             sync(playlist).collect { progress.emit(it) }
         }
@@ -224,6 +233,13 @@ class PlaylistSyncer @Inject constructor(
 
     companion object {
         private const val TAG = "PlaylistSyncer"
+
+        /**
+         * Reicht für sämtliche Meldungen eines Importlaufs – ein spät
+         * hinzugekommener Beobachter bekommt so die vollständige Abfolge
+         * nachgereicht statt eines Ausschnitts (siehe [syncInBackground]).
+         */
+        private const val SYNC_REPLAY = 16
 
         /** Wird auch beim Streamen benutzt – manche Panels prüfen darauf. */
         const val USER_AGENT = "9elfPlayer/1.0 (Android TV)"

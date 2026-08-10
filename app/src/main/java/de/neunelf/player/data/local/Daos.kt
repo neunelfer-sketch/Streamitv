@@ -287,29 +287,34 @@ interface VodDao {
 interface EpgDao {
 
     /**
-     * Alle Sendungen einer Playlist, die sich mit dem sichtbaren Zeitfenster
-     * überschneiden.
+     * Sendungen der angegebenen Sender, die sich mit dem sichtbaren
+     * Zeitfenster überschneiden.
      *
      * Die Überlappungsbedingung ist `start < fensterEnde && ende > fensterStart`
      * – so werden auch Sendungen erfasst, die vor dem Fenster begonnen haben.
      *
-     * Bewusst nach `playlistId` statt nach einer Liste von Sender-IDs
-     * gefiltert: Ein `WHERE epgChannelId IN (:channelIds)` bindet eine
-     * SQL-Variable pro Sender, und SQLite erlaubt davon nur 999 pro
-     * Statement. Bei Panels mit mehreren tausend Sendern (keine Seltenheit)
-     * stürzte das mit `SQLiteException: too many SQL variables` ab, sobald
-     * "Alle Sender" nach einem Sync ihre EPG-Daten laden wollte. Der Aufrufer
-     * filtert die Zeilen stattdessen im Speicher auf die tatsächlich
-     * gebrauchten Sender-IDs herunter.
+     * **Nie direkt aufrufen**, sondern über
+     * [de.neunelf.player.data.repository.EpgRepository]: Jede Sender-ID im
+     * `IN` belegt eine SQL-Variable, und SQLite erlaubt nur 999 pro Statement.
+     * Bei Playlists mit mehreren tausend Sendern scheitert ein ungeteilter
+     * Aufruf mit `too many SQL variables`; das Repository zerlegt die Liste
+     * deshalb in Blöcke.
      */
     @Query(
         """
         SELECT * FROM epg_programs
-        WHERE playlistId = :playlistId AND startAt < :windowEnd AND endAt > :windowStart
+        WHERE playlistId = :playlistId
+          AND epgChannelId IN (:channelIds)
+          AND startAt < :windowEnd AND endAt > :windowStart
         ORDER BY epgChannelId, startAt
         """,
     )
-    fun observeWindow(playlistId: Long, windowStart: Long, windowEnd: Long): Flow<List<EpgProgramEntity>>
+    fun observeWindowChunk(
+        playlistId: Long,
+        channelIds: List<String>,
+        windowStart: Long,
+        windowEnd: Long,
+    ): Flow<List<EpgProgramEntity>>
 
     /** Die nächsten Sendungen eines einzelnen Senders (für das Info-Overlay). */
     @Query(

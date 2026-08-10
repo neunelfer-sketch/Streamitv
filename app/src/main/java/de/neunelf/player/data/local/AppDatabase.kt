@@ -22,7 +22,17 @@ import androidx.room.RoomDatabase
         FavoriteEntity::class,
         RecentEntity::class,
     ],
-    version = 1,
+    // Bei **jeder** Änderung an einer Entity hochzählen. Room legt einen
+    // Fingerabdruck des Schemas in der Datei ab und vergleicht ihn beim
+    // Öffnen. Bleibt die Nummer gleich, während sich das Schema ändert,
+    // stürzt die App bei einem Update sofort beim Start ab
+    // ("Room cannot verify the data integrity") – fallbackToDestructiveMigration
+    // rettet das nicht, denn das greift nur bei einem Versionswechsel ohne
+    // passende Migration. Genau der Fall hier: erst mit der neuen Nummer
+    // wirft Room die alte Datei weg und legt sie neu an.
+    //
+    // 2: `directUrl` in `movies` (Film-URLs aus M3U-Playlists)
+    version = 2,
     // Kein Schema-Export: die Datenbank ist ein reiner Cache mit
     // fallbackToDestructiveMigration, es werden nie Migrationen von Hand
     // geschrieben. Der Export brachte hier nur einen Konflikt, weil die

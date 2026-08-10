@@ -7,9 +7,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.prefs.SettingsStore
 import de.neunelf.player.data.repository.IptvRepository
+import de.neunelf.player.di.ApplicationScope
 import de.neunelf.player.player.PlaybackState
 import de.neunelf.player.player.PlayerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,6 +49,7 @@ class VodPlayerViewModel @Inject constructor(
     private val repository: IptvRepository,
     private val settingsStore: SettingsStore,
     private val playerManager: PlayerManager,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     private val movieStreamId: String? = savedStateHandle["streamId"]
@@ -54,6 +57,9 @@ class VodPlayerViewModel @Inject constructor(
 
     private val title = MutableStateFlow("")
     private val loadError = MutableStateFlow<String?>(null)
+
+    /** Woher der laufende Inhalt stammt – für das Sichern der Position. */
+    private var source: ResolvedSource? = null
 
     val uiState: StateFlow<VodPlayerUiState> = combine(
         title,
@@ -75,17 +81,18 @@ class VodPlayerViewModel @Inject constructor(
                 subtitlesOn = settings.subtitlesEnabled,
             )
 
-            val source = resolveSource()
-            if (source == null) {
+            val resolved = resolveSource()
+            if (resolved == null) {
                 loadError.value = "Inhalt konnte nicht geladen werden"
                 return@launch
             }
-            title.value = source.title
+            source = resolved
+            title.value = resolved.title
 
-            val resumeMs = repository.getResumePosition(source.playlistId, source.streamId, source.kind)
+            val resumeMs = repository.getResumePosition(resolved.playlistId, resolved.streamId, resolved.kind)
             playerManager.play(
-                url = source.url,
-                title = source.title,
+                url = resolved.url,
+                title = resolved.title,
                 isLive = false,
                 startPositionMs = resumeMs,
                 bufferMs = settings.bufferMs,
@@ -96,16 +103,7 @@ class VodPlayerViewModel @Inject constructor(
             // Strom weg) höchstens ein paar Sekunden verloren.
             while (isActive) {
                 delay(10_000)
-                val duration = playerManager.currentDuration()
-                if (duration > 0) {
-                    repository.markWatched(
-                        playlistId = source.playlistId,
-                        streamId = source.streamId,
-                        kind = source.kind,
-                        positionMs = playerManager.currentPosition(),
-                        durationMs = duration,
-                    )
-                }
+                savePosition()
             }
         }
     }
@@ -119,8 +117,40 @@ class VodPlayerViewModel @Inject constructor(
     fun seekBy(deltaMs: Long) = playerManager.seekBy(deltaMs)
 
     override fun onCleared() {
+        // Position **vor** dem Stoppen lesen und über den App-Scope sichern:
+        // `viewModelScope` ist hier schon abgebrochen, und `stop()` setzt die
+        // Position des Players zurück. Ohne das ginge beim Verlassen der
+        // Fortschritt seit dem letzten Takt verloren – bis zu zehn Sekunden.
+        val current = source
+        val positionMs = playerManager.currentPosition()
+        val durationMs = playerManager.currentDuration()
+        if (current != null && durationMs > 0) {
+            appScope.launch {
+                repository.markWatched(
+                    playlistId = current.playlistId,
+                    streamId = current.streamId,
+                    kind = current.kind,
+                    positionMs = positionMs,
+                    durationMs = durationMs,
+                )
+            }
+        }
         playerManager.stop()
         super.onCleared()
+    }
+
+    /** Sichert die Wiedergabeposition, sofern die Dauer schon bekannt ist. */
+    private suspend fun savePosition() {
+        val current = source ?: return
+        val duration = playerManager.currentDuration()
+        if (duration <= 0) return
+        repository.markWatched(
+            playlistId = current.playlistId,
+            streamId = current.streamId,
+            kind = current.kind,
+            positionMs = playerManager.currentPosition(),
+            durationMs = duration,
+        )
     }
 
     // -----------------------------------------------------------------------

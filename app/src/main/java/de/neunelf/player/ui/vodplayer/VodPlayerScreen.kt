@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -68,12 +70,18 @@ fun VodPlayerScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val rootFocus = remember { FocusRequester() }
-    var controlsVisible by remember { mutableStateOf(true) }
     val player = viewModel.player()
+
+    // Hochgezählt bei jeder Eingabe. Der Zähler – nicht die Sichtbarkeit –
+    // ist der Schlüssel des Ausblend-Timers: Sonst liefe bei einer zweiten
+    // Eingabe immer noch der Timer der ersten weiter, und die Leiste
+    // verschwände mitten im Spulen.
+    var interactions by remember { mutableIntStateOf(0) }
+    var controlsVisible by remember { mutableStateOf(true) }
 
     // ExoPlayer aktualisiert seine Position nicht von sich aus als Flow –
     // für einen sich bewegenden Fortschrittsbalken wird deshalb hier gepollt.
-    var positionMs by remember { mutableStateOf(player.currentPosition) }
+    var positionMs by remember { mutableLongStateOf(player.currentPosition) }
     LaunchedEffect(player) {
         while (isActive) {
             positionMs = player.currentPosition
@@ -84,11 +92,10 @@ fun VodPlayerScreen(
     LaunchedEffect(Unit) { runCatching { rootFocus.requestFocus() } }
 
     // Bedienleiste blendet nach ein paar Sekunden ohne Eingabe wieder aus.
-    LaunchedEffect(controlsVisible) {
-        if (controlsVisible) {
-            delay(5_000)
-            controlsVisible = false
-        }
+    LaunchedEffect(interactions) {
+        controlsVisible = true
+        delay(5_000)
+        controlsVisible = false
     }
 
     BackHandler(enabled = true) { onExit() }
@@ -100,12 +107,12 @@ fun VodPlayerScreen(
             .focusRequester(rootFocus)
             .focusable()
             .dpadEvents(
-                onSelect = { viewModel.togglePlayPause(); controlsVisible = true; true },
-                onPlayPause = { viewModel.togglePlayPause(); controlsVisible = true; true },
-                onLeft = { viewModel.seekBy(-10_000L); controlsVisible = true; true },
-                onRight = { viewModel.seekBy(10_000L); controlsVisible = true; true },
-                onUp = { controlsVisible = true; true },
-                onDown = { controlsVisible = true; true },
+                onSelect = { viewModel.togglePlayPause(); interactions++; true },
+                onPlayPause = { viewModel.togglePlayPause(); interactions++; true },
+                onLeft = { viewModel.seekBy(-10_000L); interactions++; true },
+                onRight = { viewModel.seekBy(10_000L); interactions++; true },
+                onUp = { interactions++; true },
+                onDown = { interactions++; true },
             ),
     ) {
         VideoSurface(player = player, modifier = Modifier.fillMaxSize())
