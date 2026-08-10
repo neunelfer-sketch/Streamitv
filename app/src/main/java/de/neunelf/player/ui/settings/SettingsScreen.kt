@@ -47,6 +47,7 @@ import de.neunelf.player.ui.theme.TvSurfaceVariant
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenContact: () -> Unit,
+    onOpenEpgSource: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -89,6 +90,13 @@ fun SettingsScreen(
                     title = "Senderliste aktualisieren",
                     value = state.lastSyncLabel,
                     onClick = viewModel::refreshPlaylist,
+                )
+            }
+            item {
+                SettingsRow(
+                    title = "EPG-Quelle",
+                    value = state.epgUrl.ifBlank { "Automatisch (Panel-Daten)" },
+                    onClick = onOpenEpgSource,
                 )
             }
             item {

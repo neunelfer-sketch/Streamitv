@@ -45,6 +45,8 @@ data class SettingsUiState(
     val message: String? = null,
     val currentVersion: String = "",
     val update: UpdateUiState = UpdateUiState.Unknown,
+    /** Vom Nutzer hinterlegte XMLTV-Adresse; leer = automatisch ermitteln. */
+    val epgUrl: String = "",
 )
 
 @HiltViewModel
@@ -76,6 +78,7 @@ class SettingsViewModel @Inject constructor(
             message = statusMessage,
             currentVersion = updateRepository.currentVersion,
             update = updateState,
+            epgUrl = playlist?.epgUrl.orEmpty(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -174,6 +177,18 @@ class SettingsViewModel @Inject constructor(
                 }
             }
             programCount.value = epgRepository.programCount(playlist.id)
+        }
+    }
+
+    /** Setzt die EPG-Quelle; der Import läuft danach von selbst an. */
+    fun setEpgUrl(url: String) {
+        viewModelScope.launch {
+            repository.updateEpgUrl(url)
+            message.value = if (url.isBlank()) {
+                "EPG-Quelle entfernt - es werden die Daten des Panels verwendet"
+            } else {
+                "EPG-Quelle gespeichert"
+            }
         }
     }
 

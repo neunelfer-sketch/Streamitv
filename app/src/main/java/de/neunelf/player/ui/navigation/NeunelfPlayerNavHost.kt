@@ -20,6 +20,7 @@ import de.neunelf.player.ui.home.HomeScreen
 import de.neunelf.player.ui.login.LoginScreen
 import de.neunelf.player.ui.player.PlayerScreen
 import de.neunelf.player.ui.search.SearchScreen
+import de.neunelf.player.ui.settings.EpgSourceScreen
 import de.neunelf.player.ui.settings.SettingsScreen
 import de.neunelf.player.ui.vod.SeriesDetailScreen
 import de.neunelf.player.ui.vod.VodScreen
@@ -36,6 +37,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val CONTACT = "contact"
     const val SEARCH = "search"
+    const val EPG_SOURCE = "epg_source"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
     const val MOVIE_PLAYER = "movie_player/{streamId}"
@@ -169,12 +171,17 @@ fun NeunelfPlayerNavHost(
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenContact = { navController.navigate(Routes.CONTACT) },
+                onOpenEpgSource = { navController.navigate(Routes.EPG_SOURCE) },
                 onPlaylistRemoved = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
             )
+        }
+
+        composable(Routes.EPG_SOURCE) {
+            EpgSourceScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.SEARCH) {

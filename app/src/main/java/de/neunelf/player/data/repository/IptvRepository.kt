@@ -85,6 +85,22 @@ class IptvRepository @Inject constructor(
 
     suspend fun setActivePlaylist(id: Long) = playlistDao.setActive(id)
 
+    /**
+     * Setzt die EPG-Quelle der aktiven Playlist.
+     *
+     * `lastEpgSyncAt` wird dabei zurückgesetzt: Der Hauptbildschirm prüft
+     * beim nächsten Aufbau, ob ein EPG-Import fällig ist, und lädt dann von
+     * selbst neu. Ein eigener Anstoß von hier aus wäre überflüssig und
+     * liefe zudem außerhalb eines Bildschirms, der den Fortschritt anzeigen
+     * könnte.
+     */
+    suspend fun updateEpgUrl(url: String) {
+        val current = playlistDao.getActive()?.toModel() ?: return
+        val updated = current.copy(epgUrl = url.trim(), lastEpgSyncAt = 0L)
+        playlistDao.insert(updated.toEntity(isActive = true))
+        settingsStore.rememberPlaylist(updated)
+    }
+
     suspend fun deletePlaylist(id: Long) {
         playlistDao.delete(id)
         settingsStore.forgetPlaylist()
