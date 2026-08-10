@@ -168,9 +168,23 @@ data class ChannelWithProgram(
     val next: EpgProgram? = null,
 )
 
+/**
+ * Reihenfolge im Poster-Raster von Filmen und Serien.
+ *
+ * Wird je Bereich getrennt gemerkt: Bei Filmen ist "zuletzt hinzugefügt"
+ * die sinnvolle Voreinstellung (man will sehen, was neu ist), bei Serien
+ * die alphabetische – Serienkataloge ändern sich selten, und man sucht
+ * dort meist einen bestimmten Titel.
+ */
+enum class VodSort(val label: String) {
+    /** Neuzugänge zuerst. Bei Serien zählt die letzte Änderung am Eintrag. */
+    RECENT("Neu hinzugefügt"),
+    NAME_ASC("Name A–Z"),
+    NAME_DESC("Name Z–A"),
+}
+
 /** Seitenverhältnis-Modi des Players (zyklisch per Schnellmenü umschaltbar). */
-enum class AspectRatioMode(val label: String) {
-    FIT("Anpassen"),
+enum class AspectRatioMode(val label: String) {    FIT("Anpassen"),
     FILL("Ausfüllen"),
     ZOOM("Zoom"),
     FIXED_16_9("16:9"),

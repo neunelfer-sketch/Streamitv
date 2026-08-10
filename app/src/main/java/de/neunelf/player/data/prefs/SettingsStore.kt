@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import de.neunelf.player.data.model.AspectRatioMode
+import de.neunelf.player.data.model.StreamKind
+import de.neunelf.player.data.model.VodSort
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -32,6 +34,10 @@ data class AppSettings(
     val resumeLastChannel: Boolean = true,
     /** Vorschaubild in der Senderliste anzeigen (kostet Bandbreite). */
     val showPreviewPlayer: Boolean = true,
+    /** Reihenfolge im Filme-Raster. */
+    val movieSort: VodSort = VodSort.RECENT,
+    /** Reihenfolge im Serien-Raster. */
+    val seriesSort: VodSort = VodSort.NAME_ASC,
 )
 
 /**
@@ -58,8 +64,14 @@ class SettingsStore(
             guideWindowMinutes = prefs[KEY_GUIDE_WINDOW] ?: 120,
             resumeLastChannel = prefs[KEY_RESUME_LAST] ?: true,
             showPreviewPlayer = prefs[KEY_SHOW_PREVIEW] ?: true,
+            movieSort = prefs[KEY_MOVIE_SORT].toVodSort(VodSort.RECENT),
+            seriesSort = prefs[KEY_SERIES_SORT].toVodSort(VodSort.NAME_ASC),
         )
     }
+
+    /** Unbekannte Werte (etwa aus einer älteren Fassung) auf den Standard zurückführen. */
+    private fun String?.toVodSort(fallback: VodSort): VodSort =
+        this?.let { name -> runCatching { VodSort.valueOf(name) }.getOrNull() } ?: fallback
 
     suspend fun setPreferHls(value: Boolean) = edit { it[KEY_PREFER_HLS] = value }
     suspend fun setBufferMs(value: Int) = edit { it[KEY_BUFFER_MS] = value }
@@ -70,6 +82,12 @@ class SettingsStore(
     suspend fun setGuideWindowMinutes(value: Int) = edit { it[KEY_GUIDE_WINDOW] = value }
     suspend fun setResumeLastChannel(value: Boolean) = edit { it[KEY_RESUME_LAST] = value }
     suspend fun setShowPreviewPlayer(value: Boolean) = edit { it[KEY_SHOW_PREVIEW] = value }
+
+    /** Merkt die Reihenfolge für den jeweiligen Bereich getrennt. */
+    suspend fun setVodSort(kind: StreamKind, value: VodSort) = edit {
+        val key = if (kind == StreamKind.SERIES) KEY_SERIES_SORT else KEY_MOVIE_SORT
+        it[key] = value.name
+    }
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
@@ -85,6 +103,8 @@ class SettingsStore(
         private val KEY_GUIDE_WINDOW = intPreferencesKey("guide_window_minutes")
         private val KEY_RESUME_LAST = booleanPreferencesKey("resume_last_channel")
         private val KEY_SHOW_PREVIEW = booleanPreferencesKey("show_preview_player")
+        private val KEY_MOVIE_SORT = stringPreferencesKey("movie_sort")
+        private val KEY_SERIES_SORT = stringPreferencesKey("series_sort")
 
         /**
          * Auswählbare Puffergrößen.

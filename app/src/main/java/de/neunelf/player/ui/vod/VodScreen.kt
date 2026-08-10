@@ -1,5 +1,6 @@
 package de.neunelf.player.ui.vod
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -20,11 +22,20 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -32,11 +43,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import de.neunelf.player.data.model.StreamKind
+import de.neunelf.player.data.model.VodSort
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvBackground
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
@@ -63,14 +76,188 @@ fun VodScreen(
     viewModel: VodViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var isSortMenuOpen by remember { mutableStateOf(false) }
+    val sortButtonFocus = remember { FocusRequester() }
 
-    androidx.compose.runtime.LaunchedEffect(kind) { viewModel.setKind(kind) }
+    LaunchedEffect(kind) { viewModel.setKind(kind) }
 
+    // Nur solange das Menü offen ist: Zurück schließt es, statt den
+    // Bildschirm zu verlassen. Ist es zu, bleibt die Taste unangetastet
+    // und die Navigation verhält sich wie überall sonst.
+    BackHandler(enabled = isSortMenuOpen) { isSortMenuOpen = false }
+
+    // Schließt das Menü, verschwindet das gerade fokussierte Element aus der
+    // Komposition – ohne Zutun bliebe der Fokus im Nichts hängen und die
+    // Fernbedienung wirkungslos. Der Merker sorgt dafür, dass das nur beim
+    // Schließen greift und nicht schon beim ersten Aufbau des Bildschirms
+    // den Fokus vom Raster wegzieht.
+    var wasSortMenuOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(isSortMenuOpen) {
+        if (!isSortMenuOpen && wasSortMenuOpen) {
+            runCatching { sortButtonFocus.requestFocus() }
+        }
+        wasSortMenuOpen = isSortMenuOpen
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(TvBackground)) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            VodHeader(
+                title = if (kind == StreamKind.SERIES) "Serien" else "Filme",
+                sortLabel = state.sort.label,
+                buttonFocusRequester = sortButtonFocus,
+                onOpenSortMenu = { isSortMenuOpen = true },
+            )
+            VodBody(
+                state = state,
+                kind = kind,
+                onSelectCategory = viewModel::selectCategory,
+                onPlayMovie = onPlayMovie,
+                onOpenSeries = onOpenSeries,
+            )
+        }
+
+        if (isSortMenuOpen) {
+            SortMenu(
+                current = state.sort,
+                onSelect = {
+                    viewModel.setSort(it)
+                    isSortMenuOpen = false
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 64.dp, end = TvSpacing.overscanHorizontal),
+            )
+        }
+    }
+}
+
+/** Kopfzeile mit Bereichsnamen und dem Drei-Punkte-Knopf zum Sortieren. */
+@Composable
+private fun VodHeader(
+    title: String,
+    sortLabel: String,
+    buttonFocusRequester: FocusRequester,
+    onOpenSortMenu: () -> Unit,
+) {
     Row(
         modifier = Modifier
-            .fillMaxSize()
-            .background(TvBackground),
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(TvSurface)
+            .padding(horizontal = TvSpacing.overscanHorizontal),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        Text(title, style = MaterialTheme.typography.headlineSmall)
+
+        Spacer(Modifier.weight(1f))
+
+        // Die aktive Reihenfolge steht neben dem Knopf: Sonst müsste man das
+        // Menü öffnen, nur um zu sehen, wonach gerade sortiert ist.
+        Text(
+            text = sortLabel,
+            style = MaterialTheme.typography.labelLarge,
+            color = TvOnSurfaceMuted,
+            modifier = Modifier.padding(end = TvSpacing.small),
+        )
+
+        Surface(
+            onClick = onOpenSortMenu,
+            modifier = Modifier.focusRequester(buttonFocusRequester),
+            shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
+            colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+                containerColor = Color.Transparent,
+                focusedContainerColor = TvAccent,
+            ),
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "Sortieren",
+                modifier = Modifier
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .size(24.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Auswahlliste der Reihenfolgen.
+ *
+ * Bewusst kein `DropdownMenu` aus Material: Das ist auf Fokus per Zeiger
+ * ausgelegt und lässt sich mit dem Steuerkreuz nur mühsam bedienen. Eine
+ * schlichte Liste fokussierbarer Zeilen macht daraus ein Auf und Ab.
+ */
+@Composable
+private fun SortMenu(
+    current: VodSort,
+    onSelect: (VodSort) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val firstEntry = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) { runCatching { firstEntry.requestFocus() } }
+
+    Surface(
+        modifier = modifier.width(280.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = androidx.tv.material3.SurfaceDefaults.colors(containerColor = TvSurfaceElevated),
+    ) {
+        Column(modifier = Modifier.padding(vertical = 6.dp)) {
+            Text(
+                text = "Sortieren nach",
+                style = MaterialTheme.typography.labelMedium,
+                color = TvOnSurfaceMuted,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            )
+            VodSort.entries.forEachIndexed { index, option ->
+                Surface(
+                    onClick = { onSelect(option) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .then(if (index == 0) Modifier.focusRequester(firstEntry) else Modifier),
+                    shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                    colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+                        containerColor = Color.Transparent,
+                        focusedContainerColor = TvAccent,
+                    ),
+                    scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1f),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = option.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (option == current) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Ausgewählt",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Kategorien links, Poster-Raster rechts. */
+@Composable
+private fun VodBody(
+    state: VodUiState,
+    kind: StreamKind,
+    onSelectCategory: (String?) -> Unit,
+    onPlayMovie: (String) -> Unit,
+    onOpenSeries: (String) -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxSize()) {
         // --- Kategorien ------------------------------------------------------
         LazyColumn(
             modifier = Modifier
@@ -82,11 +269,11 @@ fun VodScreen(
         ) {
             items(state.categories, key = { it.id }) { category ->
                 Surface(
-                    onClick = { viewModel.selectCategory(category.id) },
+                    onClick = { onSelectCategory(category.id) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
-                        .onFocusChanged { if (it.isFocused) viewModel.selectCategory(category.id) },
+                        .onFocusChanged { if (it.isFocused) onSelectCategory(category.id) },
                     shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
                     colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
                         containerColor = if (category.id == state.selectedCategoryId) {
