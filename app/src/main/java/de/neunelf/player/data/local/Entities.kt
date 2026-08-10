@@ -198,6 +198,7 @@ data class MovieEntity(
     val plot: String?,
     val durationSecs: Int,
     val addedAt: Long,
+    val directUrl: String? = null,
 ) {
     fun toModel() = Movie(
         streamId = streamId,
@@ -211,6 +212,7 @@ data class MovieEntity(
         plot = plot,
         durationSecs = durationSecs,
         addedAt = addedAt,
+        directUrl = directUrl,
     )
 }
 
@@ -226,6 +228,7 @@ fun Movie.toEntity() = MovieEntity(
     plot = plot,
     durationSecs = durationSecs,
     addedAt = addedAt,
+    directUrl = directUrl,
 )
 
 @Entity(

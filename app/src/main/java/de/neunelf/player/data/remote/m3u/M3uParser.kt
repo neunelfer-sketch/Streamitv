@@ -187,6 +187,7 @@ object M3uParser {
                     posterUrl = entry.logoUrl,
                     categoryId = entry.group?.let { stableId(it) },
                     containerExtension = entry.url.substringAfterLast('.', "mp4").take(5),
+                    directUrl = entry.url,
                 )
             }
 

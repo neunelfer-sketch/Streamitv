@@ -246,6 +246,12 @@ interface VodDao {
     @Query("SELECT * FROM movies WHERE playlistId = :playlistId AND streamId = :streamId")
     suspend fun getMovie(playlistId: Long, streamId: String): MovieEntity?
 
+    @Query("SELECT * FROM series WHERE playlistId = :playlistId AND seriesId = :seriesId")
+    suspend fun getSeries(playlistId: Long, seriesId: String): SeriesEntity?
+
+    @Query("SELECT * FROM episodes WHERE playlistId = :playlistId AND episodeId = :episodeId")
+    suspend fun getEpisode(playlistId: Long, episodeId: String): EpisodeEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)
 

@@ -7,9 +7,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.ui.guide.GuideScreen
@@ -17,7 +19,9 @@ import de.neunelf.player.ui.home.HomeScreen
 import de.neunelf.player.ui.login.LoginScreen
 import de.neunelf.player.ui.player.PlayerScreen
 import de.neunelf.player.ui.settings.SettingsScreen
+import de.neunelf.player.ui.vod.SeriesDetailScreen
 import de.neunelf.player.ui.vod.VodScreen
+import de.neunelf.player.ui.vodplayer.VodPlayerScreen
 
 /** Alle Ziele der App. */
 object Routes {
@@ -28,6 +32,15 @@ object Routes {
     const val MOVIES = "movies"
     const val SERIES = "series"
     const val SETTINGS = "settings"
+
+    /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
+    const val MOVIE_PLAYER = "movie_player/{streamId}"
+    const val SERIES_DETAIL = "series_detail/{seriesId}"
+    const val EPISODE_PLAYER = "episode_player/{episodeId}"
+
+    fun moviePlayer(streamId: String) = "movie_player/$streamId"
+    fun seriesDetail(seriesId: String) = "series_detail/$seriesId"
+    fun episodePlayer(episodeId: String) = "episode_player/$episodeId"
 }
 
 /**
@@ -110,7 +123,7 @@ fun NeunelfPlayerNavHost(
         composable(Routes.MOVIES) {
             VodScreen(
                 kind = StreamKind.VOD,
-                onPlayMovie = { /* Detailansicht folgt – Film startet über den Player */ },
+                onPlayMovie = { streamId -> navController.navigate(Routes.moviePlayer(streamId)) },
                 onOpenSeries = {},
             )
         }
@@ -119,8 +132,32 @@ fun NeunelfPlayerNavHost(
             VodScreen(
                 kind = StreamKind.SERIES,
                 onPlayMovie = {},
-                onOpenSeries = { /* Staffelübersicht folgt */ },
+                onOpenSeries = { seriesId -> navController.navigate(Routes.seriesDetail(seriesId)) },
             )
+        }
+
+        composable(
+            route = Routes.MOVIE_PLAYER,
+            arguments = listOf(navArgument("streamId") { type = NavType.StringType }),
+        ) {
+            VodPlayerScreen(onExit = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.SERIES_DETAIL,
+            arguments = listOf(navArgument("seriesId") { type = NavType.StringType }),
+        ) {
+            SeriesDetailScreen(
+                onPlayEpisode = { episodeId -> navController.navigate(Routes.episodePlayer(episodeId)) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Routes.EPISODE_PLAYER,
+            arguments = listOf(navArgument("episodeId") { type = NavType.StringType }),
+        ) {
+            VodPlayerScreen(onExit = { navController.popBackStack() })
         }
 
         composable(Routes.SETTINGS) {

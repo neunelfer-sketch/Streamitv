@@ -95,6 +95,8 @@ data class Movie(
     val plot: String? = null,
     val durationSecs: Int = 0,
     val addedAt: Long = 0L,
+    /** Bei M3U bereits die vollständige Stream-URL. Bei Xtream leer, die URL wird zur Laufzeit gebaut. */
+    val directUrl: String? = null,
 )
 
 /**

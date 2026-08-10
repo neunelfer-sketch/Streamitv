@@ -169,14 +169,17 @@ Voraussetzungen: JDK 17, Android SDK 35, `minSdk 22` (deckt Fire OS 5 ab).
 - Favoriten und „Zuletzt gesehen“ (überleben einen Playlist-Refresh)
 - Bild-in-Bild
 - Automatische Neuversuche bei abgebrochenen Streams
+- Filme starten direkt aus dem Raster, Serien über eine Staffel-/Episodenübersicht
+  (Episoden werden bei Xtream bei Bedarf über `get_series_info` nachgeladen)
+- Fortsetzposition für Filme/Episoden (wird während der Wiedergabe laufend gesichert)
 
 ## Noch offen
 
-- Detailansicht für Filme und Staffelübersicht für Serien
 - Catch-up/Timeshift-Wiedergabe (die URL-Erzeugung steht bereits in `XtreamApi`)
 - Multiview (mehrere Streams gleichzeitig)
 - Sortierung und Ausblenden von Sendern durch den Nutzer
 - Aufnahmefunktion
+- Serien aus reinen M3U-Playlists (der Parser erkennt aktuell nur Live und Filme)
 
 ---
 

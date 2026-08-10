@@ -10,6 +10,7 @@ import de.neunelf.player.data.local.VodDao
 import de.neunelf.player.data.local.toEntity
 import de.neunelf.player.data.model.Category
 import de.neunelf.player.data.model.Channel
+import de.neunelf.player.data.model.Episode
 import de.neunelf.player.data.model.Movie
 import de.neunelf.player.data.model.Playlist
 import de.neunelf.player.data.model.PlaylistType
@@ -17,10 +18,13 @@ import de.neunelf.player.data.model.Series
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.remote.xtream.XtreamApi
 import de.neunelf.player.data.remote.xtream.XtreamCredentials
+import de.neunelf.player.data.remote.xtream.XtreamMapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -53,6 +57,7 @@ class IptvRepository @Inject constructor(
     private val vodDao: VodDao,
     private val userDataDao: UserDataDao,
     private val xtreamApi: XtreamApi,
+    private val json: Json,
 ) {
 
     // -----------------------------------------------------------------------
@@ -142,6 +147,48 @@ class IptvRepository @Inject constructor(
             vodDao.observeSeries(playlist.id, categoryId).map { list -> list.map { it.toModel() } }
         }
 
+    suspend fun getMovie(streamId: String): Movie? {
+        val playlist = playlistDao.getActive() ?: return null
+        return vodDao.getMovie(playlist.id, streamId)?.toModel()
+    }
+
+    suspend fun getSeriesDetails(seriesId: String): Series? {
+        val playlist = playlistDao.getActive() ?: return null
+        return vodDao.getSeries(playlist.id, seriesId)?.toModel()
+    }
+
+    suspend fun getEpisode(episodeId: String): Episode? {
+        val playlist = playlistDao.getActive() ?: return null
+        return vodDao.getEpisode(playlist.id, episodeId)?.toModel()
+    }
+
+    fun observeEpisodes(seriesId: String): Flow<List<Episode>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest emptyFlow()
+            vodDao.observeEpisodes(playlist.id, seriesId).map { list -> list.map { it.toModel() } }
+        }
+
+    /**
+     * Lädt die Episoden einer Serie vom Panel nach, falls der Cache noch leer
+     * ist. `get_series_info` liefert bei großen Serien viele Daten – deshalb
+     * wird nur einmalig nachgefragt, nicht bei jedem Öffnen der Detailseite.
+     * M3U-Playlists kennen keine Serien und werden hier übersprungen.
+     */
+    suspend fun refreshSeriesEpisodes(seriesId: String) {
+        val playlist = playlistDao.getActive() ?: return
+        val alreadyCached = vodDao.observeEpisodes(playlist.id, seriesId).first().isNotEmpty()
+        if (alreadyCached) return
+
+        val model = playlist.toModel()
+        if (model.type != PlaylistType.XTREAM) return
+
+        runCatching {
+            val response = xtreamApi.getSeriesInfo(model.credentials(), seriesId)
+            val episodes = XtreamMapper.toEpisodes(seriesId, response, json)
+            vodDao.insertEpisodes(episodes.map { it.toEntity(playlist.id) })
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Favoriten & Verlauf
     // -----------------------------------------------------------------------
@@ -225,6 +272,8 @@ class IptvRepository @Inject constructor(
     }
 
     suspend fun resolveMovieUrl(movie: Movie): String? {
+        movie.directUrl?.let { return it }
+
         val playlist = playlistDao.getById(movie.playlistId)?.toModel() ?: return null
         if (playlist.type != PlaylistType.XTREAM) return null
         return xtreamApi.buildStreamUrl(
