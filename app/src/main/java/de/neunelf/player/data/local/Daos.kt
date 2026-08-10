@@ -285,6 +285,15 @@ interface VodDao {
     @Query("DELETE FROM series WHERE playlistId = :playlistId")
     suspend fun deleteSeries(playlistId: Long)
 
+    @Query("DELETE FROM episodes WHERE playlistId = :playlistId")
+    suspend fun deleteEpisodes(playlistId: Long)
+
+    @Transaction
+    suspend fun replaceEpisodes(playlistId: Long, episodes: List<EpisodeEntity>) {
+        deleteEpisodes(playlistId)
+        episodes.chunked(500).forEach { insertEpisodes(it) }
+    }
+
     @Transaction
     suspend fun replaceMovies(playlistId: Long, movies: List<MovieEntity>) {
         deleteMovies(playlistId)

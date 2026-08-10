@@ -126,6 +126,8 @@ data class Episode(
     val plot: String? = null,
     val durationSecs: Int = 0,
     val thumbnailUrl: String? = null,
+    /** Bei M3U bereits die vollständige Stream-URL. Bei Xtream leer, die URL entsteht zur Laufzeit. */
+    val directUrl: String? = null,
 )
 
 /**

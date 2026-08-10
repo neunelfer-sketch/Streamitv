@@ -2,6 +2,7 @@ package de.neunelf.player.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.exoplayer.ExoPlayer
 import de.neunelf.player.data.model.Category
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.ChannelWithProgram
@@ -16,13 +17,17 @@ import de.neunelf.player.data.repository.IptvRepository
 import de.neunelf.player.data.repository.PlaylistSyncer
 import de.neunelf.player.data.repository.SyncProgress
 import de.neunelf.player.data.repository.UpdateRepository
+import de.neunelf.player.player.PreviewPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
@@ -105,7 +110,14 @@ class HomeViewModel @Inject constructor(
     private val syncer: PlaylistSyncer,
     private val settingsStore: SettingsStore,
     private val updateRepository: UpdateRepository,
+    private val previewPlayer: PreviewPlayer,
 ) : ViewModel() {
+
+    /** Läuft die verzögerte Vorschau gerade an? Siehe [startPreview]. */
+    private var previewJob: Job? = null
+
+    /** Aus, solange der Vollbild-Player im Vordergrund ist. */
+    private var previewEnabled = true
 
     /** Ausgewählte Kategorie. Startwert: "Alle Sender". */
     private val selectedCategory = MutableStateFlow<CategoryItem>(CategoryItem.All(0))
@@ -232,6 +244,58 @@ class HomeViewModel @Inject constructor(
     fun onChannelFocused(channel: Channel) {
         focusedChannelId.value = channel.streamId
         loadUpcoming(channel)
+        startPreview(channel)
+    }
+
+    /** Der ExoPlayer der Vorschaufläche – die UI bindet ihn an eine `PlayerView`. */
+    fun previewPlayer(): ExoPlayer = previewPlayer.getOrCreate()
+
+    /**
+     * Startet die Vorschau des fokussierten Senders – aber erst nach einer
+     * kurzen Pause.
+     *
+     * Ohne diese Verzögerung würde beim Durchblättern der Senderliste für
+     * jeden überflogenen Sender eine Verbindung aufgebaut. Viele Panels
+     * erlauben nur eine Handvoll gleichzeitiger Verbindungen und sperren den
+     * Zugang bei solchen Salven zeitweise.
+     *
+     * `previewJob` wird bei jedem Fokuswechsel abgebrochen: Es zählt immer
+     * nur der Sender, auf dem der Fokus zur Ruhe kommt.
+     */
+    private fun startPreview(channel: Channel) {
+        previewJob?.cancel()
+        if (!previewEnabled) {
+            previewPlayer.stop()
+            return
+        }
+        previewJob = viewModelScope.launch {
+            delay(PREVIEW_DELAY_MS)
+            val settings = settingsStore.settings.first()
+            if (!settings.showPreviewPlayer) return@launch
+            val url = repository.resolveStreamUrl(channel, preferHls = settings.preferHls)
+                ?: return@launch
+            previewPlayer.play(url)
+        }
+    }
+
+    /**
+     * Hält die Vorschau an, solange der Vollbild-Player läuft.
+     *
+     * Sonst liefen zwei Streams gleichzeitig – bei Panels mit begrenzter
+     * Verbindungszahl bricht dann ausgerechnet das Vollbild ab.
+     */
+    fun setPreviewEnabled(enabled: Boolean) {
+        previewEnabled = enabled
+        if (!enabled) {
+            previewJob?.cancel()
+            previewPlayer.stop()
+        }
+    }
+
+    /** Gibt den Vorschau-Player frei – beim endgültigen Verlassen des Bildschirms. */
+    fun releasePreview() {
+        previewJob?.cancel()
+        previewPlayer.release()
     }
 
     fun setSearchQuery(query: String) {
@@ -337,5 +401,12 @@ class HomeViewModel @Inject constructor(
 
         /** EPG alle 6 Stunden – die meisten XMLTV-Quellen aktualisieren 4x täglich. */
         private val EPG_INTERVAL_MS = TimeUnit.HOURS.toMillis(6)
+
+        /**
+         * Wartezeit, bevor die Vorschau anläuft. Lang genug, dass beim
+         * Durchblättern nicht für jeden überflogenen Sender eine Verbindung
+         * aufgeht, kurz genug, dass es beim Verweilen nicht träge wirkt.
+         */
+        private const val PREVIEW_DELAY_MS = 900L
     }
 }

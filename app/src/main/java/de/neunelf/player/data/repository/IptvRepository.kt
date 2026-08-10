@@ -284,14 +284,18 @@ class IptvRepository @Inject constructor(
         )
     }
 
-    suspend fun resolveEpisodeUrl(playlistId: Long, episodeId: String, extension: String): String? {
+    suspend fun resolveEpisodeUrl(playlistId: Long, episode: Episode): String? {
+        // Bei M3U steht die Adresse bereits in der Datei; nur Xtream baut sie
+        // zur Laufzeit aus den Zugangsdaten zusammen.
+        episode.directUrl?.let { return it }
+
         val playlist = playlistDao.getById(playlistId)?.toModel() ?: return null
         if (playlist.type != PlaylistType.XTREAM) return null
         return xtreamApi.buildStreamUrl(
             credentials = playlist.credentials(),
             kind = StreamKind.SERIES,
-            streamId = episodeId,
-            extension = extension,
+            streamId = episode.episodeId,
+            extension = episode.containerExtension,
         )
     }
 

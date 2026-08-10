@@ -2,7 +2,9 @@ package de.neunelf.player.data.remote.m3u
 
 import de.neunelf.player.data.model.Category
 import de.neunelf.player.data.model.Channel
+import de.neunelf.player.data.model.Episode
 import de.neunelf.player.data.model.Movie
+import de.neunelf.player.data.model.Series
 import de.neunelf.player.data.model.StreamKind
 import java.io.BufferedReader
 import java.io.InputStream
@@ -62,6 +64,18 @@ object M3uParser {
 
     /** `key="value"` – Werte dürfen Leerzeichen und Sonderzeichen enthalten. */
     private val ATTRIBUTE_REGEX = Regex("""([\w-]+)\s*=\s*"([^"]*)"""")
+
+    /** "S01E03", "s1e3", "S01 E03", "S01.E03" – die verbreitetste Schreibweise. */
+    private val SEASON_EPISODE = Regex("""(?i)\bS\s?(\d{1,3})\s?[._-]?\s?E\s?(\d{1,4})\b""")
+
+    /** "1x03" – vor allem in Playlists aus dem englischsprachigen Raum. */
+    private val SEASON_EPISODE_X = Regex("""(?i)\b(\d{1,3})\s?x\s?(\d{1,4})\b""")
+
+    /** Gruppenbezeichnungen, die auf Serien hindeuten. */
+    private val SERIES_WORDS = listOf("serie", "series", "staffel", "season", "tv show", "tvshow")
+
+    /** Gruppenbezeichnungen, die auf Filme hindeuten. */
+    private val MOVIE_WORDS = listOf("vod", "film", "movie", "kino", "cinema")
 
     private const val EXTM3U = "#EXTM3U"
     private const val EXTINF = "#EXTINF"
@@ -191,6 +205,87 @@ object M3uParser {
                 )
             }
 
+    /**
+     * Fasst die Serien-Einträge zu Serien zusammen.
+     *
+     * Eine M3U-Datei kennt keine Serien, nur einzelne Episoden – jede Zeile
+     * ist eine Folge, erkennbar an einem Muster wie `S01E03` im Titel. Der
+     * Serienname ergibt sich aus dem Titel ohne diesen Teil; alle Folgen mit
+     * demselben Namen landen unter einer Serie.
+     *
+     * Einträge ohne erkennbares Muster werden **nicht** verworfen, sondern
+     * als einteilige Serie geführt. Alles andere hieße, dass Inhalte
+     * stillschweigend verschwinden – genau der Fehler, den es hier vorher
+     * gab.
+     */
+    fun toSeries(playlist: M3uPlaylist, playlistId: Long): List<Series> =
+        playlist.entries
+            .filter { it.kind == StreamKind.SERIES }
+            .groupBy { seriesKey(it.title) }
+            .map { (key, episodes) ->
+                val first = episodes.first()
+                Series(
+                    seriesId = stableId(key),
+                    playlistId = playlistId,
+                    name = seriesName(first.title),
+                    posterUrl = first.logoUrl,
+                    categoryId = first.group?.let { stableId(it) },
+                )
+            }
+
+    /** Die einzelnen Folgen, bereits ihrer Serie zugeordnet. */
+    fun toEpisodes(playlist: M3uPlaylist): List<Episode> =
+        playlist.entries
+            .filter { it.kind == StreamKind.SERIES }
+            .groupBy { seriesKey(it.title) }
+            .flatMap { (key, entries) ->
+                entries.mapIndexed { index, entry ->
+                    val marker = parseEpisodeMarker(entry.title)
+                    Episode(
+                        episodeId = stableId(entry.url),
+                        seriesId = stableId(key),
+                        // Ohne Muster im Titel bleibt nur die Reihenfolge aus
+                        // der Datei – besser als die Folge wegzulassen.
+                        season = marker?.season ?: 1,
+                        episodeNumber = marker?.episode ?: (index + 1),
+                        title = entry.title,
+                        containerExtension = entry.url.substringAfterLast('.', "mp4").take(5),
+                        directUrl = entry.url,
+                    )
+                }
+            }
+            .sortedWith(compareBy({ it.seriesId }, { it.season }, { it.episodeNumber }))
+
+    /** Staffel- und Folgennummer aus dem Titel, z. B. "S01E03" oder "1x03". */
+    private fun parseEpisodeMarker(title: String): EpisodeMarker? {
+        SEASON_EPISODE.find(title)?.let { match ->
+            return EpisodeMarker(
+                season = match.groupValues[1].toIntOrNull() ?: return null,
+                episode = match.groupValues[2].toIntOrNull() ?: return null,
+            )
+        }
+        SEASON_EPISODE_X.find(title)?.let { match ->
+            return EpisodeMarker(
+                season = match.groupValues[1].toIntOrNull() ?: return null,
+                episode = match.groupValues[2].toIntOrNull() ?: return null,
+            )
+        }
+        return null
+    }
+
+    /** Titel ohne Folgenkennung – der Name der Serie. */
+    private fun seriesName(title: String): String =
+        title.replace(SEASON_EPISODE, " ")
+            .replace(SEASON_EPISODE_X, " ")
+            .replace(Regex("\\s+"), " ")
+            .trim(' ', '-', '–', '_', '.', ':')
+            .ifBlank { title.trim() }
+
+    /** Vergleichsschlüssel, damit "Breaking Bad" und "BREAKING BAD" zusammenfallen. */
+    private fun seriesKey(title: String): String = seriesName(title).lowercase()
+
+    private data class EpisodeMarker(val season: Int, val episode: Int)
+
     /** Leitet die Kategorien aus den `group-title`-Werten ab. */
     fun toCategories(playlist: M3uPlaylist, playlistId: Long, kind: StreamKind): List<Category> =
         playlist.entries
@@ -239,7 +334,7 @@ object M3uParser {
             channelNumber = channelNumber,
             userAgent = userAgent,
             referrer = referrer,
-            kind = guessKind(url, group),
+            kind = guessKind(url, title, group),
         )
     }
 
@@ -297,22 +392,34 @@ object M3uParser {
      * Rät den Inhaltstyp. Xtream-Exporte kodieren ihn im Pfad
      * (`/live/`, `/movie/`, `/series/`); sonst hilft die Gruppenbezeichnung.
      */
-    private fun guessKind(url: String, group: String?): StreamKind {
+    private fun guessKind(url: String, title: String, group: String?): StreamKind {
         val lowerUrl = url.lowercase()
+
+        // 1. Der Pfad ist die verlässlichste Angabe – Panels kodieren die Art
+        //    dort selbst, unabhängig davon, wie der Anbieter seine Gruppen nennt.
+        when {
+            "/movie/" in lowerUrl || "/movies/" in lowerUrl -> return StreamKind.VOD
+            "/series/" in lowerUrl -> return StreamKind.SERIES
+            "/live/" in lowerUrl -> return StreamKind.LIVE
+        }
+
+        // 2. Eine Folgenkennung im Titel ("S01E03") ist ein starkes Signal und
+        //    schlägt die Gruppenbezeichnung: Sie steht am einzelnen Eintrag,
+        //    die Gruppe fasst nur grob zusammen.
+        if (SEASON_EPISODE.containsMatchIn(title) || SEASON_EPISODE_X.containsMatchIn(title)) {
+            return StreamKind.SERIES
+        }
+
+        // 3. Gruppenbezeichnung. Serien **vor** Filmen prüfen: Gruppen heißen
+        //    häufig "VOD | Serien" oder "VOD - Series". Andersherum gewinnt
+        //    das enthaltene "vod", und sämtliche Serien landen unter Filmen.
+        val lowerGroup = group?.lowercase().orEmpty()
         return when {
-            "/movie/" in lowerUrl || "/movies/" in lowerUrl -> StreamKind.VOD
-            "/series/" in lowerUrl -> StreamKind.SERIES
-            "/live/" in lowerUrl -> StreamKind.LIVE
-            else -> {
-                val lowerGroup = group?.lowercase().orEmpty()
-                when {
-                    listOf("vod", "film", "movie", "kino").any { it in lowerGroup } -> StreamKind.VOD
-                    listOf("serie", "series", "staffel", "season").any { it in lowerGroup } -> StreamKind.SERIES
-                    // Endet auf eine Container-Endung -> mit hoher Wahrscheinlichkeit VOD.
-                    lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".mkv") -> StreamKind.VOD
-                    else -> StreamKind.LIVE
-                }
-            }
+            SERIES_WORDS.any { it in lowerGroup } -> StreamKind.SERIES
+            MOVIE_WORDS.any { it in lowerGroup } -> StreamKind.VOD
+            // Endet auf eine Container-Endung -> mit hoher Wahrscheinlichkeit VOD.
+            lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".mkv") -> StreamKind.VOD
+            else -> StreamKind.LIVE
         }
     }
 

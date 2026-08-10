@@ -227,8 +227,28 @@ class PlaylistSyncer @Inject constructor(
             vodDao.replaceMovies(playlist.id, movies.map { it.toEntity() })
         }
 
+        // --- Serien --------------------------------------------------------
+        // Eine M3U-Datei kennt nur einzelne Folgen; der Parser fasst sie
+        // anhand der Titel zu Serien zusammen. Anders als bei Xtream gibt es
+        // hier nichts nachzuladen – alle Folgen stehen schon in der Datei,
+        // also werden sie gleich mitgeschrieben.
+        val series = M3uParser.toSeries(parsed, playlist.id)
+        if (series.isNotEmpty()) {
+            emit(SyncProgress.Step("Speichere ${series.size} Serien…", 90))
+            categoryDao.replaceAll(
+                playlist.id,
+                StreamKind.SERIES.name,
+                M3uParser.toCategories(parsed, playlist.id, StreamKind.SERIES).map { it.toEntity() },
+            )
+            vodDao.replaceSeries(playlist.id, series.map { it.toEntity() })
+            vodDao.replaceEpisodes(
+                playlist.id,
+                M3uParser.toEpisodes(parsed).map { it.toEntity(playlist.id) },
+            )
+        }
+
         emit(SyncProgress.Step("Fertig", 100))
-        emit(SyncProgress.Done(channels.size, movies.size, 0))
+        emit(SyncProgress.Done(channels.size, movies.size, series.size))
     }
 
     companion object {

@@ -180,8 +180,7 @@ class VodPlayerViewModel @Inject constructor(
         episodeId?.let { id ->
             val episode = repository.getEpisode(id) ?: return null
             val playlist = repository.getActivePlaylist() ?: return null
-            val url = repository.resolveEpisodeUrl(playlist.id, episode.episodeId, episode.containerExtension)
-                ?: return null
+            val url = repository.resolveEpisodeUrl(playlist.id, episode) ?: return null
             return ResolvedSource(
                 url = url,
                 title = "S${episode.season}E${episode.episodeNumber} · ${episode.title}",

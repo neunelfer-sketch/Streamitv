@@ -151,6 +151,17 @@ fun SettingsScreen(
                     onClick = viewModel::toggleSubtitles,
                 )
             }
+            item {
+                SettingsRow(
+                    title = "Live-Vorschau",
+                    value = if (state.settings.showPreviewPlayer) {
+                        "An – der gewählte Sender läuft rechts in der Vorschau"
+                    } else {
+                        "Aus – spart eine Verbindung zum Server"
+                    },
+                    onClick = viewModel::togglePreviewPlayer,
+                )
+            }
 
             item { SettingsSection("App") }
             item {

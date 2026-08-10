@@ -223,6 +223,18 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Schaltet die Live-Vorschau im Hauptbildschirm um.
+     *
+     * Abschaltbar, weil sie eine zweite Verbindung zum Panel braucht – bei
+     * Zugängen mit nur einer erlaubten Verbindung stört das die Wiedergabe.
+     */
+    fun togglePreviewPlayer() {
+        viewModelScope.launch {
+            settingsStore.setShowPreviewPlayer(!settingsStore.settings.first().showPreviewPlayer)
+        }
+    }
+
     /** "Nie" oder "Heute 14:32" / "Mo 05.08. 09:11". */
     private fun Long?.toLabel(): String {
         if (this == null || this == 0L) return "Nie"

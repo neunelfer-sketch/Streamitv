@@ -288,6 +288,7 @@ data class EpisodeEntity(
     val plot: String?,
     val durationSecs: Int,
     val thumbnailUrl: String?,
+    val directUrl: String? = null,
 ) {
     fun toModel() = Episode(
         episodeId = episodeId,
@@ -299,6 +300,7 @@ data class EpisodeEntity(
         plot = plot,
         durationSecs = durationSecs,
         thumbnailUrl = thumbnailUrl,
+        directUrl = directUrl,
     )
 }
 
@@ -313,6 +315,7 @@ fun Episode.toEntity(playlistId: Long) = EpisodeEntity(
     plot = plot,
     durationSecs = durationSecs,
     thumbnailUrl = thumbnailUrl,
+    directUrl = directUrl,
 )
 
 /**

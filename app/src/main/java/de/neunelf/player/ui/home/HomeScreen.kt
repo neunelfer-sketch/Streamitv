@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,8 +44,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
@@ -97,12 +105,37 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val channelListFocus = remember { FocusRequester() }
+    val previewPlayer = remember { viewModel.previewPlayer() }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // Beim Betreten soll der Fokus auf der Senderliste stehen – nicht auf der
     // Kopfzeile. Sonst muss der Nutzer bei jedem Start zweimal nach unten.
     LaunchedEffect(state.channels.isNotEmpty()) {
         if (state.channels.isNotEmpty()) {
             runCatching { channelListFocus.requestFocus() }
+        }
+    }
+
+    // Die Vorschau läuft nur, solange dieser Bildschirm auch vorne ist.
+    //
+    // Beides ist nötig: Beim Wechsel ins Vollbild bleibt der
+    // Hauptbildschirm im Rückstapel bestehen (die Komposition endet also
+    // nicht), und ohne ON_PAUSE liefen zwei Streams gleichzeitig – bei
+    // Panels mit wenigen erlaubten Verbindungen bricht dann ausgerechnet
+    // das Vollbild ab. `onDispose` greift, wenn der Bildschirm endgültig
+    // verlassen wird.
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> viewModel.setPreviewEnabled(true)
+                Lifecycle.Event.ON_PAUSE -> viewModel.setPreviewEnabled(false)
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.releasePreview()
         }
     }
 
@@ -166,6 +199,7 @@ fun HomeScreen(
                 DetailPane(
                     item = state.focusedChannel,
                     upcoming = state.upcoming,
+                    previewPlayer = previewPlayer,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
@@ -398,6 +432,7 @@ private fun ChannelColumn(
 private fun DetailPane(
     item: ChannelWithProgram?,
     upcoming: List<de.neunelf.player.data.model.EpgProgram>,
+    previewPlayer: ExoPlayer?,
     modifier: Modifier = Modifier,
 ) {
     if (item == null) {
@@ -412,9 +447,9 @@ private fun DetailPane(
 
     Column(modifier = modifier) {
         // --- Vorschaufläche -------------------------------------------------
-        // Hier läuft im fertigen Aufbau das Live-Bild des fokussierten Senders
-        // (siehe PreviewPlayer). Solange nichts gestartet ist, zeigen wir das
-        // Senderlogo – ein leerer schwarzer Kasten wirkt wie ein Fehler.
+        // Das Live-Bild des fokussierten Senders. Das Senderlogo liegt
+        // darunter und bleibt sichtbar, solange noch kein Bild da ist –
+        // ein leerer schwarzer Kasten wirkte wie ein Fehler.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -428,6 +463,25 @@ private fun DetailPane(
                 contentDescription = channel.name,
                 modifier = Modifier.size(120.dp),
             )
+
+            if (previewPlayer != null) {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { context ->
+                        PlayerView(context).apply {
+                            useController = false
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            // Ohne das bliebe zwischen zwei Sendern kurz das
+                            // letzte Bild des vorherigen stehen.
+                            setKeepContentOnPlayerReset(false)
+                            setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+                            player = previewPlayer
+                        }
+                    },
+                    update = { view -> view.player = previewPlayer },
+                    onRelease = { view -> view.player = null },
+                )
+            }
         }
 
         Spacer(Modifier.height(TvSpacing.medium))
