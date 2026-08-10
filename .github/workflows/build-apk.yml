@@ -95,6 +95,7 @@ jobs:
           # von GitHub ergibt sich eine Adresse, die über alle Versionen hinweg
           # gleich bleibt. Auf einer Fernbedienung tippt man sie genau einmal.
           cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-latest.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "out/9elf-Player-latest-debug.apk"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           ls -lh out/
 
@@ -212,11 +213,14 @@ jobs:
           export GH_TOKEN
 
           VERSION="${{ steps.version.outputs.value }}"
-          # Bewusst nur die fertige APK, nicht der Debug-Build: der ist
-          # 25 MB groß, langsamer und dient allein der Fehlersuche.
-          # 9elf-Player-latest.apk ist dieselbe Datei unter festem Namen und
-          # sorgt für die gleichbleibende Download-Adresse.
-          FILES=("out/9elf-Player-$VERSION.apk" "out/9elf-Player-latest.apk")
+          # 9elf-Player-latest.apk / -latest-debug.apk sind dieselben Dateien
+          # unter festem Namen und sorgen für gleichbleibende Download-Adressen.
+          FILES=(
+            "out/9elf-Player-$VERSION.apk"
+            "out/9elf-Player-latest.apk"
+            "out/9elf-Player-$VERSION-debug.apk"
+            "out/9elf-Player-latest-debug.apk"
+          )
           echo "Spiegele nach $PUBLIC_RELEASE_REPO: ${FILES[*]}"
           gh release create "$VERSION" "${FILES[@]}" \
             --repo "$PUBLIC_RELEASE_REPO" \
@@ -232,8 +236,10 @@ jobs:
              \`github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk\`
           3. Nach dem Laden auf *Installieren* gehen.
 
-          Beide Dateien sind identisch – \`9elf-Player-latest.apk\` trägt nur
-          den festen Namen für die dauerhafte Adresse.
+          \`9elf-Player-latest.apk\` ist der optimierte Build – den nehmen.
+          \`9elf-Player-latest-debug.apk\` ist nur für die Fehlersuche gedacht,
+          deutlich größer und langsamer:
+          \`github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest-debug.apk\`
 
           Signiert mit einem öffentlichen Testschlüssel, nicht mit einem
           Veröffentlichungsschlüssel." \
@@ -248,4 +254,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Öffentlich (direkt auf dem Stick ladbar):" >> $GITHUB_STEP_SUMMARY
             echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Debug-Build (Fehlersuche):" >> $GITHUB_STEP_SUMMARY
+            echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest-debug.apk" >> $GITHUB_STEP_SUMMARY
           fi
