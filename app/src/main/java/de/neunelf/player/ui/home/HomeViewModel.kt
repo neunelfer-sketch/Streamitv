@@ -292,10 +292,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /** Gibt den Vorschau-Player frei – beim endgültigen Verlassen des Bildschirms. */
-    fun releasePreview() {
+    /**
+     * Gibt den Vorschau-Player frei.
+     *
+     * Bewusst hier und nicht beim Verlassen der Komposition: Solange dieses
+     * ViewModel lebt, kann der Bildschirm jederzeit zurückkommen. Und beim
+     * Abräumen der Komposition ist nicht festgelegt, ob die `PlayerView`
+     * oder der zugehörige Effekt zuerst drankommt – eine noch angebundene
+     * Ansicht auf einem freigegebenen Player beendet die App.
+     */
+    override fun onCleared() {
         previewJob?.cancel()
         previewPlayer.release()
+        super.onCleared()
     }
 
     fun setSearchQuery(query: String) {

@@ -118,12 +118,19 @@ fun HomeScreen(
 
     // Die Vorschau läuft nur, solange dieser Bildschirm auch vorne ist.
     //
-    // Beides ist nötig: Beim Wechsel ins Vollbild bleibt der
-    // Hauptbildschirm im Rückstapel bestehen (die Komposition endet also
-    // nicht), und ohne ON_PAUSE liefen zwei Streams gleichzeitig – bei
-    // Panels mit wenigen erlaubten Verbindungen bricht dann ausgerechnet
-    // das Vollbild ab. `onDispose` greift, wenn der Bildschirm endgültig
-    // verlassen wird.
+    // Zwei verschiedene Fälle, die beide abgedeckt sein müssen:
+    // - **Wechsel ins Vollbild.** Der Hauptbildschirm verlässt dabei die
+    //   Komposition (`onDispose`), die Activity selbst pausiert aber nicht.
+    //   Ohne das Anhalten liefen zwei Streams gleichzeitig – bei Panels mit
+    //   wenigen erlaubten Verbindungen bricht dann ausgerechnet das
+    //   Vollbild ab.
+    // - **App in den Hintergrund** (Home-Taste). Da endet die Komposition
+    //   nicht, dafür kommt ON_PAUSE.
+    //
+    // Freigegeben wird der Player hier bewusst *nicht*, sondern erst in
+    // `HomeViewModel.onCleared`: Ob die `PlayerView` oder dieser Effekt
+    // zuerst abgeräumt wird, ist nicht festgelegt – eine noch angebundene
+    // Ansicht auf einem bereits freigegebenen Player beendet die App.
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -135,7 +142,7 @@ fun HomeScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.releasePreview()
+            viewModel.setPreviewEnabled(false)
         }
     }
 
