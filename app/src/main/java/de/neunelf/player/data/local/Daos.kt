@@ -272,20 +272,29 @@ interface VodDao {
 interface EpgDao {
 
     /**
-     * Sendungen für das EPG-Raster: alle Programme mehrerer Sender, die sich
-     * mit dem sichtbaren Zeitfenster überschneiden.
+     * Alle Sendungen einer Playlist, die sich mit dem sichtbaren Zeitfenster
+     * überschneiden.
      *
      * Die Überlappungsbedingung ist `start < fensterEnde && ende > fensterStart`
      * – so werden auch Sendungen erfasst, die vor dem Fenster begonnen haben.
+     *
+     * Bewusst nach `playlistId` statt nach einer Liste von Sender-IDs
+     * gefiltert: Ein `WHERE epgChannelId IN (:channelIds)` bindet eine
+     * SQL-Variable pro Sender, und SQLite erlaubt davon nur 999 pro
+     * Statement. Bei Panels mit mehreren tausend Sendern (keine Seltenheit)
+     * stürzte das mit `SQLiteException: too many SQL variables` ab, sobald
+     * "Alle Sender" nach einem Sync ihre EPG-Daten laden wollte. Der Aufrufer
+     * filtert die Zeilen stattdessen im Speicher auf die tatsächlich
+     * gebrauchten Sender-IDs herunter.
      */
     @Query(
         """
         SELECT * FROM epg_programs
-        WHERE epgChannelId IN (:channelIds) AND startAt < :windowEnd AND endAt > :windowStart
+        WHERE playlistId = :playlistId AND startAt < :windowEnd AND endAt > :windowStart
         ORDER BY epgChannelId, startAt
         """,
     )
-    fun observeWindow(channelIds: List<String>, windowStart: Long, windowEnd: Long): Flow<List<EpgProgramEntity>>
+    fun observeWindow(playlistId: Long, windowStart: Long, windowEnd: Long): Flow<List<EpgProgramEntity>>
 
     @Query(
         """

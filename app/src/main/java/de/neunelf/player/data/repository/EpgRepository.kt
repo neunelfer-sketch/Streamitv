@@ -68,11 +68,16 @@ class EpgRepository @Inject constructor(
         windowStart: Long,
         windowEnd: Long,
     ): Flow<Map<String, List<EpgProgram>>> {
-        val channelIds = channels.mapNotNull { it.epgChannelId }.distinct()
-        if (channelIds.isEmpty()) return flowOf(emptyMap())
+        val relevantIds = channels.mapNotNull { it.epgChannelId }.toSet()
+        if (relevantIds.isEmpty()) return flowOf(emptyMap())
+        val playlistId = channels.first().playlistId
 
-        return epgDao.observeWindow(channelIds, windowStart, windowEnd).map { rows ->
-            rows.map { it.toModel() }.groupBy { it.epgChannelId }
+        return epgDao.observeWindow(playlistId, windowStart, windowEnd).map { rows ->
+            rows.asSequence()
+                .filter { it.epgChannelId in relevantIds }
+                .map { it.toModel() }
+                .toList()
+                .groupBy { it.epgChannelId }
         }
     }
 
@@ -81,16 +86,21 @@ class EpgRepository @Inject constructor(
      * genau die Daten, die die Senderliste im TiviMate-Stil braucht.
      */
     fun observeChannelsWithProgram(channels: List<Channel>, now: Long): Flow<List<ChannelWithProgram>> {
-        val channelIds = channels.mapNotNull { it.epgChannelId }.distinct()
-        if (channelIds.isEmpty()) {
+        val relevantIds = channels.mapNotNull { it.epgChannelId }.toSet()
+        if (relevantIds.isEmpty()) {
             return flowOf(channels.map { ChannelWithProgram(it) })
         }
+        val playlistId = channels.first().playlistId
 
         // Fenster: von jetzt bis in 12 Stunden. Damit ist "aktuell" und
         // "als Nächstes" abgedeckt, ohne die ganze Woche zu laden.
         val windowEnd = now + TimeUnit.HOURS.toMillis(12)
-        return epgDao.observeWindow(channelIds, now, windowEnd).map { rows ->
-            val byChannel = rows.map { it.toModel() }.groupBy { it.epgChannelId }
+        return epgDao.observeWindow(playlistId, now, windowEnd).map { rows ->
+            val byChannel = rows.asSequence()
+                .filter { it.epgChannelId in relevantIds }
+                .map { it.toModel() }
+                .toList()
+                .groupBy { it.epgChannelId }
             channels.map { channel ->
                 val programs = channel.epgChannelId?.let { byChannel[it] }.orEmpty()
                 ChannelWithProgram(
