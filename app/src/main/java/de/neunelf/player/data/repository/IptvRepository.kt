@@ -116,6 +116,20 @@ class IptvRepository @Inject constructor(
     suspend fun getChannel(playlistId: Long, streamId: String): Channel? =
         channelDao.getById(playlistId, streamId)?.toModel()
 
+    /** Senderzahl für die Kategorie-Leiste, ohne die komplette Liste zu laden. */
+    fun observeChannelCount(): Flow<Int> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest emptyFlow()
+            channelDao.observeCount(playlist.id)
+        }
+
+    /** Favoritenzahl für die Kategorie-Leiste, ohne die komplette Liste zu laden. */
+    fun observeFavoriteCount(kind: StreamKind = StreamKind.LIVE): Flow<Int> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest emptyFlow()
+            userDataDao.observeFavoriteCount(playlist.id, kind.name)
+        }
+
     fun observeMovies(categoryId: String?): Flow<List<Movie>> =
         playlistDao.observeActive().flatMapLatest { playlist ->
             if (playlist == null) return@flatMapLatest emptyFlow()

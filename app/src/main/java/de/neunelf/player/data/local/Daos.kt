@@ -191,6 +191,15 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND streamId = :streamId")
     suspend fun getById(playlistId: Long, streamId: String): ChannelEntity?
 
+    /**
+     * Reine Zählung für die Kategorie-Leiste ("Alle Sender"). Bewusst getrennt
+     * von [observeAll]: bei 8.000+ Sendern nur für eine Zahl die komplette
+     * Senderliste samt Favoriten-/Verlaufs-JOIN zu laden, wäre unnötiger
+     * Speicher- und CPU-Aufwand bei jedem Update.
+     */
+    @Query("SELECT COUNT(*) FROM channels WHERE playlistId = :playlistId")
+    fun observeCount(playlistId: Long): Flow<Int>
+
     /** Alle EPG-IDs der Playlist – Filter für den XMLTV-Import. */
     @Query("SELECT DISTINCT epgChannelId FROM channels WHERE playlistId = :playlistId AND epgChannelId IS NOT NULL")
     suspend fun getEpgChannelIds(playlistId: Long): List<String>
@@ -295,27 +304,6 @@ interface EpgDao {
         """,
     )
     fun observeWindow(playlistId: Long, windowStart: Long, windowEnd: Long): Flow<List<EpgProgramEntity>>
-
-    @Query(
-        """
-        SELECT * FROM epg_programs
-        WHERE epgChannelId IN (:channelIds) AND startAt < :windowEnd AND endAt > :windowStart
-        ORDER BY epgChannelId, startAt
-        """,
-    )
-    suspend fun getWindow(channelIds: List<String>, windowStart: Long, windowEnd: Long): List<EpgProgramEntity>
-
-    /**
-     * Aktuell laufende Sendung je Sender – das ist die Zeile unter dem
-     * Sendernamen in der Kanalliste.
-     */
-    @Query(
-        """
-        SELECT * FROM epg_programs
-        WHERE epgChannelId IN (:channelIds) AND startAt <= :now AND endAt > :now
-        """,
-    )
-    fun observeCurrent(channelIds: List<String>, now: Long): Flow<List<EpgProgramEntity>>
 
     /** Die nächsten Sendungen eines einzelnen Senders (für das Info-Overlay). */
     @Query(

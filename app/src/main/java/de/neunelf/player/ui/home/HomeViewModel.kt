@@ -135,8 +135,11 @@ class HomeViewModel @Inject constructor(
     private val categories: StateFlow<List<CategoryItem>> =
         combine(
             repository.observeCategories(StreamKind.LIVE),
-            repository.observeChannels(ChannelFilter.All).map { it.size },
-            repository.observeChannels(ChannelFilter.Favorites).map { it.size },
+            // Reine Zählungen statt der vollen Senderliste – bei 8.000+
+            // Sendern spart das pro Update mehrere tausend Objektzuweisungen
+            // allein für eine Zahl in der Kategorie-Leiste.
+            repository.observeChannelCount(),
+            repository.observeFavoriteCount(),
             repository.observeChannels(ChannelFilter.Recent).map { it.size },
         ) { groups, allCount, favoriteCount, recentCount ->
             buildList {
