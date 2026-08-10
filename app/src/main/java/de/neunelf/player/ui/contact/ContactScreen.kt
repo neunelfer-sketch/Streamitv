@@ -3,9 +3,7 @@ package de.neunelf.player.ui.contact
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -27,28 +25,17 @@ import de.neunelf.player.ui.theme.TvBackground
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
 import de.neunelf.player.ui.theme.TvSpacing
 
-/** Ein Telegram-Kanal mit zugehörigem QR-Code. */
-private data class ContactChannel(
-    val label: String,
-    val handle: String,
-    val qrRes: Int,
-)
-
-private val CHANNELS = listOf(
-    ContactChannel("9elf", "t.me/neunelfzig", R.drawable.qr_telegram_neunelfzig),
-    ContactChannel("Streamingpate", "t.me/streamingpate", R.drawable.qr_telegram_streamingpate),
-)
-
 /**
  * Kontaktseite zum Verlängern des Zugangs.
  *
  * Auf einem Fernseher lässt sich keine Adresse anklicken und schon gar
- * nicht bequem abtippen – der QR-Code ist hier der eigentliche Weg: Handy
- * davorhalten, fertig. Die Adresse steht trotzdem darunter, für alle, die
- * gerade kein Handy zur Hand haben.
+ * nicht abtippen – der QR-Code ist hier der einzige brauchbare Weg: Handy
+ * davorhalten, fertig. Die Adresse steht deshalb bewusst *nicht* als Text
+ * darunter; es ist eine SimpleX-Einladung mit über hundert Zeichen, die
+ * niemand von Hand überträgt.
  *
- * Die Codes liegen als Vektorgrafik vor und bleiben deshalb auf jeder
- * Bildschirmgröße scharf. Ihre weiße Fläche samt Ruhezone ist Teil der
+ * Der Code liegt als Vektorgrafik vor und bleibt deshalb auf jeder
+ * Bildschirmgröße scharf. Seine weiße Fläche samt Ruhezone ist Teil der
  * Grafik: Ein QR-Code direkt auf dunklem Grund wird von vielen Kameras
  * nicht erkannt.
  */
@@ -69,39 +56,32 @@ fun ContactScreen(onBack: () -> Unit) {
         Text("Zugang verlängern", style = MaterialTheme.typography.headlineLarge)
         Spacer(Modifier.height(TvSpacing.small))
         Text(
-            text = "Code mit der Handykamera scannen – der Chat öffnet sich direkt in Telegram.",
+            text = "Code mit der Handykamera scannen – der Chat öffnet sich direkt in SimpleX.",
             style = MaterialTheme.typography.bodyLarge,
             color = TvOnSurfaceMuted,
         )
 
         Spacer(Modifier.height(TvSpacing.large))
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(TvSpacing.large),
-            verticalAlignment = Alignment.Top,
-        ) {
-            CHANNELS.forEach { channel ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(channel.qrRes),
-                        contentDescription = "QR-Code zu ${channel.handle}",
-                        modifier = Modifier
-                            .size(260.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                    )
-                    Spacer(Modifier.height(TvSpacing.small))
-                    Text(
-                        text = channel.label,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = TvAccent,
-                    )
-                    Text(
-                        text = channel.handle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TvOnSurfaceMuted,
-                    )
-                }
-            }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(R.drawable.qr_9elf),
+                contentDescription = "QR-Code für den Chat mit 9elf",
+                modifier = Modifier
+                    .size(300.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+            )
+            Spacer(Modifier.height(TvSpacing.small))
+            Text(
+                text = "9elf",
+                style = MaterialTheme.typography.titleLarge,
+                color = TvAccent,
+            )
+            Text(
+                text = "SimpleX Chat",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TvOnSurfaceMuted,
+            )
         }
 
         Spacer(Modifier.weight(1f))

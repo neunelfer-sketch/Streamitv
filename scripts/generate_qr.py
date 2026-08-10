@@ -5,7 +5,10 @@ BORDER = 4  # Ruhezone: vier Module, wie es die QR-Norm verlangt
 
 
 def to_vector(content: str) -> tuple[int, str]:
-    qr = segno.make(content, error="q")
+    # Fehlerkorrektur "m" statt "q": Der Code wird am Bildschirm gezeigt und
+    # nutzt sich nicht ab wie ein Aufdruck. Die niedrigere Stufe spart
+    # Module, und groessere Module lassen sich vom Sofa aus leichter scannen.
+    qr = segno.make(content, error="m")
     matrix = [list(row) for row in qr.matrix]
     n = len(matrix)
     size = n + 2 * BORDER
@@ -52,8 +55,10 @@ def write_vector(path: pathlib.Path, content: str, url: str) -> None:
 
 
 TARGETS = {
-    "qr_telegram_neunelfzig": "https://t.me/neunelfzig",
-    "qr_telegram_streamingpate": "https://t.me/streamingpate",
+    "qr_9elf": (
+        "https://smp9.simplex.im/i#8AB6myL6UxBau7c6peWrRi465WUUd8ec"
+        "/O8s4wxXkaE01kkHxa9PlyvtuT8lWO1IaVayxAcpoyVU"
+    ),
 }
 
 drawable = pathlib.Path(sys.argv[1])

@@ -167,7 +167,7 @@ fun SettingsScreen(
             item {
                 SettingsRow(
                     title = "Zugang verlängern",
-                    value = "QR-Code zum Chat auf Telegram",
+                    value = "QR-Code zum Chat mit 9elf",
                     onClick = onOpenContact,
                 )
             }

@@ -210,19 +210,20 @@ Zwei Voraussetzungen, die leicht übersehen werden:
 Beim ersten Mal fragt Android, ob die App Installationen vornehmen darf;
 die App führt dafür direkt in die passende Systemeinstellung.
 
-## QR-Codes zum Verlängern
+## QR-Code zum Verlängern
 
-Unter *Einstellungen → App → Zugang verlängern* zeigt die App zwei
-QR-Codes, über die der Zuschauer den Telegram-Chat erreicht. Auf einem
-Fernseher ist das der einzige bequeme Weg – anklicken lässt sich dort
-nichts, und eine Adresse mit der Fernbedienung abzutippen ist mühsam.
+Unter *Einstellungen → App → Zugang verlängern* zeigt die App einen
+QR-Code, über den der Zuschauer den SimpleX-Chat mit 9elf erreicht. Auf
+einem Fernseher ist das der einzige brauchbare Weg – anklicken lässt sich
+dort nichts, und eine SimpleX-Einladung hat über hundert Zeichen, die
+niemand mit der Fernbedienung abtippt.
 
-Die Codes liegen doppelt vor:
+Der Code liegt doppelt vor:
 
 | Datei | Zweck |
 |---|---|
-| `app/src/main/res/drawable/qr_telegram_*.xml` | Vektorgrafik für die App, auf jeder Bildschirmgröße scharf |
-| `docs/qr/qr_telegram_*.png` | zum Ausdrucken oder für Werbung außerhalb der App |
+| `app/src/main/res/drawable/qr_9elf.xml` | Vektorgrafik für die App, auf jeder Bildschirmgröße scharf |
+| `docs/qr/qr_9elf.png` | zum Ausdrucken oder für Werbung außerhalb der App |
 
 Beide entstehen aus `scripts/generate_qr.py`. Ändert sich eine Adresse
 oder kommt ein Kanal dazu, wird `TARGETS` im Skript angepasst und es neu
