@@ -75,6 +75,7 @@ class SettingsViewModel @Inject constructor(
             syncer.sync(playlist).collect { progress ->
                 message.value = when (progress) {
                     is SyncProgress.Step -> progress.message
+                    is SyncProgress.LiveReady -> "${progress.channels} Sender geladen, Filme/Serien folgen…"
                     is SyncProgress.Done -> "${progress.channels} Sender aktualisiert"
                     is SyncProgress.Failed -> "Fehler: ${progress.message}"
                 }

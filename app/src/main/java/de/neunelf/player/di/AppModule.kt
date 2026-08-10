@@ -17,11 +17,24 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+/**
+ * Ein Gültigkeitsbereich, der die App überlebt statt an einen Bildschirm
+ * gebunden zu sein – für Arbeit, die eine Navigation übersteht (siehe
+ * [de.neunelf.player.data.repository.PlaylistSyncer.syncInBackground]).
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ApplicationScope
 
 /**
  * Zentrale Objektgraph-Konfiguration.
@@ -100,4 +113,12 @@ object AppModule {
     @Singleton
     fun provideSettingsStore(@ApplicationContext context: Context): SettingsStore =
         SettingsStore(context)
+
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(): CoroutineScope =
+        // SupervisorJob: ein fehlgeschlagener Hintergrund-Import darf nicht
+        // den gemeinsamen Gültigkeitsbereich für alle anderen mit reißen.
+        CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }

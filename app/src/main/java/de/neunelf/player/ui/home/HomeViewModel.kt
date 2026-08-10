@@ -282,6 +282,7 @@ class HomeViewModel @Inject constructor(
         syncer.sync(playlist).collect { progress ->
             when (progress) {
                 is SyncProgress.Step -> syncMessage.value = progress.message
+                is SyncProgress.LiveReady -> syncMessage.value = "Filme/Serien werden im Hintergrund geladen…"
                 is SyncProgress.Done -> syncMessage.value = null
                 is SyncProgress.Failed -> {
                     errorMessage.value = progress.message

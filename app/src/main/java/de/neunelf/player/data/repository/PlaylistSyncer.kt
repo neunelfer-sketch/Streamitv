@@ -12,13 +12,18 @@ import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.remote.m3u.M3uParser
 import de.neunelf.player.data.remote.xtream.XtreamApi
 import de.neunelf.player.data.remote.xtream.XtreamMapper
+import de.neunelf.player.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import javax.inject.Inject
@@ -27,6 +32,13 @@ import javax.inject.Singleton
 /** Fortschrittsmeldungen während des Imports – die UI zeigt sie als Statuszeile. */
 sealed interface SyncProgress {
     data class Step(val message: String, val percent: Int) : SyncProgress
+
+    /**
+     * Die Live-Sender sind gespeichert und sofort nutzbar. Filme und Serien
+     * laufen bei Xtream ggf. noch nach – wer nur darauf wartet, bis man den
+     * Hauptbildschirm sehen kann, braucht nicht auf [Done] zu warten.
+     */
+    data class LiveReady(val channels: Int) : SyncProgress
     data class Done(val channels: Int, val movies: Int, val series: Int) : SyncProgress
     data class Failed(val message: String, val cause: Throwable? = null) : SyncProgress
 }
@@ -39,7 +51,8 @@ sealed interface SyncProgress {
  * bei großen Panels um Größenordnungen schneller als ein Aufruf je Kategorie).
  *
  * VOD und Serien werden absichtlich *nach* Live TV geladen: Live ist das,
- * worauf der Nutzer wartet, der Rest darf nachlaufen.
+ * worauf der Nutzer wartet, der Rest darf nachlaufen (siehe [SyncProgress.LiveReady]
+ * und [syncInBackground]).
  */
 @Singleton
 class PlaylistSyncer @Inject constructor(
@@ -49,6 +62,7 @@ class PlaylistSyncer @Inject constructor(
     private val categoryDao: CategoryDao,
     private val channelDao: ChannelDao,
     private val vodDao: VodDao,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) {
 
     /**
@@ -61,12 +75,32 @@ class PlaylistSyncer @Inject constructor(
                 PlaylistType.XTREAM -> syncXtream(playlist)
                 PlaylistType.M3U -> syncM3u(playlist)
             }
-            playlistDao.markSynced(playlist.id, System.currentTimeMillis())
         } catch (e: Exception) {
             Log.e(TAG, "Playlist-Sync fehlgeschlagen für '${playlist.name}'", e)
             emit(SyncProgress.Failed(e.message ?: "Unbekannter Fehler", e))
         }
     }.flowOn(Dispatchers.IO)
+
+    /**
+     * Startet [sync] in einem App-weiten Gültigkeitsbereich statt im
+     * `viewModelScope` des Aufrufers.
+     *
+     * Grund: Die Ersteinrichtung soll zum Hauptbildschirm wechseln, sobald
+     * die Live-Sender da sind ([SyncProgress.LiveReady]) – Filme und Serien
+     * dürfen ruhig noch ein bis zwei Minuten brauchen. Würde der Import im
+     * `viewModelScope` des Einrichtungsbildschirms laufen, würde genau dieser
+     * Wechsel die zugehörige ViewModel zerstören und den Rest des Imports
+     * mitten drin abbrechen. Der zurückgegebene [Flow] ist deshalb ein
+     * `SharedFlow`: Beobachter können jederzeit abspringen, ohne den
+     * eigentlichen Import zu stoppen.
+     */
+    fun syncInBackground(playlist: Playlist): Flow<SyncProgress> {
+        val progress = MutableSharedFlow<SyncProgress>(replay = 0, extraBufferCapacity = 8)
+        appScope.launch {
+            sync(playlist).collect { progress.emit(it) }
+        }
+        return progress.asSharedFlow()
+    }
 
     // -----------------------------------------------------------------------
     // Xtream
@@ -93,6 +127,8 @@ class PlaylistSyncer @Inject constructor(
         emit(SyncProgress.Step("Speichere ${channels.size} Sender…", 45))
         categoryDao.replaceAll(playlist.id, StreamKind.LIVE.name, liveCategories.map { it.toEntity() })
         channelDao.replaceAll(playlist.id, channels.map { it.toEntity() })
+        playlistDao.markSynced(playlist.id, System.currentTimeMillis())
+        emit(SyncProgress.LiveReady(channels.size))
 
         // --- Filme ---------------------------------------------------------
         emit(SyncProgress.Step("Lade Filme…", 60))
@@ -153,6 +189,16 @@ class PlaylistSyncer @Inject constructor(
         val channels = M3uParser.toChannels(parsed, playlist.id)
         val movies = M3uParser.toMovies(parsed, playlist.id)
 
+        // Enthält die Playlist eine EPG-Quelle und der Nutzer hat keine
+        // eigene eingetragen, übernehmen wir sie automatisch – noch vor
+        // LiveReady, damit der automatische EPG-Import auf dem
+        // Hauptbildschirm (der direkt danach anläuft) sie schon kennt.
+        if (playlist.epgUrl.isBlank() && parsed.epgUrls.isNotEmpty()) {
+            playlistDao.insert(
+                playlist.copy(epgUrl = parsed.epgUrls.first()).toEntity(isActive = true),
+            )
+        }
+
         emit(SyncProgress.Step("Speichere ${channels.size} Sender…", 75))
         categoryDao.replaceAll(
             playlist.id,
@@ -160,6 +206,8 @@ class PlaylistSyncer @Inject constructor(
             M3uParser.toCategories(parsed, playlist.id, StreamKind.LIVE).map { it.toEntity() },
         )
         channelDao.replaceAll(playlist.id, channels.map { it.toEntity() })
+        playlistDao.markSynced(playlist.id, System.currentTimeMillis())
+        emit(SyncProgress.LiveReady(channels.size))
 
         if (movies.isNotEmpty()) {
             categoryDao.replaceAll(
@@ -168,14 +216,6 @@ class PlaylistSyncer @Inject constructor(
                 M3uParser.toCategories(parsed, playlist.id, StreamKind.VOD).map { it.toEntity() },
             )
             vodDao.replaceMovies(playlist.id, movies.map { it.toEntity() })
-        }
-
-        // Enthält die Playlist eine EPG-Quelle und der Nutzer hat keine
-        // eigene eingetragen, übernehmen wir sie automatisch.
-        if (playlist.epgUrl.isBlank() && parsed.epgUrls.isNotEmpty()) {
-            playlistDao.insert(
-                playlist.copy(epgUrl = parsed.epgUrls.first()).toEntity(isActive = true),
-            )
         }
 
         emit(SyncProgress.Step("Fertig", 100))

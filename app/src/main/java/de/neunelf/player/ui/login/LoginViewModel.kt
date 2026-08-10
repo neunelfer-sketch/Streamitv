@@ -119,16 +119,25 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Läuft in [PlaylistSyncer.syncInBackground], nicht im eigenen
+     * `viewModelScope`: Sobald die Live-Sender da sind, wechselt die App
+     * sofort zum Hauptbildschirm (nicht erst, wenn auch Filme und Serien
+     * fertig sind) – dieses ViewModel wird dabei zerstört. Liefe der Import
+     * im eigenen Scope, würde genau das ihn mitten drin abbrechen.
+     */
     private suspend fun runInitialSync(playlist: Playlist) {
-        syncer.sync(playlist).collect { progress ->
+        syncer.syncInBackground(playlist).collect { progress ->
             when (progress) {
                 is SyncProgress.Step ->
                     _uiState.update { it.copy(statusMessage = progress.message) }
 
-                is SyncProgress.Done ->
+                is SyncProgress.LiveReady ->
                     _uiState.update {
                         it.copy(isBusy = false, statusMessage = null, isDone = true)
                     }
+
+                is SyncProgress.Done -> Unit // Bereits auf dem Hauptbildschirm, nichts mehr zu tun.
 
                 is SyncProgress.Failed ->
                     _uiState.update {
