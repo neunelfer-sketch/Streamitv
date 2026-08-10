@@ -64,6 +64,7 @@ import de.neunelf.player.player.toResizeMode
 import de.neunelf.player.ui.components.ChannelListItem
 import de.neunelf.player.ui.components.ChannelLogo
 import de.neunelf.player.ui.components.ProgramProgressBar
+import de.neunelf.player.ui.common.LockScreenOrientation
 import de.neunelf.player.ui.common.dpadEvents
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvFavorite
@@ -98,6 +99,11 @@ fun PlayerScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val rootFocus = remember { FocusRequester() }
+
+    // Auf einem Handy nur während der Wiedergabe im Querformat verharren –
+    // in Menüs soll sich das Gerät frei drehen lassen. Auf einem Fernseher
+    // ohne Sensor ist das ein Aufruf ohne Wirkung.
+    LockScreenOrientation()
 
     // Startkanal nur einmal anspielen – nicht bei jeder Recomposition.
     LaunchedEffect(startChannel?.streamId) {

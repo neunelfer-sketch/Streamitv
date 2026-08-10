@@ -3,6 +3,7 @@ package de.neunelf.player.ui.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -51,6 +52,7 @@ import androidx.tv.material3.Text
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.ChannelWithProgram
+import de.neunelf.player.ui.common.COMPACT_WIDTH_BREAKPOINT
 import de.neunelf.player.ui.components.ChannelListItem
 import de.neunelf.player.ui.components.ChannelLogo
 import de.neunelf.player.ui.components.ProgramProgressBar
@@ -123,45 +125,53 @@ fun HomeScreen(
             onOpenSettings = onOpenSettings,
         )
 
-        Row(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // Auf einem Handy im Querformat bleibt für die Vorschau sonst
+            // kaum Platz – siehe COMPACT_WIDTH_BREAKPOINT.
+            val isCompact = maxWidth < COMPACT_WIDTH_BREAKPOINT
+            val categoryWidth = if (isCompact) 180.dp else 260.dp
+            val channelWidth = if (isCompact) 260.dp else 460.dp
 
-            // ---------------- Spalte 1: Kategorien ----------------
-            CategoryColumn(
-                categories = state.categories,
-                selectedKey = state.selectedCategoryKey,
-                onSelect = viewModel::selectCategory,
-                modifier = Modifier
-                    .width(260.dp)
-                    .fillMaxHeight()
-                    .background(TvSurface),
-            )
+            Row(modifier = Modifier.fillMaxSize()) {
 
-            // ---------------- Spalte 2: Sender ----------------
-            ChannelColumn(
-                channels = state.channels,
-                isLoading = state.isLoading,
-                focusRequester = channelListFocus,
-                onChannelClick = { channel ->
-                    viewModel.markWatched(channel)
-                    onOpenPlayer(channel)
-                },
-                onChannelFocused = viewModel::onChannelFocused,
-                onToggleFavorite = viewModel::toggleFavorite,
-                modifier = Modifier
-                    .width(460.dp)
-                    .fillMaxHeight()
-                    .background(TvSurface.copy(alpha = 0.5f)),
-            )
+                // ---------------- Spalte 1: Kategorien ----------------
+                CategoryColumn(
+                    categories = state.categories,
+                    selectedKey = state.selectedCategoryKey,
+                    onSelect = viewModel::selectCategory,
+                    modifier = Modifier
+                        .width(categoryWidth)
+                        .fillMaxHeight()
+                        .background(TvSurface),
+                )
 
-            // ---------------- Spalte 3: Vorschau + Details ----------------
-            DetailPane(
-                item = state.focusedChannel,
-                upcoming = state.upcoming,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(TvSpacing.large),
-            )
+                // ---------------- Spalte 2: Sender ----------------
+                ChannelColumn(
+                    channels = state.channels,
+                    isLoading = state.isLoading,
+                    focusRequester = channelListFocus,
+                    onChannelClick = { channel ->
+                        viewModel.markWatched(channel)
+                        onOpenPlayer(channel)
+                    },
+                    onChannelFocused = viewModel::onChannelFocused,
+                    onToggleFavorite = viewModel::toggleFavorite,
+                    modifier = Modifier
+                        .width(channelWidth)
+                        .fillMaxHeight()
+                        .background(TvSurface.copy(alpha = 0.5f)),
+                )
+
+                // ---------------- Spalte 3: Vorschau + Details ----------------
+                DetailPane(
+                    item = state.focusedChannel,
+                    upcoming = state.upcoming,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(TvSpacing.large),
+                )
+            }
         }
     }
 }

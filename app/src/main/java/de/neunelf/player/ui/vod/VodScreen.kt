@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -50,6 +51,7 @@ import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.model.VodSort
+import de.neunelf.player.ui.common.COMPACT_WIDTH_BREAKPOINT
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvBackground
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
@@ -257,73 +259,80 @@ private fun VodBody(
     onPlayMovie: (String) -> Unit,
     onOpenSeries: (String) -> Unit,
 ) {
-    Row(modifier = Modifier.fillMaxSize()) {
-        // --- Kategorien ------------------------------------------------------
-        LazyColumn(
-            modifier = Modifier
-                .width(280.dp)
-                .fillMaxHeight()
-                .background(TvSurface),
-            contentPadding = PaddingValues(TvSpacing.small),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            items(state.categories, key = { it.id }) { category ->
-                Surface(
-                    onClick = { onSelectCategory(category.id) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp)
-                        .onFocusChanged { if (it.isFocused) onSelectCategory(category.id) },
-                    shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
-                    colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
-                        containerColor = if (category.id == state.selectedCategoryId) {
-                            TvSurfaceVariant
-                        } else {
-                            Color.Transparent
-                        },
-                        focusedContainerColor = TvAccent,
-                    ),
-                    scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1f),
-                ) {
-                    Box(
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        // Auf einem Handy im Querformat bleibt für das Poster-Raster sonst
+        // kaum Platz – siehe COMPACT_WIDTH_BREAKPOINT.
+        val categoryWidth = if (maxWidth < COMPACT_WIDTH_BREAKPOINT) 200.dp else 280.dp
+
+        Row(modifier = Modifier.fillMaxSize()) {
+            // --- Kategorien --------------------------------------------------
+            LazyColumn(
+                modifier = Modifier
+                    .width(categoryWidth)
+                    .fillMaxHeight()
+                    .background(TvSurface),
+                contentPadding = PaddingValues(TvSpacing.small),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                items(state.categories, key = { it.id }) { category ->
+                    Surface(
+                        onClick = { onSelectCategory(category.id) },
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp),
-                        contentAlignment = Alignment.CenterStart,
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .onFocusChanged { if (it.isFocused) onSelectCategory(category.id) },
+                        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
+                        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+                            containerColor = if (category.id == state.selectedCategoryId) {
+                                TvSurfaceVariant
+                            } else {
+                                Color.Transparent
+                            },
+                            focusedContainerColor = TvAccent,
+                        ),
+                        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1f),
                     ) {
-                        Text(
-                            text = category.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            Text(
+                                text = category.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // --- Raster ----------------------------------------------------------
-        LazyVerticalGrid(
-            // Feste Spaltenzahl statt adaptiver Breite: auf TV ist die
-            // Bildschirmgröße bekannt, und ein stabiles Raster macht die
-            // Navigation mit dem Steuerkreuz vorhersagbar.
-            columns = GridCells.Fixed(6),
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            contentPadding = PaddingValues(TvSpacing.large),
-            horizontalArrangement = Arrangement.spacedBy(TvSpacing.medium),
-            verticalArrangement = Arrangement.spacedBy(TvSpacing.medium),
-        ) {
-            items(state.items, key = { it.id }) { item ->
-                PosterCard(
-                    title = item.title,
-                    subtitle = item.subtitle,
-                    posterUrl = item.posterUrl,
-                    onClick = {
-                        if (kind == StreamKind.VOD) onPlayMovie(item.id) else onOpenSeries(item.id)
-                    },
-                )
+            // --- Raster --------------------------------------------------------
+            LazyVerticalGrid(
+                // Adaptiv statt einer festen Spaltenzahl: Bei fester Zahl würde
+                // ein schmales Handy im Querformat sechs Poster in seine Breite
+                // quetschen, bis Titel unlesbar werden. So bleibt die Postergröße
+                // etwa gleich, und es passen einfach weniger Spalten hinein.
+                columns = GridCells.Adaptive(minSize = 150.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentPadding = PaddingValues(TvSpacing.large),
+                horizontalArrangement = Arrangement.spacedBy(TvSpacing.medium),
+                verticalArrangement = Arrangement.spacedBy(TvSpacing.medium),
+            ) {
+                items(state.items, key = { it.id }) { item ->
+                    PosterCard(
+                        title = item.title,
+                        subtitle = item.subtitle,
+                        posterUrl = item.posterUrl,
+                        onClick = {
+                            if (kind == StreamKind.VOD) onPlayMovie(item.id) else onOpenSeries(item.id)
+                        },
+                    )
+                }
             }
         }
     }

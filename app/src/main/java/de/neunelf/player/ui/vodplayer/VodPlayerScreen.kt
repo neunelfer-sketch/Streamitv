@@ -44,6 +44,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import de.neunelf.player.core.TimeFormat
+import de.neunelf.player.ui.common.LockScreenOrientation
 import de.neunelf.player.ui.common.dpadEvents
 import de.neunelf.player.ui.components.ProgramProgressBar
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
@@ -71,6 +72,9 @@ fun VodPlayerScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val rootFocus = remember { FocusRequester() }
     val player = viewModel.player()
+
+    // Auf einem Handy nur während der Wiedergabe im Querformat verharren.
+    LockScreenOrientation()
 
     // Hochgezählt bei jeder Eingabe. Der Zähler – nicht die Sichtbarkeit –
     // ist der Schlüssel des Ausblend-Timers: Sonst liefe bei einer zweiten

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -49,6 +50,7 @@ import androidx.tv.material3.Text
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.EpgProgram
+import de.neunelf.player.ui.common.COMPACT_WIDTH_BREAKPOINT
 import de.neunelf.player.ui.components.ChannelLogo
 import de.neunelf.player.ui.components.ProgramProgressBar
 import de.neunelf.player.ui.theme.TvAccent
@@ -121,78 +123,88 @@ fun GuideScreen(
         }
     }
 
-    Row(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(TvBackground),
     ) {
-        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            GuideHeader(
-                dayLabel = state.dayLabel,
-                selectedProgram = state.selectedProgram,
-                onPreviousDay = viewModel::previousDay,
-                onNextDay = viewModel::nextDay,
-                onJumpToNow = viewModel::jumpToNow,
-            )
+        // Auf einem Handy im Querformat bliebe von der eigentlich
+        // scrollbaren Zeitleiste sonst kaum etwas sichtbar – siehe
+        // COMPACT_WIDTH_BREAKPOINT.
+        val isCompact = maxWidth < COMPACT_WIDTH_BREAKPOINT
+        val channelColumnWidth = if (isCompact) 160.dp else CHANNEL_COLUMN_WIDTH
+        val previewWidth = if (isCompact) 260.dp else 340.dp
 
-            // --- Zeitleiste ------------------------------------------------
-            Row(modifier = Modifier.fillMaxWidth()) {
-                // Platzhalter über der Senderspalte, damit die Achse passt.
-                Box(
-                    modifier = Modifier
-                        .width(CHANNEL_COLUMN_WIDTH)
-                        .height(TIMELINE_HEIGHT)
-                        .background(TvSurface),
+        Row(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                GuideHeader(
+                    dayLabel = state.dayLabel,
+                    selectedProgram = state.selectedProgram,
+                    onPreviousDay = viewModel::previousDay,
+                    onNextDay = viewModel::nextDay,
+                    onJumpToNow = viewModel::jumpToNow,
                 )
-                TimeRuler(
-                    windowStart = state.window.start,
-                    windowMinutes = state.window.durationMinutes,
-                    scrollState = timelineScroll,
-                )
-            }
 
-            // --- Rasterzeilen -------------------------------------------------
-            if (state.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Lade Programmzeitschrift…", color = TvOnSurfaceMuted)
+                // --- Zeitleiste ------------------------------------------------
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    // Platzhalter über der Senderspalte, damit die Achse passt.
+                    Box(
+                        modifier = Modifier
+                            .width(channelColumnWidth)
+                            .height(TIMELINE_HEIGHT)
+                            .background(TvSurface),
+                    )
+                    TimeRuler(
+                        windowStart = state.window.start,
+                        windowMinutes = state.window.durationMinutes,
+                        scrollState = timelineScroll,
+                    )
                 }
-            } else {
-                LazyColumn(
-                    state = rowsState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = TvSpacing.large),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    items(state.channels, key = { it.streamId }) { channel ->
-                        GuideRow(
-                            channel = channel,
-                            programs = channel.epgChannelId
-                                ?.let { state.programsByChannel[it] }
-                                .orEmpty(),
-                            windowStart = state.window.start,
-                            windowEnd = state.window.end,
-                            scrollState = timelineScroll,
-                            onProgramFocused = { program -> viewModel.onProgramFocused(channel, program) },
-                            onProgramClick = { onPlayChannel(channel) },
-                        )
+
+                // --- Rasterzeilen -------------------------------------------------
+                if (state.isLoading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Lade Programmzeitschrift…", color = TvOnSurfaceMuted)
+                    }
+                } else {
+                    LazyColumn(
+                        state = rowsState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = TvSpacing.large),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        items(state.channels, key = { it.streamId }) { channel ->
+                            GuideRow(
+                                channel = channel,
+                                programs = channel.epgChannelId
+                                    ?.let { state.programsByChannel[it] }
+                                    .orEmpty(),
+                                windowStart = state.window.start,
+                                windowEnd = state.window.end,
+                                scrollState = timelineScroll,
+                                channelColumnWidth = channelColumnWidth,
+                                onProgramFocused = { program -> viewModel.onProgramFocused(channel, program) },
+                                onProgramClick = { onPlayChannel(channel) },
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // --- Vorschau: was läuft gerade auf dem fokussierten Sender --------
-        GuidePreviewPane(
-            channel = state.selectedChannel,
-            programs = state.selectedChannel?.epgChannelId
-                ?.let { state.programsByChannel[it] }
-                .orEmpty(),
-            now = now,
-            modifier = Modifier
-                .width(340.dp)
-                .fillMaxHeight()
-                .background(TvSurface)
-                .padding(TvSpacing.large),
-        )
+            // --- Vorschau: was läuft gerade auf dem fokussierten Sender --------
+            GuidePreviewPane(
+                channel = state.selectedChannel,
+                programs = state.selectedChannel?.epgChannelId
+                    ?.let { state.programsByChannel[it] }
+                    .orEmpty(),
+                now = now,
+                modifier = Modifier
+                    .width(previewWidth)
+                    .fillMaxHeight()
+                    .background(TvSurface)
+                    .padding(TvSpacing.large),
+            )
+        }
     }
 }
 
@@ -456,6 +468,7 @@ private fun GuideRow(
     windowStart: Long,
     windowEnd: Long,
     scrollState: androidx.compose.foundation.ScrollState,
+    channelColumnWidth: Dp,
     onProgramFocused: (EpgProgram?) -> Unit,
     onProgramClick: () -> Unit,
 ) {
@@ -464,7 +477,7 @@ private fun GuideRow(
         // --- Fixe Senderspalte ---------------------------------------------
         Row(
             modifier = Modifier
-                .width(CHANNEL_COLUMN_WIDTH)
+                .width(channelColumnWidth)
                 .fillMaxHeight()
                 .background(TvSurface)
                 .padding(horizontal = TvSpacing.small),

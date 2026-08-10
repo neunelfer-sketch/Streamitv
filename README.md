@@ -1,7 +1,35 @@
 # 9elf Player
 
-IPTV-Player für **Android TV** und **Fire TV** im Stil von TiviMate.
-Nativ umgesetzt mit **Kotlin, Jetpack Compose for TV und Media3/ExoPlayer**.
+IPTV-Player für **Android TV**, **Fire TV** und **Android-Handys** im Stil
+von TiviMate. Nativ umgesetzt mit **Kotlin, Jetpack Compose for TV und
+Media3/ExoPlayer**.
+
+## Auf dem Handy
+
+Dieselbe APK läuft auch auf einem Android-Handy (ab API 22) – dieselbe
+`.apk`, kein separater Build. Drei Anpassungen machen das möglich:
+
+- Die App ist nicht mehr als reine TV-App markiert
+  (`android.software.leanback` `required="false"`), sonst würden manche
+  Launcher/Stores sie auf Handys als inkompatibel ausblenden.
+- Die Bildschirmausrichtung ist frei, nicht mehr fest auf Querformat
+  gesperrt. Nur während der eigentlichen Video-Wiedergabe schaltet die App
+  gezielt auf Querformat (`LockScreenOrientation`) – in Menüs und
+  Einstellungen darf sich das Handy frei drehen.
+- Die mehrspaltigen Bildschirme (Hauptbildschirm, TV-Guide, Filme/Serien)
+  sind für TV-Breiten (≥ 900 dp) entworfen. Unterhalb dieser Schwelle
+  verwenden sie schmalere, aber weiterhin feste Spaltenbreiten
+  (`COMPACT_WIDTH_BREAKPOINT`), damit auf einem Handy im Querformat noch
+  genug Platz für die Vorschau bleibt. Das Filme-/Serien-Raster nutzt
+  zusätzlich `GridCells.Adaptive` statt einer festen Spaltenzahl, damit
+  Poster nicht auf Briefmarkengröße schrumpfen.
+
+Die D-Pad-Bedienung war von Anfang an so gebaut, dass jede Aktion sowohl
+über Fokus (Fernbedienung) als auch über Klick (Touch) auslöst – deshalb
+funktioniert die App per Fingertipp, ohne dass die Interaktionslogik
+angefasst werden musste. Eine eigens für Touch entworfene Oberfläche
+(z. B. eine Navigationsleiste unten, dichtere Listen) ist das nicht –
+dafür wäre eine echte zweite Bildschirmvariante nötig.
 
 ## Warum nativ statt Flutter
 
