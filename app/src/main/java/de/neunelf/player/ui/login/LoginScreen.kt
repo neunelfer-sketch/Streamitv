@@ -13,20 +13,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -205,11 +213,21 @@ private fun TypeChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 /**
- * Eingabefeld im TV-Look.
+ * Eingabefeld im TV-Look mit zwei Zuständen: Anzeige und Bearbeitung.
  *
- * `androidx.tv.material3` bringt keine Textfelder mit, deshalb hier das
- * Material3-Feld mit angepassten Farben – wichtig ist vor allem ein klar
- * sichtbarer Fokus-Rahmen.
+ * Der Grund für diese Zweiteilung: `OutlinedTextField` öffnet die
+ * Bildschirmtastatur automatisch, sobald es den Fokus bekommt – auf einem
+ * Touchscreen ist das richtig (Fokus = Antippen = Tippabsicht), auf einem
+ * Fernseher aber nicht. Dort bewegt jeder Druck des Steuerkreuzes den Fokus
+ * von Feld zu Feld, und ohne diese Trennung ginge bei jedem Vorbeiwandern
+ * die Tastatur auf.
+ *
+ * Deshalb zeigt das Feld im Ruhezustand nur eine fokussierbare Zeile mit
+ * Beschriftung und aktuellem Wert – navigierbar, aber ohne Tastatur. Erst
+ * ein Druck auf OK schaltet in den Bearbeitungsmodus um, in dem das echte
+ * `OutlinedTextField` erscheint, den Fokus bekommt und (jetzt gewollt) die
+ * Tastatur öffnet. Verlässt das Feld den Fokus – durch Weiterspringen,
+ * Zurück-Taste oder `imeAction` –, kehrt es in den Ruhezustand zurück.
  */
 @Composable
 private fun TvTextField(
@@ -221,29 +239,85 @@ private fun TvTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { androidx.compose.material3.Text(label) },
-        singleLine = true,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-            keyboardType = keyboardType,
-            imeAction = imeAction,
-            autoCorrectEnabled = false,
-        ),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = TvSurfaceVariant,
-            unfocusedContainerColor = TvSurfaceVariant,
-            focusedIndicatorColor = TvAccent,
-            unfocusedIndicatorColor = TvOnSurfaceMuted,
-            focusedTextColor = TvOnSurface,
-            unfocusedTextColor = TvOnSurface,
-            focusedLabelColor = TvAccent,
-            unfocusedLabelColor = TvOnSurfaceMuted,
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-    )
+    var isEditing by remember { mutableStateOf(false) }
+    val editFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
+    if (isEditing) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { androidx.compose.material3.Text(label) },
+            singleLine = true,
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = imeAction,
+                autoCorrectEnabled = false,
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    // Fokus geht auf das aktuell noch bestehende Feld-Layout
+                    // weiter, bevor der Wechsel zurück in den Ruhezustand
+                    // dessen Zusammensetzung ändert.
+                    focusManager.moveFocus(FocusDirection.Down)
+                    isEditing = false
+                },
+                onDone = {
+                    keyboardController?.hide()
+                    isEditing = false
+                },
+            ),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = TvSurfaceVariant,
+                unfocusedContainerColor = TvSurfaceVariant,
+                focusedIndicatorColor = TvAccent,
+                unfocusedIndicatorColor = TvOnSurfaceMuted,
+                focusedTextColor = TvOnSurface,
+                unfocusedTextColor = TvOnSurface,
+                focusedLabelColor = TvAccent,
+                unfocusedLabelColor = TvOnSurfaceMuted,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .focusRequester(editFocusRequester)
+                // Jeder Fokusverlust – Weiterspringen, Zurück-Taste,
+                // Antippen woanders – kehrt zuverlässig in den Ruhezustand
+                // zurück, unabhängig vom Auslöser.
+                .onFocusChanged { if (!it.isFocused) isEditing = false },
+        )
+        LaunchedEffect(Unit) {
+            runCatching { editFocusRequester.requestFocus() }
+        }
+    } else {
+        Surface(
+            onClick = { isEditing = true },
+            shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+            colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+                containerColor = TvSurfaceVariant,
+                focusedContainerColor = TvAccent,
+            ),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Text(label, style = MaterialTheme.typography.labelMedium, color = TvOnSurfaceMuted)
+                Text(
+                    // Passwörter zeigen im Ruhezustand nur Platzhalterpunkte,
+                    // damit sie beim bloßen Vorbeinavigieren nicht lesbar sind.
+                    text = when {
+                        isPassword && value.isNotEmpty() -> "••••••••"
+                        else -> value
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TvOnSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
 }
