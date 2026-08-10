@@ -64,6 +64,7 @@ import de.neunelf.player.player.toResizeMode
 import de.neunelf.player.ui.components.ChannelListItem
 import de.neunelf.player.ui.components.ChannelLogo
 import de.neunelf.player.ui.components.ProgramProgressBar
+import de.neunelf.player.ui.common.KeepScreenOn
 import de.neunelf.player.ui.common.LockScreenOrientation
 import de.neunelf.player.ui.common.dpadEvents
 import de.neunelf.player.ui.theme.TvAccent
@@ -104,6 +105,11 @@ fun PlayerScreen(
     // in Menüs soll sich das Gerät frei drehen lassen. Auf einem Fernseher
     // ohne Sensor ist das ein Aufruf ohne Wirkung.
     LockScreenOrientation()
+
+    // Solange das Vollbild offen ist, bleibt der Bildschirmschoner weg.
+    // Live-TV kennt keine Pause: Wer hier steht, schaut zu – auch wenn er
+    // minutenlang keine Taste drückt.
+    KeepScreenOn()
 
     // Startkanal nur einmal anspielen – nicht bei jeder Recomposition.
     LaunchedEffect(startChannel?.streamId) {

@@ -1,6 +1,7 @@
 package de.neunelf.player.player
 
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.common.MimeTypes
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
@@ -75,6 +76,13 @@ class PlayerFactory @Inject constructor(
             .build()
             .apply {
                 playWhenReady = true
+                // Hält CPU und WLAN wach, solange etwas läuft. Der Bildschirm
+                // ist damit *nicht* gemeint – dafür sorgt `KeepScreenOn` in
+                // der Oberfläche. Wichtig ist das für Bild-in-Bild und den
+                // Moment, in dem das System die App in den Hintergrund
+                // schiebt: ohne Wake-Lock drosselt Fire OS dort das WLAN, und
+                // der Stream reißt nach wenigen Sekunden ab.
+                setWakeMode(C.WAKE_MODE_NETWORK)
             }
     }
 

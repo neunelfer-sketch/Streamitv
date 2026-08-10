@@ -36,7 +36,13 @@ fun LockScreenOrientation(orientation: Int = ActivityInfo.SCREEN_ORIENTATION_SEN
     }
 }
 
-private fun Context.findActivity(): Activity? {
+/**
+ * Sucht die Activity hinter einem Compose-Context.
+ *
+ * Compose reicht je nach Einbettung einen `ContextWrapper` durch, nicht
+ * zwingend die Activity selbst – deshalb die Kette hinunter.
+ */
+internal fun Context.findActivity(): Activity? {
     var context = this
     while (context is ContextWrapper) {
         if (context is Activity) return context

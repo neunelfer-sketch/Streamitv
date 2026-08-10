@@ -44,6 +44,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import de.neunelf.player.core.TimeFormat
+import de.neunelf.player.ui.common.KeepScreenOn
 import de.neunelf.player.ui.common.LockScreenOrientation
 import de.neunelf.player.ui.common.dpadEvents
 import de.neunelf.player.ui.components.ProgramProgressBar
@@ -75,6 +76,12 @@ fun VodPlayerScreen(
 
     // Auf einem Handy nur während der Wiedergabe im Querformat verharren.
     LockScreenOrientation()
+
+    // Anders als bei Live-TV an die Wiedergabe gekoppelt: Wer einen Film
+    // anhält und weggeht, soll den Bildschirmschoner ganz normal bekommen.
+    // Das Puffern zählt mit, sonst käme er ausgerechnet bei einer längeren
+    // Ladepause.
+    KeepScreenOn(enabled = state.playback.isPlaying || state.playback.isBuffering)
 
     // Hochgezählt bei jeder Eingabe. Der Zähler – nicht die Sichtbarkeit –
     // ist der Schlüssel des Ausblend-Timers: Sonst liefe bei einer zweiten

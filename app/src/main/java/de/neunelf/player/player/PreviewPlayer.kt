@@ -1,5 +1,6 @@
 package de.neunelf.player.player
 
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import javax.inject.Inject
@@ -37,6 +38,10 @@ class PreviewPlayer @Inject constructor(
             // Ton aus: Beim Durchblättern der Senderliste wäre er nur störend,
             // und beim schnellen Wechseln entstünde ein Tonsalat.
             created.volume = 0f
+            // Kein Wake-Lock für eine Vorschau: Die läuft ausschließlich,
+            // während der Hauptbildschirm vorne ist – CPU und WLAN sind dann
+            // ohnehin wach. Den Lock hält allein der Vollbild-Player.
+            created.setWakeMode(C.WAKE_MODE_NONE)
             player = created
         }
 
