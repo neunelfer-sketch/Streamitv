@@ -261,6 +261,34 @@ interface VodDao {
     @Query("SELECT * FROM movies WHERE playlistId = :playlistId AND streamId = :streamId")
     suspend fun getMovie(playlistId: Long, streamId: String): MovieEntity?
 
+    /**
+     * Titelsuche über die Filme.
+     *
+     * `LIMIT` ist wichtig: Ein kurzer Suchbegriff trifft in einem großen
+     * Katalog tausende Einträge, von denen niemand mehr als die ersten
+     * ansieht.
+     */
+    @Query(
+        """
+        SELECT * FROM movies
+        WHERE playlistId = :playlistId AND name LIKE '%' || :query || '%'
+        ORDER BY name
+        LIMIT :limit
+        """,
+    )
+    fun searchMovies(playlistId: Long, query: String, limit: Int): Flow<List<MovieEntity>>
+
+    /** Titelsuche über die Serien. */
+    @Query(
+        """
+        SELECT * FROM series
+        WHERE playlistId = :playlistId AND name LIKE '%' || :query || '%'
+        ORDER BY name
+        LIMIT :limit
+        """,
+    )
+    fun searchSeries(playlistId: Long, query: String, limit: Int): Flow<List<SeriesEntity>>
+
     @Query("SELECT * FROM series WHERE playlistId = :playlistId AND seriesId = :seriesId")
     suspend fun getSeries(playlistId: Long, seriesId: String): SeriesEntity?
 

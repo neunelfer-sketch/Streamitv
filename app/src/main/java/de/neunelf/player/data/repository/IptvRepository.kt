@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -174,6 +175,22 @@ class IptvRepository @Inject constructor(
         playlistDao.observeActive().flatMapLatest { playlist ->
             if (playlist == null) return@flatMapLatest emptyFlow()
             vodDao.observeSeries(playlist.id, categoryId).map { list -> list.map { it.toModel() } }
+        }
+
+    /** Titelsuche über Filme – für die übergreifende Suche. */
+    fun searchMovies(query: String): Flow<List<Movie>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null || query.isBlank()) return@flatMapLatest flowOf(emptyList())
+            vodDao.searchMovies(playlist.id, query, SEARCH_LIMIT)
+                .map { list -> list.map { it.toModel() } }
+        }
+
+    /** Titelsuche über Serien – für die übergreifende Suche. */
+    fun searchSeries(query: String): Flow<List<Series>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null || query.isBlank()) return@flatMapLatest flowOf(emptyList())
+            vodDao.searchSeries(playlist.id, query, SEARCH_LIMIT)
+                .map { list -> list.map { it.toModel() } }
         }
 
     suspend fun getMovie(streamId: String): Movie? {
@@ -334,6 +351,13 @@ class IptvRepository @Inject constructor(
 
         /** So viele Einträge behält der Verlauf insgesamt. */
         private const val RECENT_HISTORY_SIZE = 50
+
+        /**
+         * Höchstzahl Treffer je Bereich in der Suche. Ein kurzer Begriff
+         * trifft in einem großen Katalog tausende Einträge; angesehen wird
+         * ohnehin nur der Anfang.
+         */
+        private const val SEARCH_LIMIT = 100
     }
 }
 

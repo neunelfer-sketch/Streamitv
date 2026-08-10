@@ -19,6 +19,7 @@ import de.neunelf.player.ui.guide.GuideScreen
 import de.neunelf.player.ui.home.HomeScreen
 import de.neunelf.player.ui.login.LoginScreen
 import de.neunelf.player.ui.player.PlayerScreen
+import de.neunelf.player.ui.search.SearchScreen
 import de.neunelf.player.ui.settings.SettingsScreen
 import de.neunelf.player.ui.vod.SeriesDetailScreen
 import de.neunelf.player.ui.vod.VodScreen
@@ -34,6 +35,7 @@ object Routes {
     const val SERIES = "series"
     const val SETTINGS = "settings"
     const val CONTACT = "contact"
+    const val SEARCH = "search"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
     const val MOVIE_PLAYER = "movie_player/{streamId}"
@@ -100,6 +102,7 @@ fun NeunelfPlayerNavHost(
                 onOpenGuide = { navController.navigate(Routes.GUIDE) },
                 onOpenMovies = { navController.navigate(Routes.MOVIES) },
                 onOpenSeries = { navController.navigate(Routes.SERIES) },
+                onOpenSearch = { navController.navigate(Routes.SEARCH) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
@@ -171,6 +174,17 @@ fun NeunelfPlayerNavHost(
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
+            )
+        }
+
+        composable(Routes.SEARCH) {
+            SearchScreen(
+                onPlayChannel = { channel ->
+                    pendingChannel = channel
+                    navController.navigate(Routes.PLAYER)
+                },
+                onPlayMovie = { streamId -> navController.navigate(Routes.moviePlayer(streamId)) },
+                onOpenSeries = { seriesId -> navController.navigate(Routes.seriesDetail(seriesId)) },
             )
         }
 

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.runtime.Composable
@@ -100,6 +101,7 @@ fun HomeScreen(
     onOpenGuide: () -> Unit,
     onOpenMovies: () -> Unit,
     onOpenSeries: () -> Unit,
+    onOpenSearch: () -> Unit,
     onOpenSettings: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -162,6 +164,7 @@ fun HomeScreen(
             onOpenGuide = onOpenGuide,
             onOpenMovies = onOpenMovies,
             onOpenSeries = onOpenSeries,
+            onOpenSearch = onOpenSearch,
             onOpenSettings = onOpenSettings,
         )
 
@@ -229,6 +232,7 @@ private fun HomeTopBar(
     onOpenGuide: () -> Unit,
     onOpenMovies: () -> Unit,
     onOpenSeries: () -> Unit,
+    onOpenSearch: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     // Die Uhr rechts oben ist auf einem TV überraschend wichtig – viele
@@ -253,6 +257,7 @@ private fun HomeTopBar(
         TopBarAction(Icons.Default.CalendarMonth, "TV-Guide", onClick = onOpenGuide)
         TopBarAction(Icons.Default.Movie, "Filme", onClick = onOpenMovies)
         TopBarAction(Icons.Default.Subscriptions, "Serien", onClick = onOpenSeries)
+        TopBarAction(Icons.Default.Search, "Suche", onClick = onOpenSearch)
         TopBarAction(Icons.Default.Settings, "Einstellungen", onClick = onOpenSettings)
 
         Spacer(Modifier.weight(1f))
