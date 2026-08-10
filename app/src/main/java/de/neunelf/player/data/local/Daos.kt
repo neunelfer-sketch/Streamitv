@@ -2,6 +2,7 @@ package de.neunelf.player.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.MapInfo
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
@@ -364,6 +365,26 @@ interface VodDao {
 
     @Query("SELECT * FROM episodes WHERE playlistId = :playlistId AND episodeId = :episodeId")
     suspend fun getEpisode(playlistId: Long, episodeId: String): EpisodeEntity?
+
+    /**
+     * "Zuerst gesehen"-Zeitpunkt je Film, für den anstehenden Neu-Import.
+     *
+     * M3U-Dateien liefern kein Datum, wann ein Titel hinzukam – der
+     * komplette Bestand wird bei jedem Sync neu geschrieben (siehe
+     * [replaceMovies]). Ohne diesen Zwischenschritt bekäme dabei jeder Film
+     * denselben Zeitpunkt "jetzt" und "Neu hinzugefügt" würde nie den
+     * tatsächlich neuen Titeln entsprechen. Der Aufrufer trägt den alten
+     * Wert für schon bekannte Filme wieder ein; nur echte Neuzugänge
+     * bekommen die aktuelle Zeit.
+     */
+    @MapInfo(keyColumn = "streamId", valueColumn = "addedAt")
+    @Query("SELECT streamId, addedAt FROM movies WHERE playlistId = :playlistId")
+    suspend fun getMovieAddedTimes(playlistId: Long): Map<String, Long>
+
+    /** Dasselbe wie [getMovieAddedTimes], nur für Serien. */
+    @MapInfo(keyColumn = "seriesId", valueColumn = "lastModified")
+    @Query("SELECT seriesId, lastModified FROM series WHERE playlistId = :playlistId")
+    suspend fun getSeriesModifiedTimes(playlistId: Long): Map<String, Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)

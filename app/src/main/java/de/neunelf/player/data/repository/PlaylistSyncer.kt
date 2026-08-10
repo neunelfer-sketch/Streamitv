@@ -224,7 +224,15 @@ class PlaylistSyncer @Inject constructor(
                 StreamKind.VOD.name,
                 M3uParser.toCategories(parsed, playlist.id, StreamKind.VOD).map { it.toEntity() },
             )
-            vodDao.replaceMovies(playlist.id, movies.map { it.toEntity() })
+            // M3U liefert kein "hinzugefügt am" – ohne dieses Nachtragen
+            // bekäme bei jedem Sync die komplette Liste denselben Zeitstempel
+            // und "Neu hinzugefügt" im Sortiermenü wäre wirkungslos.
+            val previousAddedAt = vodDao.getMovieAddedTimes(playlist.id)
+            val now = System.currentTimeMillis()
+            val moviesWithAddedAt = movies.map { movie ->
+                movie.copy(addedAt = previousAddedAt[movie.streamId] ?: now)
+            }
+            vodDao.replaceMovies(playlist.id, moviesWithAddedAt.map { it.toEntity() })
         }
 
         // --- Serien --------------------------------------------------------
@@ -240,7 +248,14 @@ class PlaylistSyncer @Inject constructor(
                 StreamKind.SERIES.name,
                 M3uParser.toCategories(parsed, playlist.id, StreamKind.SERIES).map { it.toEntity() },
             )
-            vodDao.replaceSeries(playlist.id, series.map { it.toEntity() })
+            // Derselbe Grund wie bei den Filmen oben: ohne nachgetragenen
+            // Zeitpunkt wäre "Neu hinzugefügt" bei Serien ebenso wirkungslos.
+            val previousModified = vodDao.getSeriesModifiedTimes(playlist.id)
+            val now = System.currentTimeMillis()
+            val seriesWithModified = series.map { entry ->
+                entry.copy(lastModified = previousModified[entry.seriesId] ?: now)
+            }
+            vodDao.replaceSeries(playlist.id, seriesWithModified.map { it.toEntity() })
             vodDao.replaceEpisodes(
                 playlist.id,
                 M3uParser.toEpisodes(parsed).map { it.toEntity(playlist.id) },
