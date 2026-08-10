@@ -1,6 +1,7 @@
 package de.neunelf.player.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -67,6 +70,7 @@ import de.neunelf.player.ui.components.ChannelLogo
 import de.neunelf.player.ui.components.ProgramProgressBar
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvBackground
+import de.neunelf.player.ui.theme.TvLive
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
 import de.neunelf.player.ui.theme.TvSpacing
 import de.neunelf.player.ui.theme.TvSurface
@@ -462,12 +466,20 @@ private fun DetailPane(
         // Das Live-Bild des fokussierten Senders. Das Senderlogo liegt
         // darunter und bleibt sichtbar, solange noch kein Bild da ist –
         // ein leerer schwarzer Kasten wirkte wie ein Fehler.
+        //
+        // Bewusst im 16:9-Format statt einer festen Höhe: Bei einer festen
+        // Höhe wirkte die Fläche auf breiten Bildschirmen klein und
+        // gequetscht. Der Rahmen und der weiche Schatten heben sie sichtbar
+        // vom Hintergrund ab, ohne dass Text oder andere Elemente sie
+        // überlagern – die Fläche selbst bleibt so immer ungestört.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color.Black),
+                .aspectRatio(16f / 9f)
+                .shadow(elevation = 10.dp, shape = RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color.Black)
+                .border(1.dp, TvSurfaceVariant, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center,
         ) {
             ChannelLogo(
@@ -493,6 +505,8 @@ private fun DetailPane(
                     update = { view -> view.player = previewPlayer },
                     onRelease = { view -> view.player = null },
                 )
+
+                LiveBadge(modifier = Modifier.align(Alignment.TopStart).padding(10.dp))
             }
         }
 
@@ -581,6 +595,35 @@ private fun CenteredHint(text: String) {
             text = text,
             style = MaterialTheme.typography.bodyLarge,
             color = TvOnSurfaceMuted,
+        )
+    }
+}
+
+/**
+ * Kleiner Hinweis oben links auf der Vorschaufläche – rein dekorativ, also
+ * bewusst ein einfacher [Box] statt einer fokussierbaren `Surface`: Er darf
+ * dem Steuerkreuz niemals im Weg stehen.
+ */
+@Composable
+private fun LiveBadge(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color.Black.copy(alpha = 0.55f))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(RoundedCornerShape(50))
+                .background(TvLive),
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            text = "LIVE",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
         )
     }
 }
