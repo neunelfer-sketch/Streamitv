@@ -70,17 +70,6 @@ class VodViewModel @Inject constructor(
         .flatMapLatest { repository.observeCategories(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** Immer ganz oben, unabhängig vom Bereich – siehe [RECENT_CATEGORY_ID]. */
-    private val categories: StateFlow<List<Category>> = combine(kind, realCategories) { streamKind, real ->
-        val recentCategory = Category(
-            id = RECENT_CATEGORY_ID,
-            name = "Zuletzt gesehen",
-            kind = streamKind,
-            playlistId = 0L,
-        )
-        listOf(recentCategory) + real
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
     /** Zuletzt gesehene Filme bzw. Folgen, umgesetzt in Poster-Einträge mit Fortschritt. */
     private val recentItems: StateFlow<List<VodItem>> = kind
         .flatMapLatest { streamKind ->
@@ -115,6 +104,40 @@ class VodViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * Genau wie bei den Live-TV-Kategorien (siehe
+     * [de.neunelf.player.ui.home.HomeViewModel]): eine leere
+     * Spezialkategorie wird ausgeblendet, statt die Liste bei einer
+     * frischen Installation halb tot wirken zu lassen.
+     */
+    private val hasRecentItems: StateFlow<Boolean> = recentItems
+        .map { it.isNotEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Ganz oben, aber nur wenn es tatsächlich etwas zu zeigen gibt. */
+    private val categories: StateFlow<List<Category>> =
+        combine(kind, realCategories, hasRecentItems) { streamKind, real, hasRecent ->
+            if (!hasRecent) return@combine real
+            val recentCategory = Category(
+                id = RECENT_CATEGORY_ID,
+                name = "Zuletzt gesehen",
+                kind = streamKind,
+                playlistId = 0L,
+            )
+            listOf(recentCategory) + real
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Die tatsächlich wirksame Auswahl: Fällt sie auf "Zuletzt gesehen",
+     * ohne dass es dort etwas gibt, wird sie wie zuvor als "keine bestimmte
+     * Kategorie" behandelt (zeigt alles), statt auf eine ausgeblendete
+     * Kategorie zu zeigen, die niemand anwählen kann.
+     */
+    private val effectiveCategoryId: StateFlow<String?> =
+        combine(selectedCategoryId, hasRecentItems) { selected, hasRecent ->
+            if (selected == RECENT_CATEGORY_ID && !hasRecent) null else selected
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     /** Die gemerkte Reihenfolge des gerade gezeigten Bereichs. */
     private val sort: StateFlow<VodSort> =
         combine(kind, settingsStore.settings) { streamKind, settings ->
@@ -122,7 +145,7 @@ class VodViewModel @Inject constructor(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VodSort.RECENT)
 
     private val items: StateFlow<List<VodItem>> =
-        combine(kind, selectedCategoryId, sort) { streamKind, categoryId, order ->
+        combine(kind, effectiveCategoryId, sort) { streamKind, categoryId, order ->
             Triple(streamKind, categoryId, order)
         }
             .flatMapLatest { (streamKind, categoryId, order) ->
@@ -173,7 +196,7 @@ class VodViewModel @Inject constructor(
     val uiState: StateFlow<VodUiState> = combine(
         categories,
         items,
-        selectedCategoryId,
+        effectiveCategoryId,
         kind,
         sort,
     ) { categoryList, itemList, categoryId, streamKind, order ->
