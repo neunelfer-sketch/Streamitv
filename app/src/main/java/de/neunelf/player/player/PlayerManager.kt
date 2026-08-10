@@ -1,7 +1,10 @@
 package de.neunelf.player.player
 
+import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.media3.common.C
+import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -57,6 +60,7 @@ data class PlaybackState(
  */
 @Singleton
 class PlayerManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val playerFactory: PlayerFactory,
 ) {
 
@@ -108,6 +112,10 @@ class PlayerManager @Inject constructor(
         }
 
     fun release() {
+        // Reihenfolge ist wichtig: Erst die Session beenden, dann den Player
+        // freigeben. Andersherum hielte die Session kurzzeitig einen bereits
+        // freigegebenen Player – jeder Zugriff darauf beendet die App.
+        stopPlaybackService()
         exoPlayer?.removeListener(listener)
         exoPlayer?.release()
         exoPlayer = null
@@ -154,12 +162,47 @@ class PlayerManager @Inject constructor(
         player.prepare()
         player.play()
 
+        startPlaybackService()
+
         _state.value = _state.value.copy(isLive = isLive, error = null, retryCount = 0)
     }
 
     fun stop() {
         exoPlayer?.stop()
         currentUrl = null
+        stopPlaybackService()
+    }
+
+    /**
+     * Startet die Medien-Session.
+     *
+     * Sie war zwar von Anfang an vorhanden, wurde aber nie gestartet – und
+     * damit gab es sie faktisch nicht. Das ist mehr als Kosmetik: Über eine
+     * aktive Session erfährt das System, dass gerade etwas abgespielt wird.
+     * Genau daran macht Android fest, ob es die App schlafen legen darf, und
+     * daran hängen auch die Wiedergabetasten der Fernbedienung sowie der
+     * Eintrag in der „Weiterschauen“-Zeile des Launchers.
+     *
+     * Bewusst `startService` und nicht `startForegroundService`: Letzteres
+     * verlangt, dass der Dienst binnen fünf Sekunden in den Vordergrund
+     * geht, sonst beendet Android die App. Media3 erledigt den Wechsel in
+     * den Vordergrund selbst, sobald die Wiedergabe läuft. Beim Starten der
+     * Wiedergabe ist die App ohnehin im Vordergrund, die Einschränkung für
+     * Hintergrund-Starts greift hier also nicht.
+     *
+     * Schlägt es dennoch fehl, bleibt es beim bisherigen Verhalten: Die
+     * Wiedergabe läuft, nur ohne Session – deshalb kein harter Fehler.
+     */
+    private fun startPlaybackService() {
+        runCatching {
+            context.startService(Intent(context, PlaybackService::class.java))
+        }.onFailure { Log.w(TAG, "Medien-Session ließ sich nicht starten", it) }
+    }
+
+    private fun stopPlaybackService() {
+        runCatching {
+            context.stopService(Intent(context, PlaybackService::class.java))
+        }
     }
 
     fun togglePlayPause() {

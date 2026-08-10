@@ -9,6 +9,16 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <!--
+      Media3 legt für die Medien-Session eine Benachrichtigung an, sobald der
+      Dienst in den Vordergrund geht. Ab Android 13 ist dafür dieses Recht
+      nötig. Auf einem Fernseher bekommt sie ohnehin niemand zu sehen – ohne
+      die Angabe kann der Wechsel in den Vordergrund aber scheitern, und
+      damit fiele die Session weg, an der das System "hier läuft etwas"
+      erkennt.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
       Für die eingebaute Aktualisierung: Die App lädt die neue Fassung
       selbst herunter und übergibt sie dem System-Installationsprogramm.
       Ab Android 8 muss das Recht zusätzlich vom Nutzer bestätigt werden
