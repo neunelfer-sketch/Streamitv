@@ -75,6 +75,7 @@ fun VodScreen(
     kind: StreamKind,
     onPlayMovie: (String) -> Unit,
     onOpenSeries: (String) -> Unit,
+    onPlayEpisode: (String) -> Unit = {},
     viewModel: VodViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -115,6 +116,7 @@ fun VodScreen(
                 onSelectCategory = viewModel::selectCategory,
                 onPlayMovie = onPlayMovie,
                 onOpenSeries = onOpenSeries,
+                onPlayEpisode = onPlayEpisode,
             )
         }
 
@@ -258,6 +260,7 @@ private fun VodBody(
     onSelectCategory: (String?) -> Unit,
     onPlayMovie: (String) -> Unit,
     onOpenSeries: (String) -> Unit,
+    onPlayEpisode: (String) -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Auf einem Handy im Querformat bleibt für das Poster-Raster sonst
@@ -328,8 +331,13 @@ private fun VodBody(
                         title = item.title,
                         subtitle = item.subtitle,
                         posterUrl = item.posterUrl,
+                        progress = item.progress,
                         onClick = {
-                            if (kind == StreamKind.VOD) onPlayMovie(item.id) else onOpenSeries(item.id)
+                            when {
+                                item.resumeEpisodeId != null -> onPlayEpisode(item.resumeEpisodeId)
+                                kind == StreamKind.VOD -> onPlayMovie(item.id)
+                                else -> onOpenSeries(item.id)
+                            }
                         },
                     )
                 }
@@ -343,6 +351,7 @@ private fun PosterCard(
     title: String,
     subtitle: String?,
     posterUrl: String?,
+    progress: Float?,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -377,6 +386,25 @@ private fun PosterCard(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
+                }
+
+                // Fortsetzpunkt aus "Zuletzt gesehen" – am unteren Bildrand,
+                // wie bei TiviMate und Netflix, damit man ihn nicht suchen muss.
+                if (progress != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(Color.Black.copy(alpha = 0.4f)),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(progress)
+                                .background(TvAccent),
+                        )
+                    }
                 }
             }
             Column(modifier = Modifier.padding(8.dp)) {

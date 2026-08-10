@@ -104,6 +104,36 @@ data class CurrentProgramRow(
     val title: String,
 )
 
+/** Zuletzt gesehener Film samt Fortsetzpunkt. */
+data class RecentMovieRow(
+    val streamId: String,
+    val name: String,
+    val posterUrl: String?,
+    val watchedAt: Long,
+    val positionMs: Long,
+    val durationMs: Long,
+)
+
+/**
+ * Zuletzt gesehene Folge samt ihrer Serie.
+ *
+ * Der Verlauf kennt nur Folgen – welche Serie dazugehört, steht erst in
+ * der Episodentabelle. Genau diese Verbindung braucht die Anzeige
+ * "Zuletzt gesehen", damit der Zuschauer nicht selbst nachsehen muss, bei
+ * welcher Staffel und Folge er stehengeblieben ist.
+ */
+data class RecentEpisodeRow(
+    val seriesId: String,
+    val seriesName: String,
+    val posterUrl: String?,
+    val episodeId: String,
+    val season: Int,
+    val episodeNumber: Int,
+    val watchedAt: Long,
+    val positionMs: Long,
+    val durationMs: Long,
+)
+
 /** Kategorie plus berechnete Senderanzahl (siehe [CategoryDao.observeWithCounts]). */
 data class CategoryWithCount(
     val playlistId: Long,
@@ -277,6 +307,46 @@ interface VodDao {
         """,
     )
     fun searchMovies(playlistId: Long, query: String, limit: Int): Flow<List<MovieEntity>>
+
+    /** Zuletzt gesehene Filme, neueste zuerst. */
+    @Query(
+        """
+        SELECT m.streamId AS streamId, m.name AS name, m.posterUrl AS posterUrl,
+               r.watchedAt AS watchedAt, r.positionMs AS positionMs, r.durationMs AS durationMs
+        FROM recents r
+        INNER JOIN movies m
+               ON m.playlistId = r.playlistId AND m.streamId = r.streamId
+        WHERE r.playlistId = :playlistId AND r.kind = 'VOD'
+        ORDER BY r.watchedAt DESC
+        LIMIT :limit
+        """,
+    )
+    fun observeRecentMovies(playlistId: Long, limit: Int): Flow<List<RecentMovieRow>>
+
+    /**
+     * Zuletzt gesehene Folgen, neueste zuerst – mit ihrer Serie.
+     *
+     * Bewusst ohne Gruppierung je Serie: Das ließe sich in SQL nur mit einer
+     * verschachtelten Unterabfrage lösen. Da der Verlauf ohnehin auf wenige
+     * Dutzend Einträge begrenzt ist, fasst der Aufrufer die Folgen einer
+     * Serie im Speicher zusammen – schlichter und leichter nachzuvollziehen.
+     */
+    @Query(
+        """
+        SELECT s.seriesId AS seriesId, s.name AS seriesName, s.posterUrl AS posterUrl,
+               e.episodeId AS episodeId, e.season AS season, e.episodeNumber AS episodeNumber,
+               r.watchedAt AS watchedAt, r.positionMs AS positionMs, r.durationMs AS durationMs
+        FROM recents r
+        INNER JOIN episodes e
+               ON e.playlistId = r.playlistId AND e.episodeId = r.streamId
+        INNER JOIN series s
+               ON s.playlistId = e.playlistId AND s.seriesId = e.seriesId
+        WHERE r.playlistId = :playlistId AND r.kind = 'SERIES'
+        ORDER BY r.watchedAt DESC
+        LIMIT :limit
+        """,
+    )
+    fun observeRecentEpisodes(playlistId: Long, limit: Int): Flow<List<RecentEpisodeRow>>
 
     /** Titelsuche über die Serien. */
     @Query(

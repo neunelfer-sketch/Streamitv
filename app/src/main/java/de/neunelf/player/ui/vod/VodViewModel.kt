@@ -25,7 +25,18 @@ data class VodItem(
     val title: String,
     val subtitle: String?,
     val posterUrl: String?,
+    /** Fortschritt 0f..1f für den Balken unten am Poster; null = kein Fortsetzpunkt. */
+    val progress: Float? = null,
+    /**
+     * Nur bei "Zuletzt gesehen"-Serien gesetzt: die zuletzt geschaute Folge.
+     * Ein Klick springt dann direkt in die Wiedergabe statt in die
+     * Staffelübersicht – der Zuschauer muss sich Staffel und Folge nicht merken.
+     */
+    val resumeEpisodeId: String? = null,
 )
+
+/** Synthetische Kategorie, immer an erster Stelle – siehe [VodViewModel]. */
+const val RECENT_CATEGORY_ID = "__recent__"
 
 data class VodUiState(
     val categories: List<Category> = emptyList(),
@@ -50,10 +61,58 @@ class VodViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val kind = MutableStateFlow(StreamKind.VOD)
-    private val selectedCategoryId = MutableStateFlow<String?>(null)
 
-    private val categories: StateFlow<List<Category>> = kind
+    // Startet direkt auf "Zuletzt gesehen" – genau das wollte der Nutzer:
+    // ohne Umweg über eine Kategorie zu dem springen, was zuletzt lief.
+    private val selectedCategoryId = MutableStateFlow<String?>(RECENT_CATEGORY_ID)
+
+    private val realCategories: StateFlow<List<Category>> = kind
         .flatMapLatest { repository.observeCategories(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Immer ganz oben, unabhängig vom Bereich – siehe [RECENT_CATEGORY_ID]. */
+    private val categories: StateFlow<List<Category>> = combine(kind, realCategories) { streamKind, real ->
+        val recentCategory = Category(
+            id = RECENT_CATEGORY_ID,
+            name = "Zuletzt gesehen",
+            kind = streamKind,
+            playlistId = 0L,
+        )
+        listOf(recentCategory) + real
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Zuletzt gesehene Filme bzw. Folgen, umgesetzt in Poster-Einträge mit Fortschritt. */
+    private val recentItems: StateFlow<List<VodItem>> = kind
+        .flatMapLatest { streamKind ->
+            if (streamKind == StreamKind.SERIES) {
+                repository.observeRecentEpisodes().map { rows ->
+                    // Je Serie nur die zuletzt geschaute Folge – die Liste ist
+                    // bereits nach watchedAt absteigend sortiert.
+                    rows.distinctBy { it.seriesId }.map { row ->
+                        VodItem(
+                            id = row.seriesId,
+                            title = row.seriesName,
+                            subtitle = "S%02dE%02d".format(row.season, row.episodeNumber),
+                            posterUrl = row.posterUrl,
+                            progress = progressOf(row.positionMs, row.durationMs),
+                            resumeEpisodeId = row.episodeId,
+                        )
+                    }
+                }
+            } else {
+                repository.observeRecentMovies().map { rows ->
+                    rows.map { row ->
+                        VodItem(
+                            id = row.streamId,
+                            title = row.name,
+                            subtitle = null,
+                            posterUrl = row.posterUrl,
+                            progress = progressOf(row.positionMs, row.durationMs),
+                        )
+                    }
+                }
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Die gemerkte Reihenfolge des gerade gezeigten Bereichs. */
@@ -67,7 +126,9 @@ class VodViewModel @Inject constructor(
             Triple(streamKind, categoryId, order)
         }
             .flatMapLatest { (streamKind, categoryId, order) ->
-                if (streamKind == StreamKind.SERIES) {
+                if (categoryId == RECENT_CATEGORY_ID) {
+                    recentItems
+                } else if (streamKind == StreamKind.SERIES) {
                     repository.observeSeries(categoryId).map { list ->
                         list.sortedFor(order, recentKey = { it.lastModified }, name = { it.name })
                             .map { series ->
@@ -115,8 +176,9 @@ class VodViewModel @Inject constructor(
     fun setKind(value: StreamKind) {
         if (kind.value != value) {
             kind.value = value
-            // Kategorie-Auswahl gilt nicht über Bereiche hinweg.
-            selectedCategoryId.value = null
+            // Kategorie-Auswahl gilt nicht über Bereiche hinweg – zurück auf
+            // "Zuletzt gesehen", ganz oben.
+            selectedCategoryId.value = RECENT_CATEGORY_ID
         }
     }
 
@@ -143,5 +205,18 @@ class VodViewModel @Inject constructor(
         VodSort.RECENT -> sortedByDescending { recentKey(it) }
         VodSort.NAME_ASC -> sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { name(it) })
         VodSort.NAME_DESC -> sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { name(it) })
+    }
+
+    /**
+     * Fortschritt für den Balken am Poster, 0f..1f.
+     *
+     * Nahe am Ende (>95 %) wird als "fertig geschaut" wie ein frischer Start
+     * behandelt (kein Balken) – sonst bliebe ein durchgeschauter Titel für
+     * immer mit vollem Balken in "Zuletzt gesehen" stehen.
+     */
+    private fun progressOf(positionMs: Long, durationMs: Long): Float? {
+        if (durationMs <= 0L) return null
+        val fraction = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+        return fraction.takeIf { it in 0.01f..0.95f }
     }
 }

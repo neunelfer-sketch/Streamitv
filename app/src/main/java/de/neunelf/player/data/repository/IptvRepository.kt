@@ -4,6 +4,8 @@ import de.neunelf.player.data.local.CategoryDao
 import de.neunelf.player.data.local.ChannelDao
 import de.neunelf.player.data.local.FavoriteEntity
 import de.neunelf.player.data.local.PlaylistDao
+import de.neunelf.player.data.local.RecentEpisodeRow
+import de.neunelf.player.data.local.RecentMovieRow
 import de.neunelf.player.data.local.RecentEntity
 import de.neunelf.player.data.local.UserDataDao
 import de.neunelf.player.data.local.VodDao
@@ -191,6 +193,20 @@ class IptvRepository @Inject constructor(
         playlistDao.observeActive().flatMapLatest { playlist ->
             if (playlist == null) return@flatMapLatest emptyFlow()
             vodDao.observeSeries(playlist.id, categoryId).map { list -> list.map { it.toModel() } }
+        }
+
+    /** Zuletzt gesehene Filme samt Fortsetzpunkt. */
+    fun observeRecentMovies(): Flow<List<RecentMovieRow>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest flowOf(emptyList())
+            vodDao.observeRecentMovies(playlist.id, RECENT_HISTORY_SIZE)
+        }
+
+    /** Zuletzt gesehene Folgen samt Serie und Fortsetzpunkt. */
+    fun observeRecentEpisodes(): Flow<List<RecentEpisodeRow>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest flowOf(emptyList())
+            vodDao.observeRecentEpisodes(playlist.id, RECENT_HISTORY_SIZE)
         }
 
     /** Titelsuche über Filme – für die übergreifende Suche. */

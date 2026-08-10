@@ -140,6 +140,7 @@ fun NeunelfPlayerNavHost(
                 kind = StreamKind.SERIES,
                 onPlayMovie = {},
                 onOpenSeries = { seriesId -> navController.navigate(Routes.seriesDetail(seriesId)) },
+                onPlayEpisode = { episodeId -> navController.navigate(Routes.episodePlayer(episodeId)) },
             )
         }
 
