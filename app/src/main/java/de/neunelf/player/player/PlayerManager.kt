@@ -12,6 +12,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
+import de.neunelf.player.R
 import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.model.AspectRatioMode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -401,19 +402,19 @@ class PlayerManager @Inject constructor(
         val message = when (error.errorCode) {
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
-            -> "Keine Verbindung zum Server"
+            -> context.getString(R.string.error_no_connection)
 
             PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ->
-                "Der Server hat den Stream abgelehnt (evtl. zu viele Verbindungen)"
+                context.getString(R.string.error_stream_rejected)
 
             PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ->
-                "Dieser Sender ist derzeit nicht verfügbar"
+                context.getString(R.string.error_channel_unavailable)
 
             PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
             PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
-            -> "Format wird von diesem Gerät nicht unterstützt"
+            -> context.getString(R.string.error_format_unsupported)
 
-            else -> "Wiedergabe fehlgeschlagen"
+            else -> context.getString(R.string.error_playback_failed)
         }
         return message.withErrorCode("${error.errorCode} ${error.errorCodeName}")
     }
@@ -440,7 +441,7 @@ class PlayerManager @Inject constructor(
                     TrackOption(
                         groupIndex = -1,
                         trackIndex = -1,
-                        label = "Aus",
+                        label = context.getString(R.string.player_subtitles_off),
                         language = null,
                         isSelected = !subtitlesEnabled,
                         isOffOption = true,
@@ -484,14 +485,15 @@ class PlayerManager @Inject constructor(
         if (trackType == C.TRACK_TYPE_AUDIO) {
             sampleMimeType?.substringAfterLast('/')?.uppercase()?.let { parts += it }
             when (channelCount) {
-                1 -> parts += "Mono"
-                2 -> parts += "Stereo"
+                1 -> parts += context.getString(R.string.audio_mono)
+                2 -> parts += context.getString(R.string.audio_stereo)
                 6 -> parts += "5.1"
                 8 -> parts += "7.1"
             }
         }
 
-        return parts.distinct().joinToString(" · ").ifBlank { "Spur ${fallbackIndex + 1}" }
+        return parts.distinct().joinToString(" · ")
+            .ifBlank { context.getString(R.string.player_track_fallback, fallbackIndex + 1) }
     }
 
     /** Vereinheitlicht ISO-639-1/2-Codes ("de" und "deu" sollen gleich sein). */

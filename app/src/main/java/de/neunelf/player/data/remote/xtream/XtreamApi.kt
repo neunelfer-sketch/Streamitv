@@ -1,5 +1,8 @@
 package de.neunelf.player.data.remote.xtream
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.data.model.StreamKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -49,13 +52,19 @@ data class XtreamCredentials(
     }
 }
 
-/** Fehler, die beim Sprechen mit dem Panel auftreten können. */
+/**
+ * Fehler, die beim Sprechen mit dem Panel auftreten können.
+ *
+ * Die Meldung wird fertig übersetzt hereingereicht: Diese Klassen landen
+ * über [de.neunelf.player.ui.login.LoginViewModel] direkt als Fehlertext auf
+ * dem Bildschirm, haben selbst aber keinen Zugriff auf die Ressourcen.
+ * Zusammengebaut werden die Texte deshalb in [XtreamApi].
+ */
 sealed class XtreamException(message: String, cause: Throwable? = null) : IOException(message, cause) {
-    class InvalidUrl(url: String) : XtreamException("Ungültige Server-URL: $url")
-    class Http(val code: Int, url: String) : XtreamException("HTTP $code bei $url")
-    class Auth(val reason: String) : XtreamException("Anmeldung fehlgeschlagen: $reason")
-    class Parse(endpoint: String, cause: Throwable) :
-        XtreamException("Antwort von $endpoint konnte nicht gelesen werden", cause)
+    class InvalidUrl(message: String) : XtreamException(message)
+    class Http(val code: Int, message: String) : XtreamException(message)
+    class Auth(message: String) : XtreamException(message)
+    class Parse(message: String, cause: Throwable) : XtreamException(message, cause)
 }
 
 /**
@@ -70,9 +79,14 @@ sealed class XtreamException(message: String, cause: Throwable? = null) : IOExce
  */
 @Singleton
 class XtreamApi @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val httpClient: OkHttpClient,
     private val json: Json,
 ) {
+
+    /** Baut eine Anmeldefehler-Meldung: "Anmeldung fehlgeschlagen: <Grund>". */
+    private fun authError(reason: String): XtreamException.Auth =
+        XtreamException.Auth(context.getString(R.string.error_login_failed, reason))
 
     // -----------------------------------------------------------------------
     // Öffentliche Endpunkte
@@ -85,12 +99,15 @@ class XtreamApi @Inject constructor(
     suspend fun authenticate(credentials: XtreamCredentials): XtreamAuthResponse {
         val body = request(credentials, action = null)
         val response = decode<XtreamAuthResponse>(body, "player_api.php")
-            ?: throw XtreamException.Auth("Leere Antwort vom Server")
+            ?: throw authError(context.getString(R.string.error_empty_server_response))
 
-        val info = response.userInfo ?: throw XtreamException.Auth("Server lieferte keine Kontodaten")
+        val info = response.userInfo
+            ?: throw authError(context.getString(R.string.error_no_account_data))
         if (!info.isAuthenticated) {
-            val reason = info.message.ifBlank { info.status.ifBlank { "Benutzername oder Passwort falsch" } }
-            throw XtreamException.Auth(reason)
+            val reason = info.message.ifBlank {
+                info.status.ifBlank { context.getString(R.string.error_wrong_credentials) }
+            }
+            throw authError(reason)
         }
         return response
     }
@@ -247,7 +264,14 @@ class XtreamApi @Inject constructor(
 
         httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw XtreamException.Http(response.code, url.redactCredentials())
+                throw XtreamException.Http(
+                    response.code,
+                    context.getString(
+                        R.string.error_http_at_url,
+                        response.code,
+                        url.redactCredentials(),
+                    ),
+                )
             }
             response.body?.string().orEmpty()
         }
@@ -260,7 +284,9 @@ class XtreamApi @Inject constructor(
     ): HttpUrl {
         val base = credentials.normalizedBaseUrl()
         val parsed = "$base/player_api.php".toHttpUrlOrNull()
-            ?: throw XtreamException.InvalidUrl(credentials.baseUrl)
+            ?: throw XtreamException.InvalidUrl(
+                context.getString(R.string.error_invalid_server_url, credentials.baseUrl),
+            )
 
         return parsed.newBuilder().apply {
             addQueryParameter("username", credentials.username)
@@ -286,7 +312,10 @@ class XtreamApi @Inject constructor(
                 else -> emptyList()
             }
         } catch (e: Exception) {
-            throw XtreamException.Parse(endpoint, e)
+            throw XtreamException.Parse(
+                context.getString(R.string.error_response_unreadable, endpoint),
+                e,
+            )
         }
     }
 
@@ -297,7 +326,10 @@ class XtreamApi @Inject constructor(
             val element = json.parseToJsonElement(trimmed)
             if (element is JsonObject) json.decodeFromJsonElement<T>(element) else null
         } catch (e: Exception) {
-            throw XtreamException.Parse(endpoint, e)
+            throw XtreamException.Parse(
+                context.getString(R.string.error_response_unreadable, endpoint),
+                e,
+            )
         }
     }
 }

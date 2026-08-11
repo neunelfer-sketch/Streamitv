@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">9elf Player</string>
+
+    <!-- Gezinme -->
+    <string name="nav_live">Canlı TV</string>
+    <string name="nav_guide">Yayın Akışı</string>
+    <string name="content_channels">Kanallar</string>
+    <string name="content_movies">Filmler</string>
+    <string name="content_series">Diziler</string>
+    <string name="search_title">Arama</string>
+    <string name="settings_title">Ayarlar</string>
+
+    <!-- Kategoriler -->
+    <string name="category_all">Tüm kanallar</string>
+    <string name="category_favorites">Favoriler</string>
+    <string name="category_recent">Son izlenenler</string>
+    <string name="favorite">Favori</string>
+    <string name="selected">Seçili</string>
+
+    <!-- Kurulum -->
+    <string name="login_title">9elf Player kurulumu</string>
+    <string name="login_subtitle">Oynatma listesi türünü seçin</string>
+    <string name="login_type_xtream">Xtream Codes</string>
+    <string name="login_type_m3u">M3U / M3U8 bağlantısı</string>
+    <string name="login_playlist_name">Liste adı</string>
+    <string name="login_server_url">Sunucu adresi (ör. http://server.tv:8080)</string>
+    <string name="login_username">Kullanıcı adı</string>
+    <string name="login_password">Parola</string>
+    <string name="login_m3u_url">M3U adresi</string>
+    <string name="login_epg_url">EPG adresi (XMLTV, isteğe bağlı)</string>
+    <string name="login_connect">Bağlan</string>
+    <string name="login_connecting">Bağlanıyor…</string>
+    <string name="login_subscription_expired">Aboneliğin süresi dolmuş</string>
+    <string name="playlist_default_name">Listem</string>
+
+    <!-- Ana ekran -->
+    <string name="home_loading_channels">Kanallar yükleniyor…</string>
+    <string name="home_no_channels">Bu kategoride kanal yok</string>
+    <string name="home_select_channel">Bir kanal seçin</string>
+    <string name="home_update_available">%1$s sürümü hazır – Ayarlar\'a bakın</string>
+
+    <!-- Yayın bilgisi -->
+    <string name="program_time_title">%1$s  %2$s</string>
+    <string name="program_time_remaining">%1$s · %2$s</string>
+    <string name="program_up_next">Sıradaki</string>
+    <string name="player_no_program">Yayın bilgisi yok</string>
+
+    <!-- Yayın akışı -->
+    <string name="guide_loading">Yayın akışı yükleniyor…</string>
+    <string name="guide_today">Bugün</string>
+    <string name="guide_tomorrow">Yarın</string>
+    <string name="guide_yesterday">Dün</string>
+    <string name="guide_previous_day">Önceki gün</string>
+    <string name="guide_next_day">Sonraki gün</string>
+    <string name="guide_now">Şimdi</string>
+    <string name="guide_selected_program">%1$s  ·  %2$s</string>
+
+    <!-- Oynatıcı -->
+    <string name="player_audio_track">Ses parçası</string>
+    <string name="player_subtitles">Altyazı</string>
+    <string name="player_subtitles_off">Kapalı</string>
+    <string name="player_format">Format</string>
+    <string name="player_add_favorite">Favorilere ekle</string>
+    <string name="player_remove_favorite">Favorilerden çıkar</string>
+    <string name="player_pip">Görüntü içinde görüntü</string>
+    <string name="player_buffering">Arabelleğe alınıyor…</string>
+    <string name="player_reconnecting">Yeniden bağlanılıyor… (%1$d/%2$d)</string>
+    <string name="player_switch_channel_hint">Başka bir kanal için ◀ / ▶ tuşlarını kullanın</string>
+    <string name="player_channel_number_prefix">"%1$d · "</string>
+    <string name="player_up_next">Sıradaki: %1$s %2$s</string>
+    <string name="player_play">Oynat</string>
+    <string name="player_pause">Duraklat</string>
+    <string name="player_position_of_duration">%1$s / %2$s</string>
+    <string name="player_track_fallback">%1$d. parça</string>
+    <string name="audio_mono">Mono</string>
+    <string name="audio_stereo">Stereo</string>
+
+    <string name="aspect_ratio_fit">Sığdır</string>
+    <string name="aspect_ratio_fill">Doldur</string>
+    <string name="aspect_ratio_zoom">Yakınlaştır</string>
+    <string name="aspect_ratio_16_9">16:9</string>
+    <string name="aspect_ratio_4_3">4:3</string>
+
+    <!-- Filmler ve diziler -->
+    <string name="vod_sort_recent">Yeni eklenenler</string>
+    <string name="vod_sort_name_asc">Ad A–Z</string>
+    <string name="vod_sort_name_desc">Ad Z–A</string>
+    <string name="vod_sort_by">Sıralama ölçütü</string>
+    <string name="vod_sort_action">Sırala</string>
+    <string name="rating_stars">★ %1$s</string>
+    <string name="series_loading_episodes">Bölümler yükleniyor…</string>
+    <string name="series_no_episodes">Bölüm bulunamadı</string>
+    <string name="series_season">%1$d. sezon</string>
+
+    <!-- Arama -->
+    <string name="search_field_label">Başlık veya kanal</string>
+    <string name="search_hint_empty">Bir başlık yazın – kanallarda, filmlerde ve dizilerde aranır.</string>
+    <string name="search_no_results">“%1$s” için sonuç bulunamadı.</string>
+    <string name="search_channel_position">Sıra %1$d</string>
+    <string name="search_section_header">%1$s  ·  %2$d</string>
+
+    <!-- Ayarlar -->
+    <string name="settings_section_playlist">Oynatma listesi</string>
+    <string name="settings_active_playlist">Etkin liste</string>
+    <string name="settings_playlist_none">Yok</string>
+    <string name="settings_refresh_channels">Kanal listesini yenile</string>
+    <string name="settings_epg_source">EPG kaynağı</string>
+    <string name="settings_epg_source_auto">Otomatik (panel verileri)</string>
+    <string name="settings_refresh_epg">Yayın akışını yenile</string>
+    <string name="settings_remove_playlist">Listeyi kaldır</string>
+    <string name="settings_remove_playlist_desc">Bu listeye ait tüm yerel verileri siler</string>
+
+    <string name="settings_section_playback">Oynatma</string>
+    <string name="settings_buffer_size">Arabellek boyutu</string>
+    <string name="settings_buffer_seconds">%1$d sn</string>
+    <string name="settings_buffer_small">Küçük (5 sn) – en hızlı geçiş</string>
+    <string name="settings_buffer_medium">Orta (15 sn) – varsayılan</string>
+    <string name="settings_buffer_large">Büyük (30 sn) – zayıf Wi-Fi</string>
+    <string name="settings_buffer_xlarge">Çok büyük (60 sn)</string>
+    <string name="settings_stream_format">Yayın formatı</string>
+    <string name="settings_stream_format_hls">HLS (.m3u8) – kalite geçişi daha akıcı</string>
+    <string name="settings_stream_format_ts">MPEG-TS (.ts) – daha hızlı başlar</string>
+    <string name="settings_aspect_ratio">En boy oranı</string>
+    <string name="settings_preferred_audio">Tercih edilen ses parçası</string>
+    <string name="settings_audio_auto">Otomatik</string>
+    <string name="settings_subtitles">Altyazı</string>
+    <string name="settings_on">Açık</string>
+    <string name="settings_off">Kapalı</string>
+    <string name="settings_live_preview">Canlı önizleme</string>
+    <string name="settings_live_preview_on">Açık – seçili kanal sağdaki önizlemede oynar</string>
+    <string name="settings_live_preview_off">Kapalı – sunucuya bir bağlantı tasarrufu sağlar</string>
+
+    <string name="settings_section_app">Uygulama</string>
+    <string name="settings_language">Dil</string>
+    <string name="settings_language_system">Sistem dili</string>
+    <string name="settings_extend_access">Erişimi uzat</string>
+    <string name="settings_extend_access_desc">9elf ile sohbet için QR kod</string>
+    <string name="settings_update">Güncelleme</string>
+    <string name="settings_about_value">Sürüm %1$s · önbellekte %2$d EPG kaydı</string>
+    <string name="settings_sync_never">Hiç</string>
+    <string name="settings_sync_today">Bugün %1$s</string>
+    <string name="settings_sync_datetime">%1$s %2$s</string>
+
+    <!-- Yerleşik güncelleme -->
+    <string name="update_unknown">Yeni sürüm aramak için OK\'a basın</string>
+    <string name="update_checking">Aranıyor…</string>
+    <string name="update_up_to_date">Bu sürüm güncel</string>
+    <string name="update_available">%1$s sürümü hazır · indirmek için OK</string>
+    <string name="update_downloading">İndiriliyor… %%%1$d</string>
+    <string name="update_ready">%1$s sürümü indirildi · kurmak için OK</string>
+    <string name="update_failed">Başarısız: %1$s · yeniden denemek için OK</string>
+    <string name="update_check_failed">Denetim başarısız</string>
+    <string name="update_install_permission">Lütfen 9elf Player için kuruluma izin verip yeniden OK\'a basın</string>
+
+    <!-- İletişim -->
+    <string name="contact_scan_hint">Kodu telefon kameranızla okutun – sohbet doğrudan SimpleX\'te açılır.</string>
+    <string name="contact_qr_description">9elf ile sohbet için QR kod</string>
+
+    <!-- EPG kaynağı -->
+    <string name="epg_source_hint">Bir XMLTV dosyasının adresi. Xtream\'de panelin kendi yayın verilerini kullanmak için boş bırakın.</string>
+    <string name="epg_source_xmltv_url">XMLTV adresi</string>
+    <string name="epg_source_save">Kaydet ve yayın verilerini yükle</string>
+    <string name="epg_source_note">Yayın verileri, ana ekranı bir sonraki açışınızda yüklenir. Büyük dosyalarda bu birkaç dakika sürebilir.</string>
+    <string name="epg_source_removed">EPG kaynağı kaldırıldı – panelin kendi verileri kullanılacak</string>
+    <string name="epg_source_saved">EPG kaynağı kaydedildi</string>
+    <string name="epg_no_source_configured">EPG kaynağı tanımlanmamış</string>
+    <string name="epg_parsing">Yayın verileri işleniyor…</string>
+    <string name="epg_programs_loaded">%1$d yayın yüklendi</string>
+
+    <!-- Liste içe aktarma -->
+    <string name="sync_connecting">Sunucuya bağlanılıyor…</string>
+    <string name="sync_loading_channels">Kanallar yükleniyor…</string>
+    <string name="sync_saving_channels">%1$d kanal kaydediliyor…</string>
+    <string name="sync_loading_movies">Filmler yükleniyor…</string>
+    <string name="sync_loading_series">Diziler yükleniyor…</string>
+    <string name="sync_saving_series">%1$d dizi kaydediliyor…</string>
+    <string name="sync_loading_playlist">Liste yükleniyor…</string>
+    <string name="sync_parsing_playlist">Liste işleniyor…</string>
+    <string name="sync_done">Tamam</string>
+    <string name="sync_live_ready">%1$d kanal yüklendi, filmler ve diziler geliyor…</string>
+    <string name="sync_channels_updated">%1$d kanal güncellendi</string>
+    <string name="sync_vod_in_background">Filmler ve diziler arka planda yükleniyor…</string>
+
+    <!-- Süre -->
+    <string name="duration_minutes">%1$d dk</string>
+    <string name="duration_hours">%1$d sa</string>
+    <string name="duration_hours_minutes">%1$d sa %2$d dk</string>
+    <string name="duration_remaining">%1$s kaldı</string>
+
+    <!-- Hatalar -->
+    <string name="error_with_message">Hata: %1$s</string>
+    <string name="error_unknown">Bilinmeyen hata</string>
+    <string name="error_no_connection">Sunucuya bağlanılamıyor</string>
+    <string name="error_stream_rejected">Sunucu yayını reddetti (bağlantı sayısı aşılmış olabilir)</string>
+    <string name="error_channel_unavailable">Bu kanal şu anda kullanılamıyor</string>
+    <string name="error_format_unsupported">Bu cihaz bu formatı desteklemiyor</string>
+    <string name="error_playback_failed">Oynatma başarısız</string>
+    <string name="error_content_not_loaded">İçerik yüklenemedi</string>
+    <string name="error_connection_failed">Bağlantı başarısız</string>
+    <string name="error_http_status">Sunucu HTTP %1$d yanıtı verdi</string>
+    <string name="error_github_http_status">GitHub HTTP %1$d yanıtı verdi</string>
+    <string name="error_empty_response">Boş yanıt</string>
+    <string name="error_empty_server_response">Sunucudan boş yanıt</string>
+    <string name="error_no_account_data">Sunucu hesap bilgisi döndürmedi</string>
+    <string name="error_wrong_credentials">Kullanıcı adı veya parola hatalı</string>
+    <string name="error_login_failed">Oturum açılamadı: %1$s</string>
+    <string name="error_invalid_server_url">Geçersiz sunucu adresi: %1$s</string>
+    <string name="error_http_at_url">%2$s adresinde HTTP %1$d</string>
+    <string name="error_response_unreadable">%1$s yanıtı okunamadı</string>
+    <string name="error_update_file_move">İndirilen dosya kaydedilemedi</string>
+
+</resources>

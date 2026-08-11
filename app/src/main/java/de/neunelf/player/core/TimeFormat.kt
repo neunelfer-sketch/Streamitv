@@ -1,5 +1,7 @@
 package de.neunelf.player.core
 
+import android.content.Context
+import de.neunelf.player.R
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -12,15 +14,37 @@ import java.util.concurrent.TimeUnit
  * Zeitformatierung für die Oberfläche.
  *
  * Alle Zeitstempel in der App sind UTC-Millisekunden; erst hier wird in die
- * Gerätezeitzone umgerechnet. Die Formatter sind statisch, weil sie in
- * Listen sehr häufig aufgerufen werden und `DateTimeFormatter` (anders als
- * `SimpleDateFormat`) threadsicher ist.
+ * Gerätezeitzone umgerechnet. Die Formatter werden zwischengespeichert, weil
+ * sie in Listen sehr häufig aufgerufen werden und `DateTimeFormatter` (anders
+ * als `SimpleDateFormat`) threadsicher ist.
  */
 object TimeFormat {
 
-    private val CLOCK: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.GERMANY)
-    private val DAY_SHORT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.GERMANY)
-    private val DAY_LONG: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, dd. MMMM", Locale.GERMANY)
+    /**
+     * Zwischenspeicher der Formatter, gebunden an die aktive Sprache.
+     *
+     * Wochentags- und Monatsnamen kommen aus der [Locale] – ein fest
+     * verdrahtetes `Locale.GERMANY` (wie bis hierher) hätte "Mo"/"August"
+     * auch dann geliefert, wenn die App auf Türkisch läuft. Weil die
+     * Sprache zur Laufzeit umschaltbar ist, wird der Zwischenspeicher
+     * verworfen, sobald sich die Standard-Locale ändert.
+     */
+    private class Formatters(val locale: Locale) {
+        val clock: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", locale)
+        val dayShort: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE dd.MM.", locale)
+        val dayLong: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, dd. MMMM", locale)
+    }
+
+    @Volatile
+    private var cached: Formatters = Formatters(Locale.getDefault())
+
+    private val formatters: Formatters
+        get() {
+            val current = Locale.getDefault()
+            val existing = cached
+            if (existing.locale == current) return existing
+            return Formatters(current).also { cached = it }
+        }
 
     private val zone: ZoneId get() = ZoneId.systemDefault()
 
@@ -28,31 +52,39 @@ object TimeFormat {
         Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDateTime()
 
     /** "20:15" */
-    fun clock(epochMillis: Long): String = CLOCK.format(toLocal(epochMillis))
+    fun clock(epochMillis: Long): String = formatters.clock.format(toLocal(epochMillis))
 
     /** "20:15 – 21:45" */
     fun range(startMillis: Long, endMillis: Long): String =
         "${clock(startMillis)} – ${clock(endMillis)}"
 
     /** "Mo 09.08." */
-    fun dayShort(epochMillis: Long): String = DAY_SHORT.format(toLocal(epochMillis))
+    fun dayShort(epochMillis: Long): String = formatters.dayShort.format(toLocal(epochMillis))
 
     /** "Montag, 09. August" */
-    fun dayLong(epochMillis: Long): String = DAY_LONG.format(toLocal(epochMillis))
+    fun dayLong(epochMillis: Long): String = formatters.dayLong.format(toLocal(epochMillis))
 
     /** "90 Min." bzw. "1 Std. 30 Min." */
-    fun duration(durationMillis: Long): String {
+    fun duration(context: Context, durationMillis: Long): String {
         val totalMinutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
-        if (totalMinutes < 60) return "$totalMinutes Min."
+        if (totalMinutes < 60) return context.getString(R.string.duration_minutes, totalMinutes)
         val hours = totalMinutes / 60
         val minutes = totalMinutes % 60
-        return if (minutes == 0L) "$hours Std." else "$hours Std. $minutes Min."
+        return if (minutes == 0L) {
+            context.getString(R.string.duration_hours, hours)
+        } else {
+            context.getString(R.string.duration_hours_minutes, hours, minutes)
+        }
     }
 
     /** "noch 23 Min." – Restlaufzeit der aktuellen Sendung. */
-    fun remaining(endMillis: Long, now: Long = System.currentTimeMillis()): String {
+    fun remaining(
+        context: Context,
+        endMillis: Long,
+        now: Long = System.currentTimeMillis(),
+    ): String {
         val remaining = (endMillis - now).coerceAtLeast(0L)
-        return "noch ${duration(remaining)}"
+        return context.getString(R.string.duration_remaining, duration(context, remaining))
     }
 
     /** Wiedergabeposition im Player: "1:23:45" bzw. "23:45". */
@@ -62,9 +94,9 @@ object TimeFormat {
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
         return if (hours > 0) {
-            String.format(Locale.GERMANY, "%d:%02d:%02d", hours, minutes, seconds)
+            String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
         } else {
-            String.format(Locale.GERMANY, "%d:%02d", minutes, seconds)
+            String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
         }
     }
 

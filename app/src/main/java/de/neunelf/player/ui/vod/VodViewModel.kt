@@ -1,7 +1,10 @@
 package de.neunelf.player.ui.vod
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.data.model.Category
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.model.VodSort
@@ -56,6 +59,7 @@ data class VodUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class VodViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: IptvRepository,
     private val settingsStore: SettingsStore,
 ) : ViewModel() {
@@ -120,7 +124,7 @@ class VodViewModel @Inject constructor(
             if (!hasRecent) return@combine real
             val recentCategory = Category(
                 id = RECENT_CATEGORY_ID,
-                name = "Zuletzt gesehen",
+                name = context.getString(R.string.category_recent),
                 kind = streamKind,
                 playlistId = 0L,
             )
@@ -184,7 +188,16 @@ class VodViewModel @Inject constructor(
                                     id = movie.streamId,
                                     title = movie.name,
                                     subtitle = movie.year
-                                        ?: movie.rating.takeIf { it > 0 }?.let { "★ %.1f".format(it) },
+                                        ?: movie.rating.takeIf { it > 0 }?.let {
+                                            // Die Zahl wird hier formatiert, die
+                                            // Ressource trägt nur das Sternsymbol –
+                                            // "%.1f" liesse sich in XML nicht sauber
+                                            // von einem Platzhalter unterscheiden.
+                                            context.getString(
+                                                R.string.rating_stars,
+                                                "%.1f".format(it),
+                                            )
+                                        },
                                     posterUrl = movie.posterUrl,
                                 )
                             }

@@ -1,6 +1,7 @@
 package de.neunelf.player.data.prefs
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -8,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import de.neunelf.player.R
 import de.neunelf.player.data.model.AspectRatioMode
 import de.neunelf.player.data.model.Playlist
 import de.neunelf.player.data.model.PlaylistType
@@ -18,6 +20,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "neunelf_player_settings")
+
+/**
+ * Eine auswählbare Puffergröße: Beschriftung als Ressourcen-Kennung,
+ * damit sie der jeweils eingestellten Sprache folgt.
+ */
+data class BufferPreset(
+    @StringRes val labelRes: Int,
+    val valueMs: Int,
+)
 
 /** Nutzereinstellungen der App. */
 data class AppSettings(
@@ -146,7 +157,8 @@ class SettingsStore(
         if (!hasSource) return null
 
         return Playlist(
-            name = prefs[KEY_PL_NAME].orEmpty().ifBlank { "Meine Playlist" },
+            name = prefs[KEY_PL_NAME].orEmpty()
+                .ifBlank { context.getString(R.string.playlist_default_name) },
             type = type,
             serverUrl = serverUrl,
             username = prefs[KEY_PL_USER].orEmpty(),
@@ -193,12 +205,16 @@ class SettingsStore(
          * Faustregel auf TV-Sticks: kleiner Puffer = schneller Kanalwechsel,
          * größerer Puffer = weniger Aussetzer im WLAN. 15 s ist der
          * Kompromiss, mit dem die meisten Fire TV Sticks stabil laufen.
+         *
+         * Die Beschriftung steht als Ressourcen-Kennung hier, nicht als
+         * fertiger Text: Diese Liste ist eine Konstante ohne Zugriff auf
+         * einen Context, den Text holt daher erst die Oberfläche.
          */
-        val BUFFER_PRESETS = linkedMapOf(
-            "Klein (5 s) – schnellster Zap" to 5_000,
-            "Mittel (15 s) – Standard" to 15_000,
-            "Groß (30 s) – schwaches WLAN" to 30_000,
-            "Sehr groß (60 s)" to 60_000,
+        val BUFFER_PRESETS = listOf(
+            BufferPreset(R.string.settings_buffer_small, 5_000),
+            BufferPreset(R.string.settings_buffer_medium, 15_000),
+            BufferPreset(R.string.settings_buffer_large, 30_000),
+            BufferPreset(R.string.settings_buffer_xlarge, 60_000),
         )
     }
 }

@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -27,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import de.neunelf.player.R
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvBackground
 import de.neunelf.player.ui.theme.TvOnSurface
@@ -69,11 +71,13 @@ fun EpgSourceScreen(
                 vertical = TvSpacing.overscanVertical,
             ),
     ) {
-        Text("EPG-Quelle", style = MaterialTheme.typography.headlineLarge)
+        Text(
+            stringResource(R.string.settings_epg_source),
+            style = MaterialTheme.typography.headlineLarge,
+        )
         Spacer(Modifier.height(TvSpacing.small))
         Text(
-            text = "Adresse einer XMLTV-Datei. Leer lassen, um bei Xtream die " +
-                "Programmdaten des Panels zu verwenden.",
+            text = stringResource(R.string.epg_source_hint),
             style = MaterialTheme.typography.bodyLarge,
             color = TvOnSurfaceMuted,
         )
@@ -83,7 +87,9 @@ fun EpgSourceScreen(
         OutlinedTextField(
             value = url,
             onValueChange = { url = it },
-            label = { androidx.compose.material3.Text("XMLTV-URL") },
+            label = {
+                androidx.compose.material3.Text(stringResource(R.string.epg_source_xmltv_url))
+            },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri,
@@ -114,14 +120,12 @@ fun EpgSourceScreen(
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Speichern und Programmdaten laden")
+            Text(stringResource(R.string.epg_source_save))
         }
 
         Spacer(Modifier.height(TvSpacing.small))
         Text(
-            text = "Die Programmdaten werden anschließend beim nächsten Aufruf " +
-                "des Hauptbildschirms geladen. Bei großen Dateien dauert das " +
-                "einige Minuten.",
+            text = stringResource(R.string.epg_source_note),
             style = MaterialTheme.typography.bodyMedium,
             color = TvOnSurfaceMuted,
         )

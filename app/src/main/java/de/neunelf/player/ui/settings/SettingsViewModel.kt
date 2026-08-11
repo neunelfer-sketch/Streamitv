@@ -1,9 +1,12 @@
 package de.neunelf.player.ui.settings
 
+import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.AspectRatioMode
 import de.neunelf.player.data.prefs.AppLanguage
@@ -42,8 +45,10 @@ sealed interface UpdateUiState {
 data class SettingsUiState(
     val settings: AppSettings = AppSettings(),
     val playlistName: String? = null,
-    val lastSyncLabel: String = "Nie",
-    val lastEpgSyncLabel: String = "Nie",
+    /** Leer, solange der erste Wert aus der Datenbank aussteht – die
+     *  Oberfläche setzt dafür "Nie" ein (siehe SettingsScreen). */
+    val lastSyncLabel: String = "",
+    val lastEpgSyncLabel: String = "",
     val programCount: Int = 0,
     val message: String? = null,
     val currentVersion: String = "",
@@ -55,6 +60,7 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: IptvRepository,
     private val epgRepository: EpgRepository,
     private val syncer: PlaylistSyncer,
@@ -132,7 +138,11 @@ class SettingsViewModel @Inject constructor(
                     onSuccess = { info ->
                         if (info == null) UpdateUiState.UpToDate else UpdateUiState.Available(info)
                     },
-                    onFailure = { UpdateUiState.Failed(it.message ?: "Prüfung fehlgeschlagen") },
+                    onFailure = {
+                        UpdateUiState.Failed(
+                            it.message ?: context.getString(R.string.update_check_failed),
+                        )
+                    },
                 )
         }
     }
@@ -157,7 +167,7 @@ class SettingsViewModel @Inject constructor(
         // der Hinweis erklärt, warum gerade nichts installiert wurde.
         val started = updateRepository.install(file)
         if (!started) {
-            message.value = "Bitte die Installation für 9elf Player erlauben und erneut OK drücken"
+            message.value = context.getString(R.string.update_install_permission)
         }
     }
 
@@ -171,9 +181,14 @@ class SettingsViewModel @Inject constructor(
             syncer.sync(playlist).collect { progress ->
                 message.value = when (progress) {
                     is SyncProgress.Step -> progress.message
-                    is SyncProgress.LiveReady -> "${progress.channels} Sender geladen, Filme/Serien folgen…"
-                    is SyncProgress.Done -> "${progress.channels} Sender aktualisiert"
-                    is SyncProgress.Failed -> "Fehler: ${progress.message}"
+                    is SyncProgress.LiveReady ->
+                        context.getString(R.string.sync_live_ready, progress.channels)
+
+                    is SyncProgress.Done ->
+                        context.getString(R.string.sync_channels_updated, progress.channels)
+
+                    is SyncProgress.Failed ->
+                        context.getString(R.string.error_with_message, progress.message)
                 }
             }
         }
@@ -185,8 +200,11 @@ class SettingsViewModel @Inject constructor(
             epgRepository.refresh(playlist).collect { progress ->
                 message.value = when (progress) {
                     is EpgSyncProgress.Step -> progress.message
-                    is EpgSyncProgress.Done -> "${progress.programCount} Sendungen geladen"
-                    is EpgSyncProgress.Failed -> "Fehler: ${progress.message}"
+                    is EpgSyncProgress.Done ->
+                        context.getString(R.string.epg_programs_loaded, progress.programCount)
+
+                    is EpgSyncProgress.Failed ->
+                        context.getString(R.string.error_with_message, progress.message)
                 }
             }
             programCount.value = epgRepository.programCount(playlist.id)
@@ -198,9 +216,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             repository.updateEpgUrl(url)
             message.value = if (url.isBlank()) {
-                "EPG-Quelle entfernt - es werden die Daten des Panels verwendet"
+                context.getString(R.string.epg_source_removed)
             } else {
-                "EPG-Quelle gespeichert"
+                context.getString(R.string.epg_source_saved)
             }
         }
     }
@@ -235,7 +253,7 @@ class SettingsViewModel @Inject constructor(
     /** Schaltet zyklisch durch die Puffer-Voreinstellungen. */
     fun cycleBuffer() {
         viewModelScope.launch {
-            val values = SettingsStore.BUFFER_PRESETS.values.toList()
+            val values = SettingsStore.BUFFER_PRESETS.map { it.valueMs }
             val current = settingsStore.settings.first().bufferMs
             val nextIndex = (values.indexOf(current) + 1).takeIf { it in values.indices } ?: 0
             settingsStore.setBufferMs(values[nextIndex])
@@ -282,12 +300,16 @@ class SettingsViewModel @Inject constructor(
 
     /** "Nie" oder "Heute 14:32" / "Mo 05.08. 09:11". */
     private fun Long?.toLabel(): String {
-        if (this == null || this == 0L) return "Nie"
+        if (this == null || this == 0L) return context.getString(R.string.settings_sync_never)
         val isToday = TimeFormat.startOfDay(this) == TimeFormat.startOfDay(System.currentTimeMillis())
         return if (isToday) {
-            "Heute ${TimeFormat.clock(this)}"
+            context.getString(R.string.settings_sync_today, TimeFormat.clock(this))
         } else {
-            "${TimeFormat.dayShort(this)} ${TimeFormat.clock(this)}"
+            context.getString(
+                R.string.settings_sync_datetime,
+                TimeFormat.dayShort(this),
+                TimeFormat.clock(this),
+            )
         }
     }
 }

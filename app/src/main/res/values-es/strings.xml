@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">9elf Player</string>
+
+    <!-- Navegación -->
+    <string name="nav_live">TV en directo</string>
+    <string name="nav_guide">Guía de TV</string>
+    <string name="content_channels">Canales</string>
+    <string name="content_movies">Películas</string>
+    <string name="content_series">Series</string>
+    <string name="search_title">Buscar</string>
+    <string name="settings_title">Ajustes</string>
+
+    <!-- Categorías -->
+    <string name="category_all">Todos los canales</string>
+    <string name="category_favorites">Favoritos</string>
+    <string name="category_recent">Vistos recientemente</string>
+    <string name="favorite">Favorito</string>
+    <string name="selected">Seleccionado</string>
+
+    <!-- Configuración -->
+    <string name="login_title">Configurar 9elf Player</string>
+    <string name="login_subtitle">Elige el tipo de lista</string>
+    <string name="login_type_xtream">Xtream Codes</string>
+    <string name="login_type_m3u">Enlace M3U / M3U8</string>
+    <string name="login_playlist_name">Nombre de la lista</string>
+    <string name="login_server_url">Dirección del servidor (p. ej. http://server.tv:8080)</string>
+    <string name="login_username">Nombre de usuario</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_m3u_url">Dirección M3U</string>
+    <string name="login_epg_url">Dirección EPG (XMLTV, opcional)</string>
+    <string name="login_connect">Conectar</string>
+    <string name="login_connecting">Conectando…</string>
+    <string name="login_subscription_expired">La suscripción ha caducado</string>
+    <string name="playlist_default_name">Mi lista</string>
+
+    <!-- Pantalla principal -->
+    <string name="home_loading_channels">Cargando canales…</string>
+    <string name="home_no_channels">No hay canales en esta categoría</string>
+    <string name="home_select_channel">Selecciona un canal</string>
+    <string name="home_update_available">Versión %1$s disponible – consulta Ajustes</string>
+
+    <!-- Programación -->
+    <string name="program_time_title">%1$s  %2$s</string>
+    <string name="program_time_remaining">%1$s · %2$s</string>
+    <string name="program_up_next">A continuación</string>
+    <string name="player_no_program">Sin información del programa</string>
+
+    <!-- Guía de TV -->
+    <string name="guide_loading">Cargando la guía de TV…</string>
+    <string name="guide_today">Hoy</string>
+    <string name="guide_tomorrow">Mañana</string>
+    <string name="guide_yesterday">Ayer</string>
+    <string name="guide_previous_day">Día anterior</string>
+    <string name="guide_next_day">Día siguiente</string>
+    <string name="guide_now">Ahora</string>
+    <string name="guide_selected_program">%1$s  ·  %2$s</string>
+
+    <!-- Reproductor -->
+    <string name="player_audio_track">Pista de audio</string>
+    <string name="player_subtitles">Subtítulos</string>
+    <string name="player_subtitles_off">Desactivados</string>
+    <string name="player_format">Formato</string>
+    <string name="player_add_favorite">Añadir a favoritos</string>
+    <string name="player_remove_favorite">Quitar de favoritos</string>
+    <string name="player_pip">Imagen en imagen</string>
+    <string name="player_buffering">Almacenando en búfer…</string>
+    <string name="player_reconnecting">Reconectando… (%1$d/%2$d)</string>
+    <string name="player_switch_channel_hint">Usa ◀ / ▶ para elegir otro canal</string>
+    <string name="player_channel_number_prefix">"%1$d · "</string>
+    <string name="player_up_next">A continuación: %1$s %2$s</string>
+    <string name="player_play">Reproducir</string>
+    <string name="player_pause">Pausa</string>
+    <string name="player_position_of_duration">%1$s / %2$s</string>
+    <string name="player_track_fallback">Pista %1$d</string>
+    <string name="audio_mono">Mono</string>
+    <string name="audio_stereo">Estéreo</string>
+
+    <string name="aspect_ratio_fit">Ajustar</string>
+    <string name="aspect_ratio_fill">Rellenar</string>
+    <string name="aspect_ratio_zoom">Zoom</string>
+    <string name="aspect_ratio_16_9">16:9</string>
+    <string name="aspect_ratio_4_3">4:3</string>
+
+    <!-- Películas y series -->
+    <string name="vod_sort_recent">Añadidos recientemente</string>
+    <string name="vod_sort_name_asc">Nombre A–Z</string>
+    <string name="vod_sort_name_desc">Nombre Z–A</string>
+    <string name="vod_sort_by">Ordenar por</string>
+    <string name="vod_sort_action">Ordenar</string>
+    <string name="rating_stars">★ %1$s</string>
+    <string name="series_loading_episodes">Cargando episodios…</string>
+    <string name="series_no_episodes">No se han encontrado episodios</string>
+    <string name="series_season">Temporada %1$d</string>
+
+    <!-- Búsqueda -->
+    <string name="search_field_label">Título o canal</string>
+    <string name="search_hint_empty">Escribe un título: se busca en canales, películas y series.</string>
+    <string name="search_no_results">No se ha encontrado nada para «%1$s».</string>
+    <string name="search_channel_position">N.º %1$d</string>
+    <string name="search_section_header">%1$s  ·  %2$d</string>
+
+    <!-- Ajustes -->
+    <string name="settings_section_playlist">Lista</string>
+    <string name="settings_active_playlist">Lista activa</string>
+    <string name="settings_playlist_none">Ninguna</string>
+    <string name="settings_refresh_channels">Actualizar lista de canales</string>
+    <string name="settings_epg_source">Fuente de EPG</string>
+    <string name="settings_epg_source_auto">Automática (datos del panel)</string>
+    <string name="settings_refresh_epg">Actualizar la guía de TV</string>
+    <string name="settings_remove_playlist">Eliminar lista</string>
+    <string name="settings_remove_playlist_desc">Borra todos los datos locales de esta lista</string>
+
+    <string name="settings_section_playback">Reproducción</string>
+    <string name="settings_buffer_size">Tamaño del búfer</string>
+    <string name="settings_buffer_seconds">%1$d s</string>
+    <string name="settings_buffer_small">Pequeño (5 s): cambio de canal más rápido</string>
+    <string name="settings_buffer_medium">Medio (15 s): predeterminado</string>
+    <string name="settings_buffer_large">Grande (30 s): wifi débil</string>
+    <string name="settings_buffer_xlarge">Muy grande (60 s)</string>
+    <string name="settings_stream_format">Formato de emisión</string>
+    <string name="settings_stream_format_hls">HLS (.m3u8): mejor cambio de calidad</string>
+    <string name="settings_stream_format_ts">MPEG-TS (.ts): arranca más rápido</string>
+    <string name="settings_aspect_ratio">Relación de aspecto</string>
+    <string name="settings_preferred_audio">Pista de audio preferida</string>
+    <string name="settings_audio_auto">Automática</string>
+    <string name="settings_subtitles">Subtítulos</string>
+    <string name="settings_on">Activados</string>
+    <string name="settings_off">Desactivados</string>
+    <string name="settings_live_preview">Vista previa en directo</string>
+    <string name="settings_live_preview_on">Activada: el canal seleccionado se reproduce en la vista previa de la derecha</string>
+    <string name="settings_live_preview_off">Desactivada: ahorra una conexión al servidor</string>
+
+    <string name="settings_section_app">Aplicación</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_system">Idioma del sistema</string>
+    <string name="settings_extend_access">Renovar acceso</string>
+    <string name="settings_extend_access_desc">Código QR para chatear con 9elf</string>
+    <string name="settings_update">Actualización</string>
+    <string name="settings_about_value">Versión %1$s · %2$d entradas de EPG en caché</string>
+    <string name="settings_sync_never">Nunca</string>
+    <string name="settings_sync_today">Hoy %1$s</string>
+    <string name="settings_sync_datetime">%1$s %2$s</string>
+
+    <!-- Actualización integrada -->
+    <string name="update_unknown">Pulsa OK para buscar una versión nueva</string>
+    <string name="update_checking">Buscando…</string>
+    <string name="update_up_to_date">Esta versión está actualizada</string>
+    <string name="update_available">Versión %1$s disponible · OK para descargar</string>
+    <string name="update_downloading">Descargando… %1$d %%</string>
+    <string name="update_ready">Versión %1$s descargada · OK para instalar</string>
+    <string name="update_failed">Error: %1$s · OK para reintentar</string>
+    <string name="update_check_failed">No se pudo comprobar</string>
+    <string name="update_install_permission">Permite la instalación para 9elf Player y vuelve a pulsar OK</string>
+
+    <!-- Contacto -->
+    <string name="contact_scan_hint">Escanea el código con la cámara del móvil: el chat se abre directamente en SimpleX.</string>
+    <string name="contact_qr_description">Código QR para chatear con 9elf</string>
+
+    <!-- Fuente de EPG -->
+    <string name="epg_source_hint">Dirección de un archivo XMLTV. Déjalo vacío para usar los datos de programación del propio panel de Xtream.</string>
+    <string name="epg_source_xmltv_url">Dirección XMLTV</string>
+    <string name="epg_source_save">Guardar y cargar la programación</string>
+    <string name="epg_source_note">La programación se cargará la próxima vez que abras la pantalla principal. Con archivos grandes puede tardar unos minutos.</string>
+    <string name="epg_source_removed">Fuente de EPG eliminada: se usarán los datos del panel</string>
+    <string name="epg_source_saved">Fuente de EPG guardada</string>
+    <string name="epg_no_source_configured">No hay ninguna fuente de EPG configurada</string>
+    <string name="epg_parsing">Procesando la programación…</string>
+    <string name="epg_programs_loaded">%1$d programas cargados</string>
+
+    <!-- Importación de la lista -->
+    <string name="sync_connecting">Conectando con el servidor…</string>
+    <string name="sync_loading_channels">Cargando canales…</string>
+    <string name="sync_saving_channels">Guardando %1$d canales…</string>
+    <string name="sync_loading_movies">Cargando películas…</string>
+    <string name="sync_loading_series">Cargando series…</string>
+    <string name="sync_saving_series">Guardando %1$d series…</string>
+    <string name="sync_loading_playlist">Cargando la lista…</string>
+    <string name="sync_parsing_playlist">Procesando la lista…</string>
+    <string name="sync_done">Listo</string>
+    <string name="sync_live_ready">%1$d canales cargados; películas y series a continuación…</string>
+    <string name="sync_channels_updated">%1$d canales actualizados</string>
+    <string name="sync_vod_in_background">Las películas y series se cargan en segundo plano…</string>
+
+    <!-- Duración -->
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="duration_remaining">quedan %1$s</string>
+
+    <!-- Errores -->
+    <string name="error_with_message">Error: %1$s</string>
+    <string name="error_unknown">Error desconocido</string>
+    <string name="error_no_connection">Sin conexión con el servidor</string>
+    <string name="error_stream_rejected">El servidor ha rechazado la emisión (puede que haya demasiadas conexiones)</string>
+    <string name="error_channel_unavailable">Este canal no está disponible en este momento</string>
+    <string name="error_format_unsupported">Este dispositivo no admite el formato</string>
+    <string name="error_playback_failed">Error de reproducción</string>
+    <string name="error_content_not_loaded">No se ha podido cargar el contenido</string>
+    <string name="error_connection_failed">Error de conexión</string>
+    <string name="error_http_status">El servidor ha respondido con HTTP %1$d</string>
+    <string name="error_github_http_status">GitHub ha respondido con HTTP %1$d</string>
+    <string name="error_empty_response">Respuesta vacía</string>
+    <string name="error_empty_server_response">Respuesta vacía del servidor</string>
+    <string name="error_no_account_data">El servidor no ha devuelto datos de la cuenta</string>
+    <string name="error_wrong_credentials">Nombre de usuario o contraseña incorrectos</string>
+    <string name="error_login_failed">Error al iniciar sesión: %1$s</string>
+    <string name="error_invalid_server_url">Dirección de servidor no válida: %1$s</string>
+    <string name="error_http_at_url">HTTP %1$d en %2$s</string>
+    <string name="error_response_unreadable">No se ha podido leer la respuesta de %1$s</string>
+    <string name="error_update_file_move">No se ha podido guardar el archivo descargado</string>
+
+</resources>

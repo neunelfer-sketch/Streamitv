@@ -1,6 +1,9 @@
 package de.neunelf.player.data.repository
 
+import android.content.Context
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.core.toErrorCode
 import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.local.CategoryDao
@@ -60,6 +63,7 @@ sealed interface SyncProgress {
  */
 @Singleton
 class PlaylistSyncer @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val xtreamApi: XtreamApi,
     private val httpClient: OkHttpClient,
     private val playlistDao: PlaylistDao,
@@ -81,7 +85,8 @@ class PlaylistSyncer @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Playlist-Sync fehlgeschlagen für '${playlist.name}'", e)
-            emit(SyncProgress.Failed((e.message ?: "Unbekannter Fehler").withErrorCode(e.toErrorCode()), e))
+            val message = e.message ?: context.getString(R.string.error_unknown)
+            emit(SyncProgress.Failed(message.withErrorCode(e.toErrorCode()), e))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -124,11 +129,11 @@ class PlaylistSyncer @Inject constructor(
     private suspend fun FlowCollector<SyncProgress>.syncXtream(playlist: Playlist) = coroutineScope {
         val credentials = playlist.credentials()
 
-        emit(SyncProgress.Step("Verbinde mit Server…", 5))
+        emit(SyncProgress.Step(context.getString(R.string.sync_connecting), 5))
         xtreamApi.authenticate(credentials)
 
         // --- Live TV -------------------------------------------------------
-        emit(SyncProgress.Step("Lade Sender…", 15))
+        emit(SyncProgress.Step(context.getString(R.string.sync_loading_channels), 15))
         val liveCategoriesTask = async { xtreamApi.getCategories(credentials, StreamKind.LIVE) }
         val liveStreamsTask = async { xtreamApi.getLiveStreams(credentials) }
 
@@ -137,14 +142,14 @@ class PlaylistSyncer @Inject constructor(
         )
         val channels = XtreamMapper.toChannels(liveStreamsTask.await(), playlist.id)
 
-        emit(SyncProgress.Step("Speichere ${channels.size} Sender…", 45))
+        emit(SyncProgress.Step(context.getString(R.string.sync_saving_channels, channels.size), 45))
         categoryDao.replaceAll(playlist.id, StreamKind.LIVE.name, liveCategories.map { it.toEntity() })
         channelDao.replaceAll(playlist.id, channels.map { it.toEntity() })
         playlistDao.markSynced(playlist.id, System.currentTimeMillis())
         emit(SyncProgress.LiveReady(channels.size))
 
         // --- Filme ---------------------------------------------------------
-        emit(SyncProgress.Step("Lade Filme…", 60))
+        emit(SyncProgress.Step(context.getString(R.string.sync_loading_movies), 60))
         val movies = runCatching {
             val categories = XtreamMapper.toCategories(
                 xtreamApi.getCategories(credentials, StreamKind.VOD), StreamKind.VOD, playlist.id,
@@ -160,7 +165,7 @@ class PlaylistSyncer @Inject constructor(
         vodDao.replaceMovies(playlist.id, movies.map { it.toEntity() })
 
         // --- Serien --------------------------------------------------------
-        emit(SyncProgress.Step("Lade Serien…", 80))
+        emit(SyncProgress.Step(context.getString(R.string.sync_loading_series), 80))
         val series = runCatching {
             val categories = XtreamMapper.toCategories(
                 xtreamApi.getCategories(credentials, StreamKind.SERIES), StreamKind.SERIES, playlist.id,
@@ -173,7 +178,7 @@ class PlaylistSyncer @Inject constructor(
 
         vodDao.replaceSeries(playlist.id, series.map { it.toEntity() })
 
-        emit(SyncProgress.Step("Fertig", 100))
+        emit(SyncProgress.Step(context.getString(R.string.sync_done), 100))
         emit(SyncProgress.Done(channels.size, movies.size, series.size))
     }
 
@@ -182,7 +187,7 @@ class PlaylistSyncer @Inject constructor(
     // -----------------------------------------------------------------------
 
     private suspend fun FlowCollector<SyncProgress>.syncM3u(playlist: Playlist) {
-        emit(SyncProgress.Step("Lade Playlist…", 10))
+        emit(SyncProgress.Step(context.getString(R.string.sync_loading_playlist), 10))
 
         val request = Request.Builder()
             .url(playlist.m3uUrl)
@@ -191,11 +196,13 @@ class PlaylistSyncer @Inject constructor(
             .build()
 
         val parsed = httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Server antwortete mit HTTP ${response.code}")
-            val body = response.body ?: error("Leere Antwort")
+            if (!response.isSuccessful) {
+                error(context.getString(R.string.error_http_status, response.code))
+            }
+            val body = response.body ?: error(context.getString(R.string.error_empty_response))
             val gzipped = playlist.m3uUrl.endsWith(".gz", ignoreCase = true) ||
                 response.header("Content-Encoding").equals("gzip", ignoreCase = true)
-            emit(SyncProgress.Step("Verarbeite Playlist…", 40))
+            emit(SyncProgress.Step(context.getString(R.string.sync_parsing_playlist), 40))
             M3uParser.parse(body.byteStream(), gzipped)
         }
 
@@ -221,7 +228,7 @@ class PlaylistSyncer @Inject constructor(
             }
         }
 
-        emit(SyncProgress.Step("Speichere ${channels.size} Sender…", 75))
+        emit(SyncProgress.Step(context.getString(R.string.sync_saving_channels, channels.size), 75))
         categoryDao.replaceAll(
             playlist.id,
             StreamKind.LIVE.name,
@@ -255,7 +262,7 @@ class PlaylistSyncer @Inject constructor(
         // also werden sie gleich mitgeschrieben.
         val series = M3uParser.toSeries(parsed, playlist.id)
         if (series.isNotEmpty()) {
-            emit(SyncProgress.Step("Speichere ${series.size} Serien…", 90))
+            emit(SyncProgress.Step(context.getString(R.string.sync_saving_series, series.size), 90))
             categoryDao.replaceAll(
                 playlist.id,
                 StreamKind.SERIES.name,
@@ -275,7 +282,7 @@ class PlaylistSyncer @Inject constructor(
             )
         }
 
-        emit(SyncProgress.Step("Fertig", 100))
+        emit(SyncProgress.Step(context.getString(R.string.sync_done), 100))
         emit(SyncProgress.Done(channels.size, movies.size, series.size))
     }
 
