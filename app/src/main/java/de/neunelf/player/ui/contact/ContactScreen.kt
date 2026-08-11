@@ -69,7 +69,7 @@ fun ContactScreen(onBack: () -> Unit) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
-                painter = painterResource(R.drawable.qr_9elf),
+                painter = painterResource(R.drawable.qr_qwikster),
                 contentDescription = stringResource(R.string.contact_qr_description),
                 modifier = Modifier
                     .size(300.dp)
@@ -77,7 +77,7 @@ fun ContactScreen(onBack: () -> Unit) {
             )
             Spacer(Modifier.height(TvSpacing.small))
             Text(
-                text = "9elf",
+                text = "Qwikster",
                 style = MaterialTheme.typography.titleLarge,
                 color = TvAccent,
             )

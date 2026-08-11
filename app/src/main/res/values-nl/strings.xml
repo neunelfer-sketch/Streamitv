@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">9elf Player</string>
+    <string name="app_name">Qwikster</string>
 
     <!-- Navigatie -->
     <string name="nav_live">Live tv</string>
@@ -20,7 +20,7 @@
     <string name="selected">Geselecteerd</string>
 
     <!-- Instellen -->
-    <string name="login_title">9elf Player instellen</string>
+    <string name="login_title">Qwikster instellen</string>
     <string name="login_subtitle">Kies het type afspeellijst</string>
     <string name="login_type_xtream">Xtream Codes</string>
     <string name="login_type_m3u">M3U-/M3U8-link</string>
@@ -41,7 +41,7 @@
     <string name="home_select_channel">Kies een zender</string>
     <string name="home_update_available">Versie %1$s beschikbaar – zie Instellingen</string>
 
-    <string name="whats_new_title">🎉 9elf Player is bijgewerkt!</string>
+    <string name="whats_new_title">🎉 Qwikster is bijgewerkt!</string>
     <string name="whats_new_item_recent">"Onlangs bekeken" voor films &amp; series – ga precies verder waar je gebleven was</string>
     <string name="whats_new_item_languages">Nu beschikbaar in 10 talen – wijzigen kan via Instellingen → Taal</string>
     <string name="whats_new_item_epg">De programmagids (EPG) wordt nu automatisch herkend</string>
@@ -144,7 +144,7 @@
     <string name="settings_language">Taal</string>
     <string name="settings_language_system">Systeemtaal</string>
     <string name="settings_extend_access">Toegang verlengen</string>
-    <string name="settings_extend_access_desc">QR-code voor de chat met 9elf</string>
+    <string name="settings_extend_access_desc">QR-code voor de chat met Qwikster</string>
     <string name="settings_update">Update</string>
     <string name="settings_about_value">Versie %1$s · %2$d EPG-items in cache</string>
     <string name="settings_sync_never">Nooit</string>
@@ -160,7 +160,7 @@
     <string name="update_ready">Versie %1$s gedownload · OK om te installeren</string>
     <string name="update_failed">Mislukt: %1$s · OK om het opnieuw te proberen</string>
     <string name="update_check_failed">Controle mislukt</string>
-    <string name="update_install_permission">Sta de installatie voor 9elf Player toe en druk opnieuw op OK</string>
+    <string name="update_install_permission">Sta de installatie voor Qwikster toe en druk opnieuw op OK</string>
 
     <string name="update_prompt_title">⬆️ Update beschikbaar</string>
     <string name="update_prompt_version">Versie %1$s is klaar. Nu installeren of pas bij de volgende herstart?</string>
@@ -171,7 +171,7 @@
 
     <!-- Contact -->
     <string name="contact_scan_hint">Scan de code met je telefooncamera – de chat opent meteen in SimpleX.</string>
-    <string name="contact_qr_description">QR-code voor de chat met 9elf</string>
+    <string name="contact_qr_description">QR-code voor de chat met Qwikster</string>
 
     <!-- EPG-bron -->
     <string name="epg_source_hint">Adres van een XMLTV-bestand. Laat leeg om bij Xtream de programmagegevens van het paneel te gebruiken.</string>

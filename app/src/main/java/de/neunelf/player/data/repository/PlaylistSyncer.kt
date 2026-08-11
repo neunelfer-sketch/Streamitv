@@ -388,7 +388,7 @@ class PlaylistSyncer @Inject constructor(
         private const val SYNC_REPLAY = 16
 
         /** Wird auch beim Streamen benutzt – manche Panels prüfen darauf. */
-        const val USER_AGENT = "9elfPlayer/1.0 (Android TV)"
+        const val USER_AGENT = "Qwikster/1.0 (Android TV)"
 
         /** Pause zwischen zwei `get_vod_info`-Abfragen bei der Cover-Anreicherung. */
         private const val ENRICHMENT_DELAY_MS = 200L

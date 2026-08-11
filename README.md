@@ -1,4 +1,4 @@
-# 9elf Player
+# Qwikster
 
 IPTV-Player für **Android TV**, **Fire TV** und **Android-Handys** im Stil
 von TiviMate. Nativ umgesetzt mit **Kotlin, Jetpack Compose for TV und
@@ -170,8 +170,8 @@ Unterschied zwischen "läuft" und "stürzt ab".
 Jeder Push auf `main` oder einen `claude/*`-Branch baut die App auf GitHub
 Actions und hängt zwei APKs an ein Release:
 
-- `9elf-Player-vX.Y.Z.apk` – optimierter Build, dieser gehört auf den Stick
-- `9elf-Player-vX.Y.Z-debug.apk` – nur für die Fehlersuche, deutlich größer
+- `Qwikster-vX.Y.Z.apk` – optimierter Build, dieser gehört auf den Stick
+- `Qwikster-vX.Y.Z-debug.apk` – nur für die Fehlersuche, deutlich größer
   und langsamer
 
 Weil dieses Repository privat ist, sind seine Release-Dateien nicht ohne
@@ -213,7 +213,7 @@ die App führt dafür direkt in die passende Systemeinstellung.
 ## QR-Code zum Verlängern
 
 Unter *Einstellungen → App → Zugang verlängern* zeigt die App einen
-QR-Code, über den der Zuschauer den SimpleX-Chat mit 9elf erreicht. Auf
+QR-Code, über den der Zuschauer den SimpleX-Chat mit Qwikster erreicht. Auf
 einem Fernseher ist das der einzige brauchbare Weg – anklicken lässt sich
 dort nichts, und eine SimpleX-Einladung hat über hundert Zeichen, die
 niemand mit der Fernbedienung abtippt.
@@ -222,8 +222,8 @@ Der Code liegt doppelt vor:
 
 | Datei | Zweck |
 |---|---|
-| `app/src/main/res/drawable/qr_9elf.xml` | Vektorgrafik für die App, auf jeder Bildschirmgröße scharf |
-| `docs/qr/qr_9elf.png` | zum Ausdrucken oder für Werbung außerhalb der App |
+| `app/src/main/res/drawable/qr_qwikster.xml` | Vektorgrafik für die App, auf jeder Bildschirmgröße scharf |
+| `docs/qr/qr_qwikster.png` | zum Ausdrucken oder für Werbung außerhalb der App |
 
 Beide entstehen aus `scripts/generate_qr.py`. Ändert sich eine Adresse
 oder kommt ein Kanal dazu, wird `TARGETS` im Skript angepasst und es neu
@@ -284,4 +284,4 @@ Voraussetzungen: JDK 17, Android SDK 35, `minSdk 22` (deckt Fire OS 5 ab).
 
 ---
 
-_Developed by 9elf_
+_Developed by Qwikster_

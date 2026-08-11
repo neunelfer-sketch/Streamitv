@@ -1,24 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TV-Banner (320x180 dp) für den Leanback-Launcher -->
+<!-- TV-Banner (320x180 dp) für den Leanback-Launcher, im "Liquid Glass"-Stil
+     passend zum App-Icon: heller blauer Grund, Glas-Tiefe/-Glanz, weißes "Q". -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="320dp"
     android:height="180dp"
     android:viewportWidth="320"
     android:viewportHeight="180">
 
+    <!-- Grundfarbe: leicht blauer Hintergrund -->
     <path
-        android:fillColor="#0B0E14"
+        android:fillColor="#79C2F2"
         android:pathData="M0,0h320v180h-320z" />
 
-    <!-- Stilisiertes Play-Dreieck -->
+    <!-- Tiefe: abgedunkelter Streifen am unteren Rand -->
     <path
-        android:fillColor="#3D8BFF"
-        android:pathData="M118,62 L118,118 L166,90 Z" />
+        android:fillColor="#332B5A9E"
+        android:pathData="M0,120 L320,120 L320,180 L0,180 Z" />
 
-    <!-- Bildschirmrahmen -->
+    <!-- Glasglanz: diagonaler heller Streifen -->
     <path
-        android:strokeColor="#3D8BFF"
-        android:strokeWidth="4"
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M-20,60 L110,-20 L160,-20 L30,80 Z" />
+
+    <!-- Glanzpunkt oben links -->
+    <path
+        android:fillColor="#59FFFFFF"
+        android:pathData="M64,46 m-16,0 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0 Z" />
+
+    <!-- "Q"-Schriftzug: Ring plus Schwanz -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="15"
+        android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M98,50 L222,50 A8,8 0 0 1 230,58 L230,122 A8,8 0 0 1 222,130 L98,130 A8,8 0 0 1 90,122 L90,58 A8,8 0 0 1 98,50 Z" />
+        android:pathData="M126,85 A34,34 0 1,0 194,85 A34,34 0 1,0 126,85" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="15"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M184,109 L210,135" />
 </vector>

@@ -109,7 +109,7 @@ class UpdateRepository @Inject constructor(
      * Speicher-Berechtigung.
      */
     fun download(info: UpdateInfo): Flow<DownloadProgress> = flow {
-        val target = File(updateDir(), "9elf-Player-${info.versionName}.apk")
+        val target = File(updateDir(), "Qwikster-${info.versionName}.apk")
         try {
             val request = Request.Builder().url(info.downloadUrl).build()
             httpClient.newCall(request).execute().use { response ->

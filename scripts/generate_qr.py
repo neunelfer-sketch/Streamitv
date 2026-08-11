@@ -55,7 +55,7 @@ def write_vector(path: pathlib.Path, content: str, url: str) -> None:
 
 
 TARGETS = {
-    "qr_9elf": (
+    "qr_qwikster": (
         "https://smp9.simplex.im/i#8AB6myL6UxBau7c6peWrRi465WUUd8ec"
         "/O8s4wxXkaE01kkHxa9PlyvtuT8lWO1IaVayxAcpoyVU"
     ),

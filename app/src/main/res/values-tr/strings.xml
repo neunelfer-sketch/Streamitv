@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">9elf Player</string>
+    <string name="app_name">Qwikster</string>
 
     <!-- Gezinme -->
     <string name="nav_live">Canlı TV</string>
@@ -20,7 +20,7 @@
     <string name="selected">Seçili</string>
 
     <!-- Kurulum -->
-    <string name="login_title">9elf Player kurulumu</string>
+    <string name="login_title">Qwikster kurulumu</string>
     <string name="login_subtitle">Oynatma listesi türünü seçin</string>
     <string name="login_type_xtream">Xtream Codes</string>
     <string name="login_type_m3u">M3U / M3U8 bağlantısı</string>
@@ -41,7 +41,7 @@
     <string name="home_select_channel">Bir kanal seçin</string>
     <string name="home_update_available">%1$s sürümü hazır – Ayarlar\'a bakın</string>
 
-    <string name="whats_new_title">🎉 9elf Player güncellendi!</string>
+    <string name="whats_new_title">🎉 Qwikster güncellendi!</string>
     <string name="whats_new_item_recent">Film ve dizilerde "Son İzlenenler" – kaldığın yerden devam et</string>
     <string name="whats_new_item_languages">Artık 10 dilde – Ayarlar → Dil bölümünden değiştirebilirsin</string>
     <string name="whats_new_item_epg">Yayın rehberi (EPG) artık otomatik olarak algılanıyor</string>
@@ -144,7 +144,7 @@
     <string name="settings_language">Dil</string>
     <string name="settings_language_system">Sistem dili</string>
     <string name="settings_extend_access">Erişimi uzat</string>
-    <string name="settings_extend_access_desc">9elf ile sohbet için QR kod</string>
+    <string name="settings_extend_access_desc">Qwikster ile sohbet için QR kod</string>
     <string name="settings_update">Güncelleme</string>
     <string name="settings_about_value">Sürüm %1$s · önbellekte %2$d EPG kaydı</string>
     <string name="settings_sync_never">Hiç</string>
@@ -160,7 +160,7 @@
     <string name="update_ready">%1$s sürümü indirildi · kurmak için OK</string>
     <string name="update_failed">Başarısız: %1$s · yeniden denemek için OK</string>
     <string name="update_check_failed">Denetim başarısız</string>
-    <string name="update_install_permission">Lütfen 9elf Player için kuruluma izin verip yeniden OK\'a basın</string>
+    <string name="update_install_permission">Lütfen Qwikster için kuruluma izin verip yeniden OK\'a basın</string>
 
     <string name="update_prompt_title">⬆️ Güncelleme mevcut</string>
     <string name="update_prompt_version">Sürüm %1$s hazır. Şimdi mi kurulsun, yoksa bir sonraki yeniden başlatmada mı?</string>
@@ -171,7 +171,7 @@
 
     <!-- İletişim -->
     <string name="contact_scan_hint">Kodu telefon kameranızla okutun – sohbet doğrudan SimpleX\'te açılır.</string>
-    <string name="contact_qr_description">9elf ile sohbet için QR kod</string>
+    <string name="contact_qr_description">Qwikster ile sohbet için QR kod</string>
 
     <!-- EPG kaynağı -->
     <string name="epg_source_hint">Bir XMLTV dosyasının adresi. Xtream\'de panelin kendi yayın verilerini kullanmak için boş bırakın.</string>

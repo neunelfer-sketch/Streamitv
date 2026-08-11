@@ -11,7 +11,7 @@ import androidx.tv.material3.Text
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
 
 /** Entwicklerhinweis – bewusst an einer Stelle, damit er nur hier gepflegt wird. */
-const val DEVELOPER_CREDIT = "Developed by 9elf"
+const val DEVELOPER_CREDIT = "Developed by Qwikster"
 
 /**
  * Dezente Signaturzeile am unteren Rand eines Bildschirms.

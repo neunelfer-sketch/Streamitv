@@ -1,19 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- App-Icon im "Liquid Glass"-Stil: helles Blau als Grundfarbe, darüber
+     halbtransparente Flächen als Glas-Tiefe und -Glanz (statt Gradients,
+     damit es auch auf minSdk 22 zuverlässig aussieht), plus ein weißes "Q". -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <!-- Grundfarbe: leicht blauer Hintergrund -->
     <path
-        android:fillColor="#0B0E14"
+        android:fillColor="#79C2F2"
         android:pathData="M0,0h108v108h-108z" />
+
+    <!-- Tiefe: abgedunkelter Streifen am unteren Rand -->
     <path
-        android:strokeColor="#3D8BFF"
-        android:strokeWidth="5"
+        android:fillColor="#332B5A9E"
+        android:pathData="M0,70 L108,70 L108,108 L0,108 Z" />
+
+    <!-- Glasglanz: diagonaler heller Streifen -->
+    <path
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M-10,32 L46,-12 L66,-12 L10,52 Z" />
+
+    <!-- Glanzpunkt oben links -->
+    <path
+        android:fillColor="#59FFFFFF"
+        android:pathData="M26,26 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 Z" />
+
+    <!-- "Q"-Schriftzug: Ring plus Schwanz -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M26,32 L82,32 A6,6 0 0 1 88,38 L88,72 A6,6 0 0 1 82,78 L26,78 A6,6 0 0 1 20,72 L20,38 A6,6 0 0 1 26,32 Z" />
+        android:pathData="M37,49 A17,17 0 1,0 71,49 A17,17 0 1,0 37,49" />
     <path
-        android:fillColor="#3D8BFF"
-        android:pathData="M46,44 L46,66 L66,55 Z" />
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M63,60 L78,77" />
 </vector>

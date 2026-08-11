@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">9elf Player</string>
+    <string name="app_name">Qwikster</string>
 
     <!-- Navigazione -->
     <string name="nav_live">TV in diretta</string>
@@ -20,7 +20,7 @@
     <string name="selected">Selezionato</string>
 
     <!-- Configurazione -->
-    <string name="login_title">Configura 9elf Player</string>
+    <string name="login_title">Configura Qwikster</string>
     <string name="login_subtitle">Scegli il tipo di playlist</string>
     <string name="login_type_xtream">Xtream Codes</string>
     <string name="login_type_m3u">Link M3U / M3U8</string>
@@ -41,7 +41,7 @@
     <string name="home_select_channel">Seleziona un canale</string>
     <string name="home_update_available">Versione %1$s disponibile – vedi Impostazioni</string>
 
-    <string name="whats_new_title">🎉 9elf Player è stato aggiornato!</string>
+    <string name="whats_new_title">🎉 Qwikster è stato aggiornato!</string>
     <string name="whats_new_item_recent">"Visti di recente" per film e serie TV: riprendi esattamente da dove avevi interrotto</string>
     <string name="whats_new_item_languages">Ora disponibile in 10 lingue – modificabile in Impostazioni → Lingua</string>
     <string name="whats_new_item_epg">La guida programmi (EPG) viene ora rilevata automaticamente</string>
@@ -144,7 +144,7 @@
     <string name="settings_language">Lingua</string>
     <string name="settings_language_system">Lingua di sistema</string>
     <string name="settings_extend_access">Rinnova l\'accesso</string>
-    <string name="settings_extend_access_desc">Codice QR per la chat con 9elf</string>
+    <string name="settings_extend_access_desc">Codice QR per la chat con Qwikster</string>
     <string name="settings_update">Aggiornamento</string>
     <string name="settings_about_value">Versione %1$s · %2$d voci EPG in cache</string>
     <string name="settings_sync_never">Mai</string>
@@ -160,7 +160,7 @@
     <string name="update_ready">Versione %1$s scaricata · OK per installare</string>
     <string name="update_failed">Non riuscito: %1$s · OK per riprovare</string>
     <string name="update_check_failed">Controllo non riuscito</string>
-    <string name="update_install_permission">Consenti l\'installazione per 9elf Player e premi di nuovo OK</string>
+    <string name="update_install_permission">Consenti l\'installazione per Qwikster e premi di nuovo OK</string>
 
     <string name="update_prompt_title">⬆️ Aggiornamento disponibile</string>
     <string name="update_prompt_version">La versione %1$s è pronta. Installare ora o al prossimo riavvio?</string>
@@ -171,7 +171,7 @@
 
     <!-- Contatti -->
     <string name="contact_scan_hint">Inquadra il codice con la fotocamera del telefono: la chat si apre direttamente in SimpleX.</string>
-    <string name="contact_qr_description">Codice QR per la chat con 9elf</string>
+    <string name="contact_qr_description">Codice QR per la chat con Qwikster</string>
 
     <!-- Sorgente EPG -->
     <string name="epg_source_hint">Indirizzo di un file XMLTV. Lascia vuoto per usare i dati di programmazione del pannello con Xtream.</string>

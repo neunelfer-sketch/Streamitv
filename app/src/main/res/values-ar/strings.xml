@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">9elf Player</string>
+    <string name="app_name">Qwikster</string>
 
     <!-- التنقل -->
     <string name="nav_live">البث المباشر</string>
@@ -20,7 +20,7 @@
     <string name="selected">محدد</string>
 
     <!-- الإعداد -->
-    <string name="login_title">إعداد 9elf Player</string>
+    <string name="login_title">إعداد Qwikster</string>
     <string name="login_subtitle">اختر نوع قائمة التشغيل</string>
     <string name="login_type_xtream">Xtream Codes</string>
     <string name="login_type_m3u">رابط M3U / M3U8</string>
@@ -41,7 +41,7 @@
     <string name="home_select_channel">اختر قناة</string>
     <string name="home_update_available">الإصدار %1$s متاح – راجع الإعدادات</string>
 
-    <string name="whats_new_title">🎉 تم تحديث 9elf Player!</string>
+    <string name="whats_new_title">🎉 تم تحديث Qwikster!</string>
     <string name="whats_new_item_recent">"شوهد مؤخرًا" للأفلام والمسلسلات – تابع من حيث توقفت بالضبط</string>
     <string name="whats_new_item_languages">متوفر الآن بـ 10 لغات – يمكنك التغيير من الإعدادات ← اللغة</string>
     <string name="whats_new_item_epg">يتم الآن اكتشاف دليل البرامج (EPG) تلقائيًا</string>
@@ -144,7 +144,7 @@
     <string name="settings_language">اللغة</string>
     <string name="settings_language_system">لغة النظام</string>
     <string name="settings_extend_access">تمديد الاشتراك</string>
-    <string name="settings_extend_access_desc">رمز QR للدردشة مع 9elf</string>
+    <string name="settings_extend_access_desc">رمز QR للدردشة مع Qwikster</string>
     <string name="settings_update">التحديث</string>
     <string name="settings_about_value">الإصدار %1$s · ‏%2$d مدخل EPG في الذاكرة</string>
     <string name="settings_sync_never">أبدًا</string>
@@ -160,7 +160,7 @@
     <string name="update_ready">تم تنزيل الإصدار %1$s · اضغط OK للتثبيت</string>
     <string name="update_failed">فشل: %1$s · اضغط OK للمحاولة مجددًا</string>
     <string name="update_check_failed">فشل التحقق</string>
-    <string name="update_install_permission">يرجى السماح بالتثبيت لتطبيق 9elf Player ثم الضغط على OK مجددًا</string>
+    <string name="update_install_permission">يرجى السماح بالتثبيت لتطبيق Qwikster ثم الضغط على OK مجددًا</string>
 
     <string name="update_prompt_title">⬆️ يتوفر تحديث</string>
     <string name="update_prompt_version">الإصدار %1$s جاهز. هل تريد التثبيت الآن أم عند إعادة التشغيل التالية؟</string>
@@ -171,7 +171,7 @@
 
     <!-- التواصل -->
     <string name="contact_scan_hint">امسح الرمز بكاميرا هاتفك – ستفتح الدردشة مباشرةً في SimpleX.</string>
-    <string name="contact_qr_description">رمز QR للدردشة مع 9elf</string>
+    <string name="contact_qr_description">رمز QR للدردشة مع Qwikster</string>
 
     <!-- مصدر EPG -->
     <string name="epg_source_hint">عنوان ملف XMLTV. اتركه فارغًا لاستخدام بيانات البرامج الخاصة باللوحة مع Xtream.</string>
