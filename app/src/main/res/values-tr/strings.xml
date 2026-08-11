@@ -16,8 +16,7 @@
     <string name="category_all">Tüm kanallar</string>
     <string name="category_favorites">Favoriler</string>
     <string name="category_recent">Son izlenenler</string>
-    <string name="recording_notification_channel">Kayıtlar</string>
-    <string name="recording_notification_title">Kayıt sürüyor</string>
+    <string name="recording_notification_channel">Arka plan etkinliği</string>
     <string name="recording_variant_open">Ben durdurana kadar</string>
     <string name="recording_variant_120">2 saat</string>
     <string name="recording_variant_60">60 dakika</string>

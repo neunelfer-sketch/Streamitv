@@ -104,7 +104,6 @@ class RecordingRepository @Inject constructor(
             action = RecordingService.ACTION_START
             putExtra(RecordingService.EXTRA_RECORDING_ID, id)
             putExtra(RecordingService.EXTRA_URL, url)
-            putExtra(RecordingService.EXTRA_TITLE, title)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
@@ -164,7 +163,15 @@ class RecordingRepository @Inject constructor(
      */
     private fun recordingDir(): File {
         val base = context.getExternalFilesDir(null) ?: context.filesDir
-        return File(base, "recordings").apply { mkdirs() }
+        return File(base, "recordings").apply {
+            mkdirs()
+            // Leere Steuerdatei, die dem Medienscanner sagt: diesen Ordner
+            // überspringen. Der app-eigene Bereich wird zwar ohnehin nicht
+            // erfasst, aber etliche Dateimanager und Galerie-Apps durchsuchen
+            // trotzdem den ganzen Speicher – und dort tauchten die Aufnahmen
+            // dann als Videos auf.
+            runCatching { File(this, ".nomedia").createNewFile() }
+        }
     }
 
     /**

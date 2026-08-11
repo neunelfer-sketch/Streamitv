@@ -16,8 +16,7 @@
     <string name="category_all">كل القنوات</string>
     <string name="category_favorites">المفضلة</string>
     <string name="category_recent">شوهد مؤخرًا</string>
-    <string name="recording_notification_channel">التسجيلات</string>
-    <string name="recording_notification_title">جارٍ التسجيل</string>
+    <string name="recording_notification_channel">نشاط في الخلفية</string>
     <string name="recording_variant_open">حتى أوقفه</string>
     <string name="recording_variant_120">ساعتان</string>
     <string name="recording_variant_60">60 دقيقة</string>

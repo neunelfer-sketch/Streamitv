@@ -16,8 +16,7 @@
     <string name="category_all">Все каналы</string>
     <string name="category_favorites">Избранное</string>
     <string name="category_recent">Недавно просмотренные</string>
-    <string name="recording_notification_channel">Записи</string>
-    <string name="recording_notification_title">Идёт запись</string>
+    <string name="recording_notification_channel">Фоновая активность</string>
     <string name="recording_variant_open">Пока не остановлю</string>
     <string name="recording_variant_120">2 часа</string>
     <string name="recording_variant_60">60 минут</string>

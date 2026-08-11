@@ -82,8 +82,7 @@ class RecordingService : Service() {
             ACTION_START -> {
                 val id = intent.getLongExtra(EXTRA_RECORDING_ID, 0L)
                 val url = intent.getStringExtra(EXTRA_URL).orEmpty()
-                val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
-                if (id != 0L && url.isNotBlank()) start(id, url, title)
+                if (id != 0L && url.isNotBlank()) start(id, url)
             }
 
             ACTION_STOP -> {
@@ -97,10 +96,10 @@ class RecordingService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun start(id: Long, url: String, title: String) {
+    private fun start(id: Long, url: String) {
         if (jobs.containsKey(id)) return
 
-        startForegroundCompat(title)
+        startForegroundCompat()
         acquireLocks()
 
         jobs[id] = scope.launch {
@@ -223,7 +222,7 @@ class RecordingService : Service() {
         wifiLock = null
     }
 
-    private fun startForegroundCompat(title: String) {
+    private fun startForegroundCompat() {
         createChannel()
 
         val openApp = PendingIntent.getActivity(
@@ -232,20 +231,22 @@ class RecordingService : Service() {
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val stopAll = PendingIntent.getService(
-            this,
-            1,
-            Intent(this, RecordingService::class.java).setAction(ACTION_STOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
+        // Bewusst nichtssagend: Android **erzwingt** bei einem
+        // Vordergrunddienst eine Benachrichtigung, sie lässt sich nicht
+        // abschalten. Was sich abschalten lässt, ist alles, was sie
+        // auffällig macht – Titel ohne Hinweis auf eine Aufnahme, kein
+        // Sendungsname, kein Stopp-Knopf, kein Ton, kein Aufpoppen. Übrig
+        // bleibt ein stiller Eintrag, wie ihn jede App im Hintergrund
+        // erzeugt. Gestoppt wird in der App selbst.
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.recording_notification_title))
-            .setContentText(title)
-            .setSmallIcon(android.R.drawable.presence_video_online)
+            .setContentTitle(getString(R.string.app_name))
+            .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setOngoing(true)
+            .setSilent(true)
+            .setShowWhen(false)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setContentIntent(openApp)
-            .addAction(0, getString(R.string.recording_stop), stopAll)
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -269,11 +270,19 @@ class RecordingService : Service() {
         val manager = getSystemService(NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         manager.createNotificationChannel(
+            // IMPORTANCE_MIN ist die niedrigste Stufe, die für einen
+            // Vordergrunddienst zulässig ist: kein Ton, kein Aufpoppen, in
+            // der Leiste zusammengeklappt. Der Kanalname taucht in den
+            // Systemeinstellungen auf und nennt deshalb ebenfalls keine
+            // Aufnahme.
             NotificationChannel(
                 CHANNEL_ID,
                 getString(R.string.recording_notification_channel),
-                NotificationManager.IMPORTANCE_LOW,
-            ),
+                NotificationManager.IMPORTANCE_MIN,
+            ).apply {
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_SECRET
+            },
         )
     }
 
@@ -305,6 +314,5 @@ class RecordingService : Service() {
         const val ACTION_STOP = "de.qwikster.player.RECORDING_STOP"
         const val EXTRA_RECORDING_ID = "recordingId"
         const val EXTRA_URL = "url"
-        const val EXTRA_TITLE = "title"
     }
 }
