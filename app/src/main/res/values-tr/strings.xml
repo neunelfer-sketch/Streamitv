@@ -16,6 +16,15 @@
     <string name="category_all">Tüm kanallar</string>
     <string name="category_favorites">Favoriler</string>
     <string name="category_recent">Son izlenenler</string>
+    <string name="vod_empty">Burada henüz bir şey yok</string>
+    <string name="movie_resume_at">%1$s izlendi</string>
+    <string name="movie_plot">Konu</string>
+    <string name="movie_from_start">Baştan başlat</string>
+    <string name="movie_resume">Devam et</string>
+    <string name="movie_play">Oynat</string>
+    <string name="category_recently_added">Yeni eklenenler</string>
+    <string name="category_continue_watching">İzlemeye devam et</string>
+    <string name="category_overview">Genel bakış</string>
     <string name="favorite">Favori</string>
     <string name="selected">Seçili</string>
 

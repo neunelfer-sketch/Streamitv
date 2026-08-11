@@ -42,6 +42,24 @@ data class VodItem(
 const val RECENT_CATEGORY_ID = "__recent__"
 
 /**
+ * Startansicht mit waagerechten Reihen – die erste Kategorie und der
+ * Einstieg beim Öffnen von "Filme" bzw. "Serien".
+ *
+ * Sie zeigt nicht *eine* Kategorie, sondern einen Querschnitt: oben das
+ * Angefangene, darunter Neuzugänge, darunter je Kategorie eine Reihe. Genau
+ * so steigen Netflix und Disney+ ein, und aus gutem Grund: Ein Raster
+ * verlangt, dass man vorher weiß, wonach man sucht. Reihen bieten etwas an.
+ */
+const val OVERVIEW_CATEGORY_ID = "__overview__"
+
+/** Eine waagerechte Reihe der Startansicht. */
+data class VodRow(
+    val id: String,
+    val title: String,
+    val items: List<VodItem>,
+)
+
+/**
  * Kategorien mit Buchstaben zuerst, mit Ziffern beginnende danach.
  *
  * Panels mischen beides oft wild durcheinander (z. B. "18+", "24/7" oder
@@ -60,9 +78,14 @@ data class VodUiState(
     val categories: List<Category> = emptyList(),
     val selectedCategoryId: String? = null,
     val items: List<VodItem> = emptyList(),
+    /** Nur in der Startansicht gefüllt – siehe [OVERVIEW_CATEGORY_ID]. */
+    val rows: List<VodRow> = emptyList(),
     val kind: StreamKind = StreamKind.VOD,
     val sort: VodSort = VodSort.RECENT,
-)
+) {
+    /** Zeigt der Bildschirm gerade Reihen statt eines Rasters? */
+    val isOverview: Boolean get() = selectedCategoryId == OVERVIEW_CATEGORY_ID
+}
 
 /**
  * Gemeinsamer Zustand für "Filme" und "Serien".
@@ -81,9 +104,10 @@ class VodViewModel @Inject constructor(
 
     private val kind = MutableStateFlow(StreamKind.VOD)
 
-    // Startet direkt auf "Zuletzt gesehen" – genau das wollte der Nutzer:
-    // ohne Umweg über eine Kategorie zu dem springen, was zuletzt lief.
-    private val selectedCategoryId = MutableStateFlow<String?>(RECENT_CATEGORY_ID)
+    // Startet auf der Reihenansicht. Deren erste Reihe ist das Angefangene,
+    // die frühere Startkategorie "Zuletzt gesehen" steht damit weiterhin
+    // ganz oben – nur eben neben Neuzugängen und Kategorien statt allein.
+    private val selectedCategoryId = MutableStateFlow<String?>(OVERVIEW_CATEGORY_ID)
 
     private val realCategories: StateFlow<List<Category>> = kind
         .flatMapLatest { repository.observeCategories(it) }
@@ -134,17 +158,111 @@ class VodViewModel @Inject constructor(
         .map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    /** Ganz oben, aber nur wenn es tatsächlich etwas zu zeigen gibt. */
+    /**
+     * Die Startansicht steht immer ganz oben, "Zuletzt gesehen" nur, wenn es
+     * dort tatsächlich etwas gibt – eine leere Spezialkategorie ließe die
+     * Liste bei einer frischen Installation halb tot wirken.
+     */
     private val categories: StateFlow<List<Category>> =
         combine(kind, realCategories, hasRecentItems) { streamKind, real, hasRecent ->
-            if (!hasRecent) return@combine real
-            val recentCategory = Category(
-                id = RECENT_CATEGORY_ID,
-                name = context.getString(R.string.category_recent),
+            fun synthetic(id: String, nameRes: Int) = Category(
+                id = id,
+                name = context.getString(nameRes),
                 kind = streamKind,
                 playlistId = 0L,
             )
-            listOf(recentCategory) + real
+
+            buildList {
+                add(synthetic(OVERVIEW_CATEGORY_ID, R.string.category_overview))
+                if (hasRecent) add(synthetic(RECENT_CATEGORY_ID, R.string.category_recent))
+                addAll(real)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Die Reihen der Startansicht.
+     *
+     * Alles stammt aus **einer** Abfrage über den gesamten Bestand, der
+     * ohnehin geladen wird, sobald jemand "Alle" wählt – gruppiert wird im
+     * Speicher. Je Reihe nur [ROW_ITEM_LIMIT] Einträge: Weiter kommt
+     * niemand, ohne die Reihe komplett durchzublättern, und jedes Poster
+     * kostet Speicher.
+     */
+    private val overviewRows: StateFlow<List<VodRow>> =
+        combine(kind, realCategories, recentItems) { streamKind, cats, recent ->
+            Triple(streamKind, cats, recent)
+        }.flatMapLatest { (streamKind, cats, recent) ->
+            val allItems = if (streamKind == StreamKind.SERIES) {
+                repository.observeSeries(null).map { list ->
+                    list.map { series ->
+                        series.categoryId to VodItem(
+                            id = series.seriesId,
+                            title = series.name,
+                            subtitle = series.year,
+                            posterUrl = series.posterUrl,
+                        ) to series.lastModified
+                    }
+                }
+            } else {
+                repository.observeMovies(null).map { list ->
+                    list.map { movie ->
+                        movie.categoryId to VodItem(
+                            id = movie.streamId,
+                            title = movie.name,
+                            subtitle = movie.year,
+                            posterUrl = movie.posterUrl,
+                        ) to movie.addedAt
+                    }
+                }
+            }
+
+            allItems.map { entries ->
+                buildList {
+                    // 1. Angefangenes zuerst. Wer etwas offen hat, will fast
+                    //    immer genau dort weitermachen – das gehört nicht in
+                    //    eine Kategorie weiter unten, sondern nach ganz oben.
+                    if (recent.isNotEmpty()) {
+                        add(
+                            VodRow(
+                                id = RECENT_CATEGORY_ID,
+                                title = context.getString(R.string.category_continue_watching),
+                                items = recent.take(ROW_ITEM_LIMIT),
+                            ),
+                        )
+                    }
+
+                    // 2. Neuzugänge über alle Kategorien hinweg.
+                    val newest = entries.sortedByDescending { it.second }
+                        .map { it.first.second }
+                        .take(ROW_ITEM_LIMIT)
+                    if (newest.isNotEmpty()) {
+                        add(
+                            VodRow(
+                                id = "__new__",
+                                title = context.getString(R.string.category_recently_added),
+                                items = newest,
+                            ),
+                        )
+                    }
+
+                    // 3. Je Kategorie eine Reihe, in derselben Reihenfolge wie
+                    //    die Liste links – sonst suchte man eine Kategorie an
+                    //    zwei Stellen an verschiedenen Positionen.
+                    val byCategory = entries.groupBy({ it.first.first }, { it.first.second })
+                    cats.forEach { category ->
+                        val items = byCategory[category.id].orEmpty()
+                        if (items.isNotEmpty()) {
+                            add(
+                                VodRow(
+                                    id = category.id,
+                                    title = category.name,
+                                    items = items.take(ROW_ITEM_LIMIT),
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /**
@@ -155,8 +273,8 @@ class VodViewModel @Inject constructor(
      */
     private val effectiveCategoryId: StateFlow<String?> =
         combine(selectedCategoryId, hasRecentItems) { selected, hasRecent ->
-            if (selected == RECENT_CATEGORY_ID && !hasRecent) null else selected
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+            if (selected == RECENT_CATEGORY_ID && !hasRecent) OVERVIEW_CATEGORY_ID else selected
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OVERVIEW_CATEGORY_ID)
 
     /** Die gemerkte Reihenfolge des gerade gezeigten Bereichs. */
     private val sort: StateFlow<VodSort> =
@@ -169,7 +287,11 @@ class VodViewModel @Inject constructor(
             Triple(streamKind, categoryId, order)
         }
             .flatMapLatest { (streamKind, categoryId, order) ->
-                if (categoryId == RECENT_CATEGORY_ID) {
+                if (categoryId == OVERVIEW_CATEGORY_ID) {
+                    // Die Startansicht zeigt Reihen, kein Raster – siehe
+                    // [overviewRows]. Hier gäbe es nichts zu laden.
+                    kotlinx.coroutines.flow.flowOf(emptyList())
+                } else if (categoryId == RECENT_CATEGORY_ID) {
                     // "Neu hinzugefügt" ergibt hier keinen Sinn – die Liste ist
                     // schon nach zuletzt geschaut sortiert, das ist ihr Zweck.
                     // A-Z/Z-A gilt aber auch hier: der Drei-Punkte-Knopf soll
@@ -222,17 +344,21 @@ class VodViewModel @Inject constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    private val gridState = combine(categories, items, effectiveCategoryId) { categoryList, itemList, categoryId ->
+        Triple(categoryList, itemList, categoryId)
+    }
+
     val uiState: StateFlow<VodUiState> = combine(
-        categories,
-        items,
-        effectiveCategoryId,
+        gridState,
+        overviewRows,
         kind,
         sort,
-    ) { categoryList, itemList, categoryId, streamKind, order ->
+    ) { (categoryList, itemList, categoryId), rowList, streamKind, order ->
         VodUiState(
             categories = categoryList,
             selectedCategoryId = categoryId,
             items = itemList,
+            rows = if (categoryId == OVERVIEW_CATEGORY_ID) rowList else emptyList(),
             kind = streamKind,
             sort = order,
         )
@@ -242,8 +368,8 @@ class VodViewModel @Inject constructor(
         if (kind.value != value) {
             kind.value = value
             // Kategorie-Auswahl gilt nicht über Bereiche hinweg – zurück auf
-            // "Zuletzt gesehen", ganz oben.
-            selectedCategoryId.value = RECENT_CATEGORY_ID
+            // die Startansicht, ganz oben.
+            selectedCategoryId.value = OVERVIEW_CATEGORY_ID
         }
     }
 
@@ -283,5 +409,16 @@ class VodViewModel @Inject constructor(
         if (durationMs <= 0L) return null
         val fraction = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
         return fraction.takeIf { it in 0.01f..0.95f }
+    }
+
+    private companion object {
+        /**
+         * Höchstzahl Poster je Reihe der Startansicht.
+         *
+         * Wer weiter will, wählt die Kategorie links an und bekommt das
+         * vollständige Raster. Eine Reihe mit tausenden Einträgen wäre mit
+         * dem Steuerkreuz ohnehin nicht zu durchqueren.
+         */
+        const val ROW_ITEM_LIMIT = 20
     }
 }

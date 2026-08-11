@@ -16,6 +16,15 @@
     <string name="category_all">كل القنوات</string>
     <string name="category_favorites">المفضلة</string>
     <string name="category_recent">شوهد مؤخرًا</string>
+    <string name="vod_empty">لا يوجد شيء هنا بعد</string>
+    <string name="movie_resume_at">شوهد حتى %1$s</string>
+    <string name="movie_plot">القصة</string>
+    <string name="movie_from_start">البدء من البداية</string>
+    <string name="movie_resume">متابعة</string>
+    <string name="movie_play">تشغيل</string>
+    <string name="category_recently_added">أُضيف حديثًا</string>
+    <string name="category_continue_watching">متابعة المشاهدة</string>
+    <string name="category_overview">نظرة عامة</string>
     <string name="favorite">مفضلة</string>
     <string name="selected">محدد</string>
 

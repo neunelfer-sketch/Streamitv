@@ -22,6 +22,7 @@ import de.qwikster.player.ui.player.PlayerScreen
 import de.qwikster.player.ui.search.SearchScreen
 import de.qwikster.player.ui.settings.EpgSourceScreen
 import de.qwikster.player.ui.settings.SettingsScreen
+import de.qwikster.player.ui.vod.MovieDetailScreen
 import de.qwikster.player.ui.vod.SeriesDetailScreen
 import de.qwikster.player.ui.vod.VodScreen
 import de.qwikster.player.ui.vodplayer.VodPlayerScreen
@@ -40,10 +41,12 @@ object Routes {
     const val EPG_SOURCE = "epg_source"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
+    const val MOVIE_DETAIL = "movie_detail/{streamId}"
     const val MOVIE_PLAYER = "movie_player/{streamId}"
     const val SERIES_DETAIL = "series_detail/{seriesId}"
     const val EPISODE_PLAYER = "episode_player/{episodeId}"
 
+    fun movieDetail(streamId: String) = "movie_detail/$streamId"
     fun moviePlayer(streamId: String) = "movie_player/$streamId"
     fun seriesDetail(seriesId: String) = "series_detail/$seriesId"
     fun episodePlayer(episodeId: String) = "episode_player/$episodeId"
@@ -130,7 +133,7 @@ fun QwiksterNavHost(
         composable(Routes.MOVIES) {
             VodScreen(
                 kind = StreamKind.VOD,
-                onPlayMovie = { streamId -> navController.navigate(Routes.moviePlayer(streamId)) },
+                onPlayMovie = { streamId -> navController.navigate(Routes.movieDetail(streamId)) },
                 onOpenSeries = {},
             )
         }
@@ -141,6 +144,17 @@ fun QwiksterNavHost(
                 onPlayMovie = {},
                 onOpenSeries = { seriesId -> navController.navigate(Routes.seriesDetail(seriesId)) },
                 onPlayEpisode = { episodeId -> navController.navigate(Routes.episodePlayer(episodeId)) },
+            )
+        }
+
+        composable(
+            route = Routes.MOVIE_DETAIL,
+            arguments = listOf(navArgument("streamId") { type = NavType.StringType }),
+        ) { entry ->
+            val streamId = entry.arguments?.getString("streamId").orEmpty()
+            MovieDetailScreen(
+                onPlay = { navController.navigate(Routes.moviePlayer(streamId)) },
+                onBack = { navController.popBackStack() },
             )
         }
 
@@ -191,7 +205,7 @@ fun QwiksterNavHost(
                     pendingChannel = channel
                     navController.navigate(Routes.PLAYER)
                 },
-                onPlayMovie = { streamId -> navController.navigate(Routes.moviePlayer(streamId)) },
+                onPlayMovie = { streamId -> navController.navigate(Routes.movieDetail(streamId)) },
                 onOpenSeries = { seriesId -> navController.navigate(Routes.seriesDetail(seriesId)) },
             )
         }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -34,10 +35,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -346,6 +349,21 @@ private fun VodBody(
                 }
             }
 
+            // --- Startansicht: waagerechte Reihen ------------------------------
+            if (state.isOverview) {
+                VodRows(
+                    rows = state.rows,
+                    kind = kind,
+                    onPlayMovie = onPlayMovie,
+                    onOpenSeries = onOpenSeries,
+                    onPlayEpisode = onPlayEpisode,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                )
+                return@Row
+            }
+
             // --- Raster --------------------------------------------------------
             LazyVerticalGrid(
                 // Adaptiv statt einer festen Spaltenzahl: Bei fester Zahl würde
@@ -381,6 +399,107 @@ private fun VodBody(
     }
 }
 
+/**
+ * Die Startansicht: untereinander mehrere waagerechte Reihen.
+ *
+ * Zwei Dinge machen das auf einem Fernseher benutzbar:
+ *
+ * - **Jede Reihe merkt sich ihre Stelle.** `focusRestorer` bringt den Fokus
+ *   beim Zurückkommen dorthin, wo man die Reihe verlassen hat. Ohne das
+ *   landet man nach einem Ausflug nach unten und wieder hoch stets wieder am
+ *   Anfang und blättert alles erneut durch.
+ * - **Der Fokus beginnt oben links.** Genau wie überall sonst in der App –
+ *   ein fester Startpunkt statt der Stelle, die Compose zufällig zuerst
+ *   findet.
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun VodRows(
+    rows: List<VodRow>,
+    kind: StreamKind,
+    onPlayMovie: (String) -> Unit,
+    onOpenSeries: (String) -> Unit,
+    onPlayEpisode: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (rows.isEmpty()) {
+        Box(modifier, contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(R.string.vod_empty),
+                style = MaterialTheme.typography.bodyLarge,
+                color = TvOnSurfaceMuted,
+            )
+        }
+        return
+    }
+
+    val firstItem = remember { FocusRequester() }
+    LaunchedEffect(rows.firstOrNull()?.id) { runCatching { firstItem.requestFocus() } }
+
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(
+            start = TvSpacing.large,
+            end = TvSpacing.large,
+            top = TvSpacing.medium,
+            bottom = TvSpacing.large,
+        ),
+        verticalArrangement = Arrangement.spacedBy(TvSpacing.large),
+    ) {
+        itemsIndexed(rows, key = { _, row -> row.id }) { rowIndex, row ->
+            Column {
+                Text(
+                    text = row.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(TvSpacing.small))
+
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRestorer(),
+                    horizontalArrangement = Arrangement.spacedBy(TvSpacing.medium),
+                ) {
+                    itemsIndexed(row.items, key = { _, item -> "${row.id}-${item.id}" }) { index, item ->
+                        PosterCard(
+                            title = item.title,
+                            subtitle = item.subtitle,
+                            posterUrl = item.posterUrl,
+                            progress = item.progress,
+                            onClick = {
+                                when {
+                                    item.resumeEpisodeId != null -> onPlayEpisode(item.resumeEpisodeId)
+                                    kind == StreamKind.VOD -> onPlayMovie(item.id)
+                                    else -> onOpenSeries(item.id)
+                                }
+                            },
+                            modifier = Modifier
+                                .width(POSTER_WIDTH)
+                                .then(
+                                    if (rowIndex == 0 && index == 0) {
+                                        Modifier.focusRequester(firstItem)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Breite eines Posters in der Reihenansicht.
+ *
+ * Im Raster ergibt sie sich aus der Spaltenaufteilung; eine Reihe kennt
+ * keine Spalten und braucht deshalb ein festes Maß.
+ */
+private val POSTER_WIDTH = 150.dp
+
 @Composable
 private fun PosterCard(
     title: String,
@@ -388,10 +507,11 @@ private fun PosterCard(
     posterUrl: String?,
     progress: Float?,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.touchClickable(onClick),
+        modifier = modifier.touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = TvSurfaceElevated,

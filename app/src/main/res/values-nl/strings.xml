@@ -16,6 +16,15 @@
     <string name="category_all">Alle zenders</string>
     <string name="category_favorites">Favorieten</string>
     <string name="category_recent">Recent bekeken</string>
+    <string name="vod_empty">Nog niets aanwezig</string>
+    <string name="movie_resume_at">Bekeken tot %1$s</string>
+    <string name="movie_plot">Verhaal</string>
+    <string name="movie_from_start">Vanaf begin afspelen</string>
+    <string name="movie_resume">Hervatten</string>
+    <string name="movie_play">Afspelen</string>
+    <string name="category_recently_added">Nieuw toegevoegd</string>
+    <string name="category_continue_watching">Verder kijken</string>
+    <string name="category_overview">Overzicht</string>
     <string name="favorite">Favoriet</string>
     <string name="selected">Geselecteerd</string>
 

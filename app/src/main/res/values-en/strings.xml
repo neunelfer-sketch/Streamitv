@@ -16,6 +16,15 @@
     <string name="category_all">All channels</string>
     <string name="category_favorites">Favourites</string>
     <string name="category_recent">Recently watched</string>
+    <string name="vod_empty">Nothing here yet</string>
+    <string name="movie_resume_at">Watched up to %1$s</string>
+    <string name="movie_plot">Synopsis</string>
+    <string name="movie_from_start">Start from beginning</string>
+    <string name="movie_resume">Resume</string>
+    <string name="movie_play">Play</string>
+    <string name="category_recently_added">Recently added</string>
+    <string name="category_continue_watching">Continue watching</string>
+    <string name="category_overview">Overview</string>
     <string name="favorite">Favourite</string>
     <string name="selected">Selected</string>
 

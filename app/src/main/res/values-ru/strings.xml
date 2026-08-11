@@ -16,6 +16,15 @@
     <string name="category_all">Все каналы</string>
     <string name="category_favorites">Избранное</string>
     <string name="category_recent">Недавно просмотренные</string>
+    <string name="vod_empty">Пока ничего нет</string>
+    <string name="movie_resume_at">Просмотрено до %1$s</string>
+    <string name="movie_plot">Описание</string>
+    <string name="movie_from_start">Смотреть сначала</string>
+    <string name="movie_resume">Продолжить</string>
+    <string name="movie_play">Смотреть</string>
+    <string name="category_recently_added">Новое</string>
+    <string name="category_continue_watching">Продолжить просмотр</string>
+    <string name="category_overview">Обзор</string>
     <string name="favorite">В избранном</string>
     <string name="selected">Выбрано</string>
 
