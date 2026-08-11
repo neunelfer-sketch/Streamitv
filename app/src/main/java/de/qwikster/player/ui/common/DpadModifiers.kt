@@ -106,6 +106,39 @@ fun Modifier.dpadEvents(
 }
 
 /**
+ * Riegelt einen modalen Hinweis gegen den Hintergrund ab.
+ *
+ * Alles, was der fokussierte Knopf nicht selbst verarbeitet hat, wird hier
+ * verbraucht: Sonst reicht das Steuerkreuz den Fokus an die verdeckte
+ * Oberfläche dahinter weiter, und ein Fokuswechsel dort löst von selbst
+ * Aktionen aus (Vorschau starten, Programmdaten nachladen).
+ *
+ * Die Richtungen müssen aber **innerhalb** des Hinweises weiter wirken.
+ * Genau das ging zunächst schief: Ein pauschales "alles verbrauchen"
+ * schluckt auch den Weg vom einen zum anderen Knopf – der zweite Knopf war
+ * mit der Fernbedienung dann überhaupt nicht mehr erreichbar. Wer mehr als
+ * einen Knopf zeigt, gibt hier deshalb an, wohin die jeweilige Richtung
+ * führen soll.
+ */
+fun Modifier.modalInputTrap(
+    onLeft: () -> Unit = {},
+    onRight: () -> Unit = {},
+    onUp: () -> Unit = {},
+    onDown: () -> Unit = {},
+): Modifier = onKeyEvent { event ->
+    if (event.type == KeyEventType.KeyDown) {
+        when (event.key) {
+            Key.DirectionLeft -> onLeft()
+            Key.DirectionRight -> onRight()
+            Key.DirectionUp -> onUp()
+            Key.DirectionDown -> onDown()
+            else -> Unit
+        }
+    }
+    true
+}
+
+/**
  * Macht ein Element zusätzlich per Fingertipp bedienbar.
  *
  * Die Bausteine aus `androidx.tv.material3` (`Surface`, `Button`) werten

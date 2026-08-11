@@ -47,7 +47,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -72,6 +71,7 @@ import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.Channel
 import de.qwikster.player.data.model.ChannelWithProgram
 import de.qwikster.player.ui.common.COMPACT_WIDTH_BREAKPOINT
+import de.qwikster.player.ui.common.modalInputTrap
 import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.ChannelListItem
 import de.qwikster.player.ui.components.ChannelLogo
@@ -732,13 +732,13 @@ private fun LiveBadge(modifier: Modifier = Modifier) {
  *
  * Bewusst kein Startbildschirm-Dialog bei jedem Öffnen (siehe
  * [HomeViewModel]s Kommentar zur Update-Prüfung) – er erscheint genau
- * einmal pro neuer Fassung. Einzig der OK-Knopf schließt ihn: `onKeyEvent`
- * am äußeren Rahmen fängt alles ab, was der Knopf selbst nicht schon
- * verbraucht (Pfeiltasten, sonstige Tasten) – ohne das würde das
- * Steuerkreuz den Fokus unbemerkt zur Senderliste dahinter weiterreichen,
- * und ein Fokuswechsel dort löst von selbst Hintergrundaktionen aus
- * (Vorschau starten, Programmdaten nachladen). Genau das soll nicht
- * passieren, solange der Hinweis noch offen ist.
+ * einmal pro neuer Fassung. Einzig der OK-Knopf schließt ihn: Die Sperre am
+ * äußeren Rahmen fängt alles ab, was der Knopf selbst nicht schon verbraucht
+ * (siehe [modalInputTrap]).
+ *
+ * Hier ohne Richtungsangaben, und das ist kein Versehen: Es gibt nur diesen
+ * einen Knopf, es gäbe also gar kein Ziel, zu dem eine Pfeiltaste führen
+ * könnte.
  */
 @Composable
 private fun WhatsNewDialog(onDismiss: () -> Unit) {
@@ -749,7 +749,7 @@ private fun WhatsNewDialog(onDismiss: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.7f))
-            .onKeyEvent { true },
+            .modalInputTrap(),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -811,8 +811,12 @@ private fun WhatsNewItem(emoji: String, text: String) {
  * Beide Knöpfe bleiben über alle Zustände hinweg bestehen (auch während des
  * Ladens), nur der Text darüber wechselt: Verschwände der fokussierte Knopf
  * zwischenzeitlich aus der Komposition, verlöre der Fokus sein Ziel, und
- * genau dieselbe Lücke, die [WhatsNewDialog] mit `onKeyEvent` schließt,
- * stünde wieder offen.
+ * genau dieselbe Lücke, die [modalInputTrap] schließt, stünde wieder offen.
+ *
+ * Links und rechts führen ausdrücklich von einem Knopf zum anderen. Ohne
+ * diese Angabe verschluckt die Sperre auch den Weg zwischen den beiden, und
+ * "Später" ist mit der Fernbedienung gar nicht zu erreichen – der Fokus
+ * startet auf "Jetzt installieren" und käme nie wieder davon weg.
  */
 @Composable
 private fun UpdatePromptDialog(
@@ -821,13 +825,18 @@ private fun UpdatePromptDialog(
     onLater: () -> Unit,
 ) {
     val installFocus = remember { FocusRequester() }
+    val laterFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { installFocus.requestFocus() } }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.7f))
-            .onKeyEvent { true },
+            .modalInputTrap(
+                // "Später" steht links, "Jetzt installieren" rechts.
+                onLeft = { runCatching { laterFocus.requestFocus() } },
+                onRight = { runCatching { installFocus.requestFocus() } },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -865,7 +874,9 @@ private fun UpdatePromptDialog(
                 ) {
                     Button(
                         onClick = onLater,
-                        modifier = Modifier.touchClickable(onLater),
+                        modifier = Modifier
+                            .touchClickable(onLater)
+                            .focusRequester(laterFocus),
                     ) {
                         Text(stringResource(R.string.update_prompt_later))
                     }
