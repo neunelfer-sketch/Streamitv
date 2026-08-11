@@ -38,6 +38,21 @@ data class VodItem(
 /** Synthetische Kategorie, immer an erster Stelle – siehe [VodViewModel]. */
 const val RECENT_CATEGORY_ID = "__recent__"
 
+/**
+ * Kategorien mit Buchstaben zuerst, mit Ziffern beginnende danach.
+ *
+ * Panels mischen beides oft wild durcheinander (z. B. "18+", "24/7" oder
+ * "4K" zwischen den eigentlichen Genre-Kategorien) – ein reiner
+ * Zeichenvergleich stellte sie außerdem vor "A", weil Ziffern in der
+ * Unicode-Reihenfolge vor Buchstaben liegen. So bleibt die Liste innerhalb
+ * jeder der beiden Gruppen alphabetisch, aber die Ziffern-Kategorien
+ * stehen geschlossen unten.
+ */
+private val CATEGORY_ORDER = compareBy<Category>(
+    { if (it.name.firstOrNull()?.isDigit() == true) 1 else 0 },
+    { it.name.lowercase() },
+)
+
 data class VodUiState(
     val categories: List<Category> = emptyList(),
     val selectedCategoryId: String? = null,
@@ -68,6 +83,7 @@ class VodViewModel @Inject constructor(
 
     private val realCategories: StateFlow<List<Category>> = kind
         .flatMapLatest { repository.observeCategories(it) }
+        .map { list -> list.sortedWith(CATEGORY_ORDER) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Zuletzt gesehene Filme bzw. Folgen, umgesetzt in Poster-Einträge mit Fortschritt. */

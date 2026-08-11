@@ -105,6 +105,13 @@ data class CurrentProgramRow(
     val title: String,
 )
 
+/** Ein bereits gegen `get_vod_info` abgeglichenes Filmposter. */
+data class MoviePosterEnrichment(
+    val streamId: String,
+    val posterUrl: String?,
+    val plot: String?,
+)
+
 /** Zuletzt gesehener Film samt Fortsetzpunkt. */
 data class RecentMovieRow(
     val streamId: String,
@@ -385,6 +392,21 @@ interface VodDao {
     @MapInfo(keyColumn = "seriesId", valueColumn = "lastModified")
     @Query("SELECT seriesId, lastModified FROM series WHERE playlistId = :playlistId")
     suspend fun getSeriesModifiedTimes(playlistId: Long): Map<String, Long>
+
+    /**
+     * Filme, deren Poster bereits per `get_vod_info` durch ein hochwertiges
+     * Cover ersetzt wurde (siehe [PlaylistSyncer.enrichMoviePosters]).
+     *
+     * `plot` ist der Marker dafür: Die Übersichts-Antwort des Panels
+     * (`get_vod_streams`) liefert ihn nie, nur die Detailabfrage. Ein
+     * gesetzter Plot heißt also zuverlässig "schon angereichert" – ohne
+     * eigene Merker-Spalte. Wichtig bei jedem Resync: [replaceMovies]
+     * schreibt die Tabelle komplett neu, ohne dieses Zwischenspeichern ginge
+     * jedes bereits gefundene Cover beim nächsten "Senderliste
+     * aktualisieren" wieder verloren.
+     */
+    @Query("SELECT streamId, posterUrl, plot FROM movies WHERE playlistId = :playlistId AND plot IS NOT NULL")
+    suspend fun getEnrichedMoviePosters(playlistId: Long): List<MoviePosterEnrichment>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)

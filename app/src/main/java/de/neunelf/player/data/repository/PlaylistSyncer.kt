@@ -9,6 +9,7 @@ import de.neunelf.player.data.local.ChannelDao
 import de.neunelf.player.data.local.PlaylistDao
 import de.neunelf.player.data.local.VodDao
 import de.neunelf.player.data.local.toEntity
+import de.neunelf.player.data.model.Movie
 import de.neunelf.player.data.model.Playlist
 import de.neunelf.player.data.model.PlaylistType
 import de.neunelf.player.data.model.StreamKind
@@ -21,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -69,6 +71,9 @@ class PlaylistSyncer @Inject constructor(
     private val vodDao: VodDao,
     @ApplicationScope private val appScope: CoroutineScope,
 ) {
+
+    /** Verhindert doppelt laufende Anreicherungen, falls die Playlist mehrfach kurz hintereinander aktualisiert wird. */
+    private val enrichmentInProgress = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
 
     /**
      * Synchronisiert die Playlist und meldet den Fortschritt.
@@ -158,7 +163,18 @@ class PlaylistSyncer @Inject constructor(
             Log.w(TAG, "VOD-Import übersprungen: ${it.message}")
         }.getOrDefault(emptyList())
 
-        vodDao.replaceMovies(playlist.id, movies.map { it.toEntity() })
+        // Bereits gefundene, hochwertige Poster (siehe [enrichMoviePosters])
+        // überstehen den Resync: [replaceMovies] schreibt die Tabelle sonst
+        // komplett neu und würfe jedes zuvor angereicherte Cover wieder weg.
+        val previousPosters = vodDao.getEnrichedMoviePosters(playlist.id).associateBy { it.streamId }
+        val moviesWithPosters = movies.map { movie ->
+            previousPosters[movie.streamId]?.let { enrichment ->
+                movie.copy(posterUrl = enrichment.posterUrl ?: movie.posterUrl, plot = enrichment.plot)
+            } ?: movie
+        }
+
+        vodDao.replaceMovies(playlist.id, moviesWithPosters.map { it.toEntity() })
+        enrichMoviePosters(playlist, moviesWithPosters)
 
         // --- Serien --------------------------------------------------------
         emit(SyncProgress.Step("Lade Serien…", 80))
@@ -176,6 +192,60 @@ class PlaylistSyncer @Inject constructor(
 
         emit(SyncProgress.Step("Fertig", 100))
         emit(SyncProgress.Done(channels.size, movies.size, series.size))
+    }
+
+    /**
+     * Ersetzt nach und nach das Vorschaubild aus der Senderliste
+     * (`stream_icon` – bei vielen Panels nur ein Kamerabild aus dem Film,
+     * oft verschwommen) durch das eigentliche Poster aus `get_vod_info`.
+     *
+     * Bewusst **nicht** Teil des eigentlichen Syncs: Eine Abfrage pro Film
+     * bei tausenden Filmen würde den Import um ein Vielfaches verlangsamen.
+     * Läuft stattdessen im Hintergrund weiter, ein Film nach dem anderen mit
+     * einer kleinen Pause dazwischen, und schreibt jeden Treffer sofort in
+     * die Datenbank – das Raster aktualisiert sich von selbst, sobald ein
+     * besseres Cover da ist (Room liefert Änderungen als [Flow]). Nur
+     * Filme ohne `plot` werden angefasst: das ist der Marker für "noch
+     * nicht angereichert" (siehe [VodDao.getEnrichedMoviePosters]), ein
+     * späterer Sync verarbeitet also nur echte Neuzugänge.
+     */
+    private fun enrichMoviePosters(playlist: Playlist, movies: List<Movie>) {
+        if (playlist.type != PlaylistType.XTREAM) return
+        val pending = movies.filter { it.plot.isNullOrBlank() }
+        if (pending.isEmpty() || !enrichmentInProgress.add(playlist.id)) return
+
+        appScope.launch(Dispatchers.IO) {
+            try {
+                val credentials = playlist.credentials()
+                for (movie in pending) {
+                    runCatching {
+                        val info = xtreamApi.getVodInfo(credentials, movie.streamId)
+                        val enriched = XtreamMapper.enrichMovie(movie, info)
+                        val current = vodDao.getMovie(playlist.id, movie.streamId) ?: return@runCatching
+                        vodDao.updateMovie(
+                            current.copy(
+                                posterUrl = enriched.posterUrl,
+                                // Auch ohne echten Klappentext wird ein nicht-leerer
+                                // Platzhalter gespeichert: Das ist der Marker "schon
+                                // angereichert" (siehe getEnrichedMoviePosters) – ohne
+                                // ihn würde derselbe Film bei jedem Sync erneut
+                                // angefragt, weil das Panel dafür nie einen Klappentext
+                                // liefert.
+                                plot = enriched.plot?.takeIf { it.isNotBlank() } ?: "–",
+                                year = enriched.year,
+                                rating = enriched.rating,
+                                durationSecs = enriched.durationSecs,
+                            ),
+                        )
+                    }.onFailure {
+                        Log.w(TAG, "Cover-Anreicherung übersprungen für '${movie.name}': ${it.message}")
+                    }
+                    delay(ENRICHMENT_DELAY_MS)
+                }
+            } finally {
+                enrichmentInProgress.remove(playlist.id)
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -310,6 +380,9 @@ class PlaylistSyncer @Inject constructor(
 
         /** Wird auch beim Streamen benutzt – manche Panels prüfen darauf. */
         const val USER_AGENT = "9elfPlayer/1.0 (Android TV)"
+
+        /** Pause zwischen zwei `get_vod_info`-Abfragen bei der Cover-Anreicherung. */
+        private const val ENRICHMENT_DELAY_MS = 200L
     }
 }
 
