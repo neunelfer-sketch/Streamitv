@@ -47,6 +47,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -159,8 +160,10 @@ fun HomeScreen(
         }
     }
 
-    // Zurück schließt nur den Hinweis, statt die App zu verlassen.
-    BackHandler(enabled = state.showWhatsNew) { viewModel.dismissWhatsNew() }
+    // Zurück soll den Hinweis nicht schließen (nur der OK-Knopf darf das) –
+    // aber ohne diesen Fänger würde Zurück stattdessen die App verlassen,
+    // während der Hinweis noch auf dem Bildschirm steht.
+    BackHandler(enabled = state.showWhatsNew) { }
 
     Box(modifier = Modifier.fillMaxSize().background(TvBackground)) {
         Column(
@@ -698,7 +701,13 @@ private fun LiveBadge(modifier: Modifier = Modifier) {
  *
  * Bewusst kein Startbildschirm-Dialog bei jedem Öffnen (siehe
  * [HomeViewModel]s Kommentar zur Update-Prüfung) – er erscheint genau
- * einmal pro neuer Fassung und lässt sich mit einem Tastendruck wegwischen.
+ * einmal pro neuer Fassung. Einzig der OK-Knopf schließt ihn: `onKeyEvent`
+ * am äußeren Rahmen fängt alles ab, was der Knopf selbst nicht schon
+ * verbraucht (Pfeiltasten, sonstige Tasten) – ohne das würde das
+ * Steuerkreuz den Fokus unbemerkt zur Senderliste dahinter weiterreichen,
+ * und ein Fokuswechsel dort löst von selbst Hintergrundaktionen aus
+ * (Vorschau starten, Programmdaten nachladen). Genau das soll nicht
+ * passieren, solange der Hinweis noch offen ist.
  */
 @Composable
 private fun WhatsNewDialog(onDismiss: () -> Unit) {
@@ -708,7 +717,8 @@ private fun WhatsNewDialog(onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
+            .background(Color.Black.copy(alpha = 0.7f))
+            .onKeyEvent { true },
         contentAlignment = Alignment.Center,
     ) {
         Surface(
