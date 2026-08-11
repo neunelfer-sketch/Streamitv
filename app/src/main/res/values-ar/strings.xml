@@ -215,6 +215,7 @@
     <string name="error_content_not_loaded">تعذّر تحميل المحتوى</string>
     <string name="error_connection_failed">فشل الاتصال</string>
     <string name="error_http_status">استجاب الخادم برمز HTTP %1$d</string>
+    <string name="error_http_forbidden">‏تم الرفض من قِبل المزوّد (403). غالبًا ما تكون جميع الاتصالات المتزامنة المسموح بها مستخدمة بالفعل، أو أن الاشتراك مرتبط باتصال إنترنت آخر.</string>
     <string name="error_github_http_status">استجاب GitHub برمز HTTP %1$d</string>
     <string name="error_empty_response">استجابة فارغة</string>
     <string name="error_empty_server_response">استجابة فارغة من الخادم</string>

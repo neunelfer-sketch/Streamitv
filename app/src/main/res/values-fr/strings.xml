@@ -215,6 +215,7 @@
     <string name="error_content_not_loaded">Impossible de charger ce contenu</string>
     <string name="error_connection_failed">Échec de la connexion</string>
     <string name="error_http_status">Le serveur a répondu HTTP %1$d</string>
+    <string name="error_http_forbidden">Refusé par le fournisseur (403). En général, toutes les connexions simultanées autorisées sont déjà utilisées, ou l\'accès est lié à une autre connexion Internet.</string>
     <string name="error_github_http_status">GitHub a répondu HTTP %1$d</string>
     <string name="error_empty_response">Réponse vide</string>
     <string name="error_empty_server_response">Réponse vide du serveur</string>

@@ -215,6 +215,7 @@
     <string name="error_content_not_loaded">Could not load this content</string>
     <string name="error_connection_failed">Connection failed</string>
     <string name="error_http_status">Server responded with HTTP %1$d</string>
+    <string name="error_http_forbidden">Rejected by the provider (403). Usually all permitted simultaneous connections are already in use, or the account is tied to a different internet connection.</string>
     <string name="error_github_http_status">GitHub responded with HTTP %1$d</string>
     <string name="error_empty_response">Empty response</string>
     <string name="error_empty_server_response">Empty response from the server</string>

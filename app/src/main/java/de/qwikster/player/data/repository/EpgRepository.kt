@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import de.qwikster.player.R
+import de.qwikster.player.core.httpErrorMessage
 import de.qwikster.player.core.toErrorCode
 import de.qwikster.player.core.withErrorCode
 import de.qwikster.player.data.local.ChannelDao
@@ -205,7 +206,7 @@ class EpgRepository @Inject constructor(
                 if (!response.isSuccessful) {
                     emit(
                         EpgSyncProgress.Failed(
-                            context.getString(R.string.error_http_status, response.code)
+                            context.httpErrorMessage(response.code)
                                 .withErrorCode("HTTP-${response.code}"),
                         ),
                     )

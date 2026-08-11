@@ -215,6 +215,7 @@
     <string name="error_content_not_loaded">Не удалось загрузить содержимое</string>
     <string name="error_connection_failed">Не удалось подключиться</string>
     <string name="error_http_status">Сервер ответил кодом HTTP %1$d</string>
+    <string name="error_http_forbidden">Отклонено провайдером (403). Обычно уже заняты все разрешённые одновременные подключения либо доступ привязан к другому интернет-соединению.</string>
     <string name="error_github_http_status">GitHub ответил кодом HTTP %1$d</string>
     <string name="error_empty_response">Пустой ответ</string>
     <string name="error_empty_server_response">Пустой ответ от сервера</string>

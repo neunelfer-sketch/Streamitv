@@ -5,6 +5,7 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import de.qwikster.player.R
 import de.qwikster.player.core.CodedException
+import de.qwikster.player.core.httpErrorMessage
 import de.qwikster.player.core.toErrorCode
 import de.qwikster.player.core.withErrorCode
 import de.qwikster.player.data.local.CategoryDao
@@ -269,7 +270,7 @@ class PlaylistSyncer @Inject constructor(
         val parsed = httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 throw SyncException(
-                    context.getString(R.string.error_http_status, response.code),
+                    context.httpErrorMessage(response.code),
                     "HTTP-${response.code}",
                 )
             }
@@ -389,6 +390,17 @@ class PlaylistSyncer @Inject constructor(
 
         /** Wird auch beim Streamen benutzt – manche Panels prüfen darauf. */
         const val USER_AGENT = "Qwikster/1.0 (Android TV)"
+
+        /**
+         * Zweitname für Panels, die nur bekannte Player durchlassen.
+         *
+         * VLC ist der mit Abstand am weitesten verbreitete Abspieler für
+         * IPTV-Ströme und steht deshalb praktisch überall auf der
+         * Positivliste. Er kommt ausschließlich dann zum Einsatz, wenn ein
+         * Server den eigenen Namen bereits mit 403 abgewiesen hat – siehe
+         * den Interceptor in `AppModule`.
+         */
+        const val FALLBACK_USER_AGENT = "VLC/3.0.20 LibVLC/3.0.20"
 
         /** Pause zwischen zwei `get_vod_info`-Abfragen bei der Cover-Anreicherung. */
         private const val ENRICHMENT_DELAY_MS = 200L

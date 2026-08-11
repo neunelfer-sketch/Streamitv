@@ -1,5 +1,23 @@
 package de.qwikster.player.core
 
+import android.content.Context
+import de.qwikster.player.R
+
+/**
+ * Verständliche Meldung zu einem HTTP-Fehlercode.
+ *
+ * 403 bekommt eine eigene, weil "Server antwortete mit HTTP 403" niemandem
+ * weiterhilft: Der Zugang ist in aller Regel völlig in Ordnung, der Anbieter
+ * weist die Anfrage nur ab – fast immer, weil bereits die erlaubte Zahl
+ * gleichzeitiger Verbindungen belegt ist oder der Zugang an eine andere
+ * Internetverbindung gebunden ist. Beides kann der Zuschauer selbst prüfen,
+ * sobald er es weiß.
+ */
+fun Context.httpErrorMessage(code: Int): String = when (code) {
+    403 -> getString(R.string.error_http_forbidden)
+    else -> getString(R.string.error_http_status, code)
+}
+
 /**
  * Hängt einen kurzen Diagnosecode an eine für den Nutzer bestimmte
  * Fehlermeldung an.

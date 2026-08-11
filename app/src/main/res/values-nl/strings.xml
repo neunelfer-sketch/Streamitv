@@ -215,6 +215,7 @@
     <string name="error_content_not_loaded">Kan deze inhoud niet laden</string>
     <string name="error_connection_failed">Verbinding mislukt</string>
     <string name="error_http_status">Server antwoordde met HTTP %1$d</string>
+    <string name="error_http_forbidden">Geweigerd door de aanbieder (403). Meestal zijn alle toegestane gelijktijdige verbindingen al in gebruik, of is de toegang gebonden aan een andere internetverbinding.</string>
     <string name="error_github_http_status">GitHub antwoordde met HTTP %1$d</string>
     <string name="error_empty_response">Leeg antwoord</string>
     <string name="error_empty_server_response">Leeg antwoord van de server</string>

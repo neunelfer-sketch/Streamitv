@@ -215,6 +215,7 @@
     <string name="error_content_not_loaded">İçerik yüklenemedi</string>
     <string name="error_connection_failed">Bağlantı başarısız</string>
     <string name="error_http_status">Sunucu HTTP %1$d yanıtı verdi</string>
+    <string name="error_http_forbidden">Sağlayıcı tarafından reddedildi (403). Genellikle izin verilen eşzamanlı bağlantıların tamamı kullanımdadır ya da hesap başka bir internet bağlantısına bağlıdır.</string>
     <string name="error_github_http_status">GitHub HTTP %1$d yanıtı verdi</string>
     <string name="error_empty_response">Boş yanıt</string>
     <string name="error_empty_server_response">Sunucudan boş yanıt</string>

@@ -36,6 +36,9 @@ import javax.inject.Singleton
 @Retention(AnnotationRetention.BINARY)
 annotation class ApplicationScope
 
+/** "Zugriff verweigert" – siehe den User-Agent-Zweitversuch im OkHttp-Client. */
+private const val HTTP_FORBIDDEN = 403
+
 /**
  * Zentrale Objektgraph-Konfiguration.
  *
@@ -72,11 +75,30 @@ object AppModule {
         // Viele Panels leiten von HTTP auf HTTPS (oder umgekehrt) um.
         .followRedirects(true)
         .followSslRedirects(true)
+        // Der eigene User-Agent, und bei einer Abfuhr ein zweiter Versuch mit
+        // einem verbreiteten Player-Namen.
+        //
+        // Etliche Panels führen eine Positivliste erlaubter User-Agents und
+        // antworten allem Unbekannten mit 403 – der Zugang ist dann völlig in
+        // Ordnung, nur der Name gefällt nicht. Da der Nutzer davon nichts
+        // ahnen kann und am Panel auch nichts ändern kann, versucht die App
+        // es in genau diesem Fall einmal selbst erneut. Der zweite Versuch
+        // kostet nur dort etwas, wo es ohnehin schon fehlgeschlagen war.
         .addInterceptor { chain ->
             val request = chain.request().newBuilder()
                 .header("User-Agent", PlaylistSyncer.USER_AGENT)
                 .build()
-            chain.proceed(request)
+            val response = chain.proceed(request)
+            if (response.code != HTTP_FORBIDDEN) return@addInterceptor response
+
+            // Die erste Antwort muss geschlossen werden, bevor die nächste
+            // Anfrage rausgeht – sonst bleibt die Verbindung im Pool hängen.
+            response.close()
+            chain.proceed(
+                request.newBuilder()
+                    .header("User-Agent", PlaylistSyncer.FALLBACK_USER_AGENT)
+                    .build(),
+            )
         }
         .apply {
             if (BuildConfig.DEBUG) {

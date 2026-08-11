@@ -238,6 +238,7 @@
     <string name="error_content_not_loaded">Inhalt konnte nicht geladen werden</string>
     <string name="error_connection_failed">Verbindung fehlgeschlagen</string>
     <string name="error_http_status">Server antwortete mit HTTP %1$d</string>
+    <string name="error_http_forbidden">Vom Anbieter abgelehnt (403). Meist sind schon alle erlaubten gleichzeitigen Verbindungen belegt, oder der Zugang gilt nur für eine andere Internetverbindung.</string>
     <string name="error_github_http_status">GitHub antwortete mit HTTP %1$d</string>
     <string name="error_empty_response">Leere Antwort</string>
     <string name="error_empty_server_response">Leere Antwort vom Server</string>
