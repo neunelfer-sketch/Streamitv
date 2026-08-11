@@ -162,6 +162,13 @@
     <string name="update_check_failed">Denetim başarısız</string>
     <string name="update_install_permission">Lütfen 9elf Player için kuruluma izin verip yeniden OK\'a basın</string>
 
+    <string name="update_prompt_title">⬆️ Güncelleme mevcut</string>
+    <string name="update_prompt_version">Sürüm %1$s hazır. Şimdi mi kurulsun, yoksa bir sonraki yeniden başlatmada mı?</string>
+    <string name="update_prompt_downloading">İndiriliyor… %%%1$d</string>
+    <string name="update_prompt_failed">Başarısız: %1$s</string>
+    <string name="update_prompt_install_now">Şimdi kur</string>
+    <string name="update_prompt_later">Daha sonra</string>
+
     <!-- İletişim -->
     <string name="contact_scan_hint">Kodu telefon kameranızla okutun – sohbet doğrudan SimpleX\'te açılır.</string>
     <string name="contact_qr_description">9elf ile sohbet için QR kod</string>

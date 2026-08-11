@@ -162,6 +162,13 @@
     <string name="update_check_failed">Не удалось проверить обновления</string>
     <string name="update_install_permission">Разрешите установку для 9elf Player и нажмите OK ещё раз</string>
 
+    <string name="update_prompt_title">⬆️ Доступно обновление</string>
+    <string name="update_prompt_version">Версия %1$s готова. Установить сейчас или при следующем перезапуске?</string>
+    <string name="update_prompt_downloading">Загрузка… %1$d%%</string>
+    <string name="update_prompt_failed">Ошибка: %1$s</string>
+    <string name="update_prompt_install_now">Установить сейчас</string>
+    <string name="update_prompt_later">Позже</string>
+
     <!-- Контакты -->
     <string name="contact_scan_hint">Отсканируйте код камерой телефона – чат откроется сразу в SimpleX.</string>
     <string name="contact_qr_description">QR-код для чата с 9elf</string>

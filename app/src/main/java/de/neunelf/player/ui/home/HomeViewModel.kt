@@ -15,16 +15,19 @@ import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.prefs.AppSettings
 import de.neunelf.player.data.prefs.SettingsStore
 import de.neunelf.player.data.repository.ChannelFilter
+import de.neunelf.player.data.repository.DownloadProgress
 import de.neunelf.player.data.repository.EpgRepository
 import de.neunelf.player.data.repository.IptvRepository
 import de.neunelf.player.data.repository.PlaylistSyncer
 import de.neunelf.player.data.repository.SyncProgress
 import de.neunelf.player.data.repository.UpdateRepository
 import de.neunelf.player.player.PreviewPlayer
+import de.neunelf.player.ui.settings.UpdateUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -98,6 +101,8 @@ data class HomeUiState(
     val updateVersion: String? = null,
     /** Einmalig nach einer Aktualisierung: kurzer Überblick, was neu ist. */
     val showWhatsNew: Boolean = false,
+    /** Stand der stündlichen Update-Prüfung – steuert den Installationshinweis. */
+    val updatePrompt: UpdateUiState = UpdateUiState.Unknown,
 ) {
     val hasPlaylist: Boolean get() = playlist != null
     val isEmpty: Boolean get() = !isLoading && channels.isEmpty()
@@ -130,6 +135,10 @@ class HomeViewModel @Inject constructor(
     private val upcoming = MutableStateFlow<List<EpgProgram>>(emptyList())
     private val updateVersion = MutableStateFlow<String?>(null)
     private val showWhatsNew = MutableStateFlow(false)
+    private val updatePrompt = MutableStateFlow<UpdateUiState>(UpdateUiState.Unknown)
+
+    /** Version, die der Nutzer per "Später" abgelehnt hat – erst ein neuerer Fund fragt wieder. */
+    private var dismissedUpdateVersion: String? = null
 
     /** Sammelt die Nebenzustände, damit `combine` unter fünf Quellen bleibt. */
     private data class AuxState(
@@ -215,8 +224,12 @@ class HomeViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
-    val uiState: StateFlow<HomeUiState> = combine(baseUiState, showWhatsNew) { base, show ->
-        base.copy(showWhatsNew = show)
+    val uiState: StateFlow<HomeUiState> = combine(
+        baseUiState,
+        showWhatsNew,
+        updatePrompt,
+    ) { base, show, prompt ->
+        base.copy(showWhatsNew = show, updatePrompt = prompt)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     init {
@@ -225,15 +238,23 @@ class HomeViewModel @Inject constructor(
             .onEach { playlist -> playlist?.let { maybeAutoRefresh(it) } }
             .launchIn(viewModelScope)
 
-        // Beiläufig nach einer neuen Fassung sehen. Das Ergebnis erscheint
-        // nur als Hinweis in der Kopfzeile – ein Dialog beim Start wäre auf
-        // einem Fernseher aufdringlich, und ein Fehlschlag (kein Netz)
-        // bleibt bewusst still: Wer aktiv sucht, tut das in den
-        // Einstellungen und bekommt dort auch die Fehlermeldung.
+        // Stündliche Prüfung auf eine neue Fassung – nicht nur einmal beim
+        // Start. Läuft weiter, solange dieses ViewModel lebt (also
+        // praktisch die ganze App-Laufzeit, da "Home" nie aus dem
+        // Rückstapel verschwindet), auch während der Nutzer in Live TV
+        // oder einem Film ist. Der Fund selbst erscheint nur als leiser
+        // Hinweis in der Kopfzeile; der Installationsvorschlag (siehe
+        // [updatePrompt]) taucht erst wieder auf, sobald der Nutzer auf
+        // den Hauptbildschirm zurückkehrt – nie mitten in der Wiedergabe.
         viewModelScope.launch {
-            updateVersion.value = runCatching { updateRepository.check() }
-                .getOrNull()
-                ?.versionName
+            while (isActive) {
+                val info = runCatching { updateRepository.check() }.getOrNull()
+                updateVersion.value = info?.versionName
+                if (info != null && info.versionName != dismissedUpdateVersion) {
+                    updatePrompt.value = UpdateUiState.Available(info)
+                }
+                delay(TimeUnit.HOURS.toMillis(1))
+            }
         }
 
         // Einmalig nach einer Aktualisierung: kurzer "Was ist neu"-Hinweis.
@@ -254,6 +275,44 @@ class HomeViewModel @Inject constructor(
 
     fun dismissWhatsNew() {
         showWhatsNew.value = false
+    }
+
+    // -----------------------------------------------------------------------
+    // Aktualisierung
+    // -----------------------------------------------------------------------
+
+    /**
+     * "Jetzt installieren": lädt herunter und übergibt die Datei sofort dem
+     * Installationsprogramm, ohne einen weiteren Tastendruck zu verlangen –
+     * der Nutzer hat sich mit dieser Taste bereits entschieden.
+     */
+    fun installUpdateNow() {
+        val current = (updatePrompt.value as? UpdateUiState.Available)?.info ?: return
+        viewModelScope.launch {
+            updateRepository.cleanUp()
+            updateRepository.download(current).collect { progress ->
+                when (progress) {
+                    is DownloadProgress.Running -> updatePrompt.value = UpdateUiState.Downloading(progress.percent)
+                    is DownloadProgress.Finished -> {
+                        updateRepository.install(progress.file)
+                        updatePrompt.value = UpdateUiState.Unknown
+                    }
+                    is DownloadProgress.Failed -> updatePrompt.value = UpdateUiState.Failed(progress.message)
+                }
+            }
+        }
+    }
+
+    /**
+     * "Später": Die Fassung wird erst wieder vorgeschlagen, wenn eine noch
+     * neuere gefunden wird – bei der nächsten stündlichen Prüfung erscheint
+     * genau diese Version also nicht sofort wieder. Ein Neustart der App
+     * (neues ViewModel, [dismissedUpdateVersion] beginnt leer) fragt
+     * dagegen wie gewünscht erneut.
+     */
+    fun dismissUpdatePrompt() {
+        (updatePrompt.value as? UpdateUiState.Available)?.let { dismissedUpdateVersion = it.info.versionName }
+        updatePrompt.value = UpdateUiState.Unknown
     }
 
     // -----------------------------------------------------------------------

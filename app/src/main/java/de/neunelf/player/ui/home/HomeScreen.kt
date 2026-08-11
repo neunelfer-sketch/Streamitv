@@ -75,6 +75,7 @@ import de.neunelf.player.ui.common.COMPACT_WIDTH_BREAKPOINT
 import de.neunelf.player.ui.components.ChannelListItem
 import de.neunelf.player.ui.components.ChannelLogo
 import de.neunelf.player.ui.components.ProgramProgressBar
+import de.neunelf.player.ui.settings.UpdateUiState
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvBackground
 import de.neunelf.player.ui.theme.TvLive
@@ -160,10 +161,12 @@ fun HomeScreen(
         }
     }
 
-    // Zurück soll den Hinweis nicht schließen (nur der OK-Knopf darf das) –
-    // aber ohne diesen Fänger würde Zurück stattdessen die App verlassen,
-    // während der Hinweis noch auf dem Bildschirm steht.
-    BackHandler(enabled = state.showWhatsNew) { }
+    // Nur "Zeigt gerade nichts an" lässt Zurück normal wirken – sowohl der
+    // "Was ist neu"-Hinweis als auch der Update-Vorschlag sollen sich
+    // ausschließlich über ihre eigenen Knöpfe schließen lassen, nicht über
+    // Zurück (das würde sonst stattdessen die App verlassen).
+    val isUpdatePromptVisible = !state.showWhatsNew && state.updatePrompt != UpdateUiState.Unknown
+    BackHandler(enabled = state.showWhatsNew || isUpdatePromptVisible) { }
 
     Box(modifier = Modifier.fillMaxSize().background(TvBackground)) {
         Column(
@@ -240,6 +243,12 @@ fun HomeScreen(
 
         if (state.showWhatsNew) {
             WhatsNewDialog(onDismiss = viewModel::dismissWhatsNew)
+        } else if (isUpdatePromptVisible) {
+            UpdatePromptDialog(
+                state = state.updatePrompt,
+                onInstallNow = viewModel::installUpdateNow,
+                onLater = viewModel::dismissUpdatePrompt,
+            )
         }
     }
 }
@@ -764,5 +773,84 @@ private fun WhatsNewItem(emoji: String, text: String) {
             color = TvOnSurfaceMuted,
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Update-Vorschlag (stündliche Hintergrundprüfung)
+// ---------------------------------------------------------------------------
+
+/**
+ * Erscheint auf dem Hauptbildschirm, sobald die stündliche Hintergrundprüfung
+ * (siehe [HomeViewModel]) eine neue Fassung gefunden hat – nie mitten in der
+ * Wiedergabe, weil dieser Bildschirm dann gar nicht komponiert ist.
+ *
+ * Beide Knöpfe bleiben über alle Zustände hinweg bestehen (auch während des
+ * Ladens), nur der Text darüber wechselt: Verschwände der fokussierte Knopf
+ * zwischenzeitlich aus der Komposition, verlöre der Fokus sein Ziel, und
+ * genau dieselbe Lücke, die [WhatsNewDialog] mit `onKeyEvent` schließt,
+ * stünde wieder offen.
+ */
+@Composable
+private fun UpdatePromptDialog(
+    state: UpdateUiState,
+    onInstallNow: () -> Unit,
+    onLater: () -> Unit,
+) {
+    val installFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { installFocus.requestFocus() } }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f))
+            .onKeyEvent { true },
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier.widthIn(max = 480.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = androidx.tv.material3.SurfaceDefaults.colors(containerColor = TvSurfaceElevated),
+        ) {
+            Column(modifier = Modifier.padding(TvSpacing.large)) {
+                Text(
+                    text = stringResource(R.string.update_prompt_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Spacer(Modifier.height(TvSpacing.small))
+
+                val (message, isError) = when (state) {
+                    is UpdateUiState.Available ->
+                        stringResource(R.string.update_prompt_version, state.info.versionName) to false
+                    is UpdateUiState.Downloading ->
+                        stringResource(R.string.update_prompt_downloading, state.percent) to false
+                    is UpdateUiState.Failed ->
+                        stringResource(R.string.update_prompt_failed, state.message) to true
+                    else -> "" to false
+                }
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isError) MaterialTheme.colorScheme.error else TvOnSurfaceMuted,
+                )
+
+                Spacer(Modifier.height(TvSpacing.medium))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(TvSpacing.small),
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Button(onClick = onLater) {
+                        Text(stringResource(R.string.update_prompt_later))
+                    }
+                    Button(
+                        onClick = onInstallNow,
+                        modifier = Modifier.focusRequester(installFocus),
+                    ) {
+                        Text(stringResource(R.string.update_prompt_install_now))
+                    }
+                }
+            }
+        }
     }
 }

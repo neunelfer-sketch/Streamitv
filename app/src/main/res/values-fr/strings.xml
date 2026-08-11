@@ -162,6 +162,13 @@
     <string name="update_check_failed">Échec de la vérification</string>
     <string name="update_install_permission">Autorisez l\'installation pour 9elf Player, puis appuyez de nouveau sur OK</string>
 
+    <string name="update_prompt_title">⬆️ Mise à jour disponible</string>
+    <string name="update_prompt_version">La version %1$s est prête. Installer maintenant ou au prochain redémarrage ?</string>
+    <string name="update_prompt_downloading">Téléchargement… %1$d %%</string>
+    <string name="update_prompt_failed">Échec : %1$s</string>
+    <string name="update_prompt_install_now">Installer maintenant</string>
+    <string name="update_prompt_later">Plus tard</string>
+
     <!-- Contact -->
     <string name="contact_scan_hint">Scannez le code avec l\'appareil photo de votre téléphone – le chat s\'ouvre directement dans SimpleX.</string>
     <string name="contact_qr_description">Code QR pour discuter avec 9elf</string>

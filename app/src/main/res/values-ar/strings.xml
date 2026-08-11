@@ -162,6 +162,13 @@
     <string name="update_check_failed">فشل التحقق</string>
     <string name="update_install_permission">يرجى السماح بالتثبيت لتطبيق 9elf Player ثم الضغط على OK مجددًا</string>
 
+    <string name="update_prompt_title">⬆️ يتوفر تحديث</string>
+    <string name="update_prompt_version">الإصدار %1$s جاهز. هل تريد التثبيت الآن أم عند إعادة التشغيل التالية؟</string>
+    <string name="update_prompt_downloading">جارٍ التنزيل… %1$d%%</string>
+    <string name="update_prompt_failed">فشل: %1$s</string>
+    <string name="update_prompt_install_now">التثبيت الآن</string>
+    <string name="update_prompt_later">لاحقًا</string>
+
     <!-- التواصل -->
     <string name="contact_scan_hint">امسح الرمز بكاميرا هاتفك – ستفتح الدردشة مباشرةً في SimpleX.</string>
     <string name="contact_qr_description">رمز QR للدردشة مع 9elf</string>

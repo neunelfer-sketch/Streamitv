@@ -162,6 +162,13 @@
     <string name="update_check_failed">Controle mislukt</string>
     <string name="update_install_permission">Sta de installatie voor 9elf Player toe en druk opnieuw op OK</string>
 
+    <string name="update_prompt_title">⬆️ Update beschikbaar</string>
+    <string name="update_prompt_version">Versie %1$s is klaar. Nu installeren of pas bij de volgende herstart?</string>
+    <string name="update_prompt_downloading">Downloaden… %1$d%%</string>
+    <string name="update_prompt_failed">Mislukt: %1$s</string>
+    <string name="update_prompt_install_now">Nu installeren</string>
+    <string name="update_prompt_later">Later</string>
+
     <!-- Contact -->
     <string name="contact_scan_hint">Scan de code met je telefooncamera – de chat opent meteen in SimpleX.</string>
     <string name="contact_qr_description">QR-code voor de chat met 9elf</string>
