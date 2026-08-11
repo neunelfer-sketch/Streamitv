@@ -18,14 +18,14 @@ val appVersionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() 
 val appVersionName = (findProperty("appVersionName") as String?) ?: "1.0.0"
 
 // Öffentliches Repository, aus dem die App ihre Aktualisierungen bezieht.
-val updateRepo = (findProperty("updateRepo") as String?) ?: "neunelfer-sketch/9elf-Player"
+val updateRepo = (findProperty("updateRepo") as String?) ?: "neunelfer-sketch/Qwikster-Player"
 
 android {
-    namespace = "de.neunelf.player"
+    namespace = "de.qwikster.player"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "de.neunelf.player"
+        applicationId = "de.qwikster.player"
         // minSdk 22 deckt Fire OS 5 (Fire TV Stick 2. Gen) sowie Android TV 5.1 ab.
         minSdk = 22
         targetSdk = 34

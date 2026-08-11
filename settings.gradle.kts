@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NeunelfPlayer"
+rootProject.name = "Qwikster"
 include(":app")

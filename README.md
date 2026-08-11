@@ -45,9 +45,9 @@ und in allen dreien ist der native Weg klar im Vorteil:
 ## Projektstruktur
 
 ```
-app/src/main/java/de/neunelf/player/
+app/src/main/java/de/qwikster/player/
 │
-├─ NeunelfPlayerApplication.kt  Hilt-Einstieg, Coil-Bildcache
+├─ QwiksterApplication.kt       Hilt-Einstieg, Coil-Bildcache
 ├─ MainActivity.kt              Single Activity, Bild-in-Bild
 │
 ├─ core/

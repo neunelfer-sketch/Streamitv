@@ -35,7 +35,7 @@ jobs:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       # Ziel für die öffentlichen Testbuilds. Über eine Repository-Variable
       # überschreibbar, falls das Repo mal anders heißt.
-      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/9elf-Player' }}
+      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/Qwikster-Player' }}
 
     steps:
       - name: Quellcode auschecken

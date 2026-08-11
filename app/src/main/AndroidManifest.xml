@@ -45,7 +45,7 @@
         android:required="false" />
 
     <application
-        android:name=".NeunelfPlayerApplication"
+        android:name=".QwiksterApplication"
         android:allowBackup="true"
         android:banner="@drawable/app_banner"
         android:icon="@mipmap/ic_launcher"
@@ -54,7 +54,7 @@
         android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.NeunelfPlayer"
+        android:theme="@style/Theme.Qwikster"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
@@ -63,7 +63,7 @@
           selbst (auch über App-Updates hinweg) und zeigt sie zusätzlich in
           den Systemeinstellungen unter "App-Sprachen". Für ältere Fassungen
           übernimmt das SettingsStore/DataStore dieselbe Aufgabe – siehe
-          NeunelfPlayerApplication.
+          QwiksterApplication.
         -->
         <meta-data
             android:name="autoStoreLocales"
@@ -76,7 +76,7 @@
             android:launchMode="singleTask"
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.NeunelfPlayer">
+            android:theme="@style/Theme.Qwikster">
 
             <!-- Startpunkt auf Android TV / Fire TV (Leanback-Launcher) -->
             <intent-filter>
