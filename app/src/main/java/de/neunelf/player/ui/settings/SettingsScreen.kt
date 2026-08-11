@@ -1,5 +1,6 @@
 package de.neunelf.player.ui.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,30 +11,44 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.AspectRatioMode
+import de.neunelf.player.data.prefs.AppLanguage
 import de.neunelf.player.data.prefs.SettingsStore
 import de.neunelf.player.ui.components.DeveloperCredit
 import de.neunelf.player.ui.theme.TvAccent
 import de.neunelf.player.ui.theme.TvBackground
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
 import de.neunelf.player.ui.theme.TvSpacing
+import de.neunelf.player.ui.theme.TvSurfaceElevated
 import de.neunelf.player.ui.theme.TvSurfaceVariant
 
 /**
@@ -53,24 +68,39 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(TvBackground)
-            .padding(
-                horizontal = TvSpacing.overscanHorizontal,
-                vertical = TvSpacing.overscanVertical,
-            ),
-    ) {
-        Text("Einstellungen", style = MaterialTheme.typography.headlineLarge)
-        Spacer(Modifier.height(TvSpacing.medium))
+    var isLanguageMenuOpen by remember { mutableStateOf(false) }
+    val languageRowFocus = remember { FocusRequester() }
 
-        state.message?.let {
-            Text(it, color = TvAccent, style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(TvSpacing.small))
+    // Nur solange das Menü offen ist: Zurück schließt es, statt den
+    // Bildschirm zu verlassen (siehe VodScreen.SortMenu für dasselbe Muster).
+    BackHandler(enabled = isLanguageMenuOpen) { isLanguageMenuOpen = false }
+
+    var wasLanguageMenuOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(isLanguageMenuOpen) {
+        if (!isLanguageMenuOpen && wasLanguageMenuOpen) {
+            runCatching { languageRowFocus.requestFocus() }
         }
+        wasLanguageMenuOpen = isLanguageMenuOpen
+    }
 
-        LazyColumn(
+    Box(modifier = Modifier.fillMaxSize().background(TvBackground)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    horizontal = TvSpacing.overscanHorizontal,
+                    vertical = TvSpacing.overscanVertical,
+                ),
+        ) {
+            Text("Einstellungen", style = MaterialTheme.typography.headlineLarge)
+            Spacer(Modifier.height(TvSpacing.medium))
+
+            state.message?.let {
+                Text(it, color = TvAccent, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(TvSpacing.small))
+            }
+
+            LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = TvSpacing.large),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -174,6 +204,14 @@ fun SettingsScreen(
             item { SettingsSection("App") }
             item {
                 SettingsRow(
+                    title = "Sprache",
+                    value = state.language.label,
+                    onClick = { isLanguageMenuOpen = true },
+                    modifier = Modifier.focusRequester(languageRowFocus),
+                )
+            }
+            item {
+                SettingsRow(
                     title = "Zugang verlängern",
                     value = "QR-Code zum Chat mit 9elf",
                     onClick = onOpenContact,
@@ -198,6 +236,19 @@ fun SettingsScreen(
             item { DeveloperCredit(textAlign = TextAlign.Start) }
         }
     }
+
+        if (isLanguageMenuOpen) {
+            LanguageMenu(
+                current = state.language,
+                onSelect = {
+                    viewModel.setLanguage(it)
+                    isLanguageMenuOpen = false
+                },
+                modifier = Modifier
+                    .align(Alignment.Center),
+            )
+        }
+    }
 }
 
 /** Beschriftung der Aktualisierungs-Zeile – sagt zugleich, was OK bewirkt. */
@@ -209,6 +260,81 @@ private fun UpdateUiState.describe(): String = when (this) {
     is UpdateUiState.Downloading -> "Wird geladen… $percent %"
     is UpdateUiState.ReadyToInstall -> "Version $versionName geladen · OK zum Installieren"
     is UpdateUiState.Failed -> "Fehlgeschlagen: $message · OK für erneuten Versuch"
+}
+
+/**
+ * Auswahlliste der Sprachen.
+ *
+ * Dasselbe Muster wie [de.neunelf.player.ui.vod.VodScreen]s Sortiermenü:
+ * eine schlichte, fokussierbare Liste statt eines Dialogs, der sich mit
+ * dem Steuerkreuz nur mühsam bedienen ließe. Jede Sprache steht in ihrer
+ * eigenen Schrift, damit sie unabhängig von der gerade aktiven
+ * Anzeigesprache wiedererkennbar bleibt.
+ */
+@Composable
+private fun LanguageMenu(
+    current: AppLanguage,
+    onSelect: (AppLanguage) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val firstEntry = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) { runCatching { firstEntry.requestFocus() } }
+
+    Surface(
+        modifier = modifier
+            .width(320.dp)
+            .heightIn(max = 520.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = androidx.tv.material3.SurfaceDefaults.colors(containerColor = TvSurfaceElevated),
+    ) {
+        LazyColumn(modifier = Modifier.padding(vertical = 6.dp)) {
+            item {
+                Text(
+                    text = "Sprache",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TvOnSurfaceMuted,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                )
+            }
+            items(AppLanguage.entries.toList(), key = { it.name }) { option ->
+                val isFirst = option == AppLanguage.entries.first()
+                Surface(
+                    onClick = { onSelect(option) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .then(if (isFirst) Modifier.focusRequester(firstEntry) else Modifier),
+                    shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                    colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        focusedContainerColor = TvAccent,
+                    ),
+                    scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1f),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = option.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (option == current) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Ausgewählt",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -225,10 +351,15 @@ private fun SettingsSection(title: String) {
 }
 
 @Composable
-private fun SettingsRow(title: String, value: String, onClick: () -> Unit) {
+private fun SettingsRow(
+    title: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(64.dp),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),

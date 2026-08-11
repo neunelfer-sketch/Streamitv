@@ -1,9 +1,12 @@
 package de.neunelf.player.ui.settings
 
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.AspectRatioMode
+import de.neunelf.player.data.prefs.AppLanguage
 import de.neunelf.player.data.prefs.AppSettings
 import de.neunelf.player.data.prefs.SettingsStore
 import de.neunelf.player.data.repository.DownloadProgress
@@ -47,6 +50,7 @@ data class SettingsUiState(
     val update: UpdateUiState = UpdateUiState.Unknown,
     /** Vom Nutzer hinterlegte XMLTV-Adresse; leer = automatisch ermitteln. */
     val epgUrl: String = "",
+    val language: AppLanguage = AppLanguage.SYSTEM,
 )
 
 @HiltViewModel
@@ -62,7 +66,12 @@ class SettingsViewModel @Inject constructor(
     private val programCount = MutableStateFlow(0)
     private val update = MutableStateFlow<UpdateUiState>(UpdateUiState.Unknown)
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    // AppCompat hält die gewählte Sprache selbst vor (und über App-Starts
+    // hinweg, dank `autoStoreLocales` im Manifest) – hier wird nur der
+    // aktuelle Stand für die Anzeige gespiegelt.
+    private val language = MutableStateFlow(currentAppLanguage())
+
+    private val baseState: StateFlow<SettingsUiState> = combine(
         settingsStore.settings,
         repository.observeActivePlaylist(),
         message,
@@ -80,6 +89,10 @@ class SettingsViewModel @Inject constructor(
             update = updateState,
             epgUrl = playlist?.epgUrl.orEmpty(),
         )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    val uiState: StateFlow<SettingsUiState> = combine(baseState, language) { base, currentLanguage ->
+        base.copy(language = currentLanguage)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     init {
@@ -199,6 +212,23 @@ class SettingsViewModel @Inject constructor(
     }
 
     // -----------------------------------------------------------------------
+    // Sprache
+    // -----------------------------------------------------------------------
+
+    /**
+     * Setzt die App-Sprache um – ohne Neustart, da Compose bei einer
+     * geänderten [android.content.res.Configuration] automatisch neu
+     * komponiert. AppCompat merkt sich die Wahl selbst (siehe
+     * `autoStoreLocales` im Manifest), ein eigener Speicherplatz entfällt.
+     */
+    fun setLanguage(value: AppLanguage) {
+        AppCompatDelegate.setApplicationLocales(
+            value.tag?.let { LocaleListCompat.forLanguageTags(it) } ?: LocaleListCompat.getEmptyLocaleList(),
+        )
+        language.value = value
+    }
+
+    // -----------------------------------------------------------------------
     // Wiedergabe-Einstellungen
     // -----------------------------------------------------------------------
 
@@ -260,4 +290,10 @@ class SettingsViewModel @Inject constructor(
             "${TimeFormat.dayShort(this)} ${TimeFormat.clock(this)}"
         }
     }
+}
+
+/** Liest die aktuell wirksame Sprachauswahl aus AppCompat aus. */
+private fun currentAppLanguage(): AppLanguage {
+    val tag = AppCompatDelegate.getApplicationLocales().takeIf { !it.isEmpty }?.toLanguageTags()
+    return AppLanguage.entries.firstOrNull { it.tag == tag } ?: AppLanguage.SYSTEM
 }

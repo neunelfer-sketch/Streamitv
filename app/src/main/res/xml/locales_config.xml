@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sprachen, die die App über die Systemeinstellungen ("App-Sprachen") und
+  über AppCompatDelegate.setApplicationLocales() anbietet. Reihenfolge ist
+  ohne Bedeutung – die Auswahlliste in den Einstellungen bestimmt sie selbst.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="de" />
+    <locale android:name="en" />
+    <locale android:name="tr" />
+    <locale android:name="ar" />
+    <locale android:name="ru" />
+    <locale android:name="pl" />
+    <locale android:name="fr" />
+    <locale android:name="es" />
+    <locale android:name="it" />
+    <locale android:name="nl" />
+</locale-config>
