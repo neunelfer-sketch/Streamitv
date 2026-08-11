@@ -114,17 +114,17 @@ fun EpgSourceScreen(
 
         Spacer(Modifier.height(TvSpacing.medium))
 
+        // Einmal benannt statt zweimal geschrieben: Steuerkreuz und
+        // Fingertipp lösen garantiert dieselbe Aktion aus.
+        val save = {
+            viewModel.setEpgUrl(url)
+            onBack()
+        }
         Button(
-            onClick = {
-                viewModel.setEpgUrl(url)
-                onBack()
-            },
+            onClick = save,
             modifier = Modifier
                 .fillMaxWidth()
-                .touchClickable {
-                    viewModel.setEpgUrl(url)
-                    onBack()
-                },
+                .touchClickable(save),
         ) {
             Text(stringResource(R.string.epg_source_save))
         }
