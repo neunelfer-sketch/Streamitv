@@ -224,6 +224,7 @@ fun HomeScreen(
                 ChannelColumn(
                     channels = state.channels,
                     isLoading = state.isLoading,
+                    selectedCategoryKey = state.selectedCategoryKey,
                     focusRequester = channelListFocus,
                     onChannelClick = { channel ->
                         viewModel.markWatched(channel)
@@ -484,6 +485,7 @@ private fun CategoryRow(
 private fun ChannelColumn(
     channels: List<ChannelWithProgram>,
     isLoading: Boolean,
+    selectedCategoryKey: String?,
     focusRequester: FocusRequester,
     onChannelClick: (Channel) -> Unit,
     onChannelFocused: (Channel) -> Unit,
@@ -491,6 +493,14 @@ private fun ChannelColumn(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+
+    // Neue Kategorie -> Liste wieder ganz nach oben. Ohne das bliebe die
+    // Bildlaufposition der vorherigen Kategorie stehen: Wer in "Alle Sender"
+    // weit unten war und auf "Sport" wechselt, landet dort mitten im
+    // Bestand, ohne die ersten Sender je gesehen zu haben.
+    LaunchedEffect(selectedCategoryKey) {
+        runCatching { listState.scrollToItem(0) }
+    }
 
     Box(modifier = modifier) {
         when {

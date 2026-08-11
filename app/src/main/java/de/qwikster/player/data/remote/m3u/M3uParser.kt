@@ -84,6 +84,16 @@ object M3uParser {
      */
     private val VOD_EXTENSIONS = setOf("mp4", "mkv", "avi", "mov", "m4v", "wmv")
 
+    /**
+     * Endungen, die einen fortlaufenden Strom bezeichnen statt einer Datei
+     * mit bekanntem Ende. `.m3u8` steht bewusst *nicht* dabei: Damit wird
+     * auch VOD ausgeliefert.
+     */
+    private val LIVE_EXTENSIONS = setOf("ts")
+
+    /** "24/7", "24-7", "24 7" – übliche Schreibweisen für Dauerkanäle. */
+    private val CONTINUOUS_CHANNEL = Regex("""24\s*[/\-.]?\s*7""")
+
     private const val EXTM3U = "#EXTM3U"
     private const val EXTINF = "#EXTINF"
     private const val EXTGRP = "#EXTGRP"
@@ -417,26 +427,45 @@ object M3uParser {
             return StreamKind.SERIES
         }
 
-        // 3. Senderkennzeichen. Viele Panels führen Dauerkanäle ("24/7
-        //    Filme", "Serien TV" und Ähnliches sind reale Kategorienamen für
-        //    laufende Kanäle, keine echten VOD-Angebote) in genau solchen
-        //    Gruppen – ohne diese Prüfung würde Schritt 4 sie fälschlich als
-        //    Film oder Serie einsortieren. Eine EPG-Kennung oder ein
-        //    Senderplatz gehört strukturell zu einem Kanal: Ein einzelner
-        //    Film oder eine Folge hat weder das eine noch das andere. Nur
-        //    eine erkennbare Video-Datei-Endung (statt eines Dauerstreams
-        //    wie `.ts`) widerlegt das wieder.
+        val lowerGroup = group?.lowercase().orEmpty()
+        val extension = lowerUrl.substringAfterLast('.', "")
+        val hasVodExtension = extension in VOD_EXTENSIONS
+
+        // 3. "24/7"-Kanäle. Anbieter führen Dauerschleifen mit Film- oder
+        //    Serieninhalt in Gruppen wie "24/7 Filme" oder "24-7 Series".
+        //    Inhaltlich sind das Filme, technisch aber laufende Kanäle: Sie
+        //    haben keinen Anfang, den man starten könnte. Im Filme-Raster
+        //    wären sie deshalb an der falschen Stelle – dort erwartet man
+        //    etwas, das von vorn beginnt.
+        if (CONTINUOUS_CHANNEL.containsMatchIn(lowerGroup) ||
+            CONTINUOUS_CHANNEL.containsMatchIn(title.lowercase())
+        ) {
+            return StreamKind.LIVE
+        }
+
+        // 4. Senderkennzeichen. Eine EPG-Kennung oder ein Senderplatz gehört
+        //    strukturell zu einem Kanal: Ein einzelner Film oder eine Folge
+        //    hat weder das eine noch das andere. Nur eine erkennbare
+        //    Video-Datei-Endung (statt eines Dauerstreams wie `.ts`)
+        //    widerlegt das wieder.
         val looksLikeChannel = !tvgId.isNullOrBlank() || channelNumber > 0
-        val hasVodExtension = lowerUrl.substringAfterLast('.', "") in VOD_EXTENSIONS
         if (looksLikeChannel && !hasVodExtension) {
             return StreamKind.LIVE
         }
 
-        // 4. Gruppenbezeichnung. Serien **vor** Filmen prüfen: Gruppen heißen
+        // 5. Gruppenbezeichnung. Serien **vor** Filmen prüfen: Gruppen heißen
         //    häufig "VOD | Serien" oder "VOD - Series". Andersherum gewinnt
         //    das enthaltene "vod", und sämtliche Serien landen unter Filmen.
-        val lowerGroup = group?.lowercase().orEmpty()
+        //
+        //    Eine Transportstrom-Endung sticht die Gruppe allerdings aus:
+        //    `.ts` überträgt einen fortlaufenden Strom ohne bekanntes Ende.
+        //    Was so ausgeliefert wird, ist ein Kanal – auch wenn die Gruppe
+        //    "Filme" heißt. Ohne diese Ausnahme landen genau die
+        //    Dauerkanäle im Raster, die Schritt 3 nur dann erwischt, wenn
+        //    der Anbieter sie auch "24/7" nennt.
+        val isTransportStream = extension in LIVE_EXTENSIONS
         return when {
+            isTransportStream -> StreamKind.LIVE
             SERIES_WORDS.any { it in lowerGroup } -> StreamKind.SERIES
             MOVIE_WORDS.any { it in lowerGroup } -> StreamKind.VOD
             // Endet auf eine Container-Endung -> mit hoher Wahrscheinlichkeit VOD.

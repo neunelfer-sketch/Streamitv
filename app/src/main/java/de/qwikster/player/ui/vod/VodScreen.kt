@@ -20,8 +20,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -272,6 +273,25 @@ private fun VodBody(
     onOpenSeries: (String) -> Unit,
     onPlayEpisode: (String) -> Unit,
 ) {
+    val gridState = rememberLazyGridState()
+    val firstCategory = remember { FocusRequester() }
+
+    // Beim Betreten des Bereichs steht der Fokus oben in der Kategorieliste –
+    // nicht dort, wo ihn Compose zufällig zuerst findet. So beginnt jeder
+    // Aufruf an derselben Stelle, wie man es von Netflix und Disney+ kennt.
+    LaunchedEffect(kind) { runCatching { firstCategory.requestFocus() } }
+
+    // Neue Kategorie -> Raster wieder an den Anfang. Ohne das bliebe die
+    // Bildlaufposition der vorherigen Kategorie stehen und man landete
+    // mitten im Bestand, ohne die ersten Titel je gesehen zu haben.
+    //
+    // Bewusst nur scrollen und nicht den Fokus holen: Die Auswahl folgt hier
+    // dem Fokus, ein Fokuswechsel ins Raster würde also beim bloßen
+    // Durchblättern der Kategorien den Nutzer aus der Liste reißen.
+    LaunchedEffect(state.selectedCategoryId, state.sort) {
+        runCatching { gridState.scrollToItem(0) }
+    }
+
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Auf einem Handy im Querformat bleibt für das Poster-Raster sonst
         // kaum Platz – siehe COMPACT_WIDTH_BREAKPOINT.
@@ -287,12 +307,15 @@ private fun VodBody(
                 contentPadding = PaddingValues(TvSpacing.small),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                items(state.categories, key = { it.id }) { category ->
+                itemsIndexed(state.categories, key = { _, it -> it.id }) { index, category ->
                     Surface(
                         onClick = { onSelectCategory(category.id) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp)
+                            .then(
+                                if (index == 0) Modifier.focusRequester(firstCategory) else Modifier,
+                            )
                             .touchClickable({ onSelectCategory(category.id) })
                             .onFocusChanged { if (it.isFocused) onSelectCategory(category.id) },
                         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
@@ -330,6 +353,7 @@ private fun VodBody(
                 // quetschen, bis Titel unlesbar werden. So bleibt die Postergröße
                 // etwa gleich, und es passen einfach weniger Spalten hinein.
                 columns = GridCells.Adaptive(minSize = 150.dp),
+                state = gridState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),

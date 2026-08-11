@@ -14,8 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LiveTv
@@ -33,6 +34,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,8 +78,33 @@ fun SearchScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val inputFocus = remember { FocusRequester() }
+    val firstResult = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) { runCatching { inputFocus.requestFocus() } }
+
+    // Welcher Bereich steht ganz oben? Nur dessen erste Zeile trägt den
+    // Fokusanker, damit "Weiter" immer beim obersten Treffer landet und
+    // nicht irgendwo mitten in der Liste.
+    val firstSection = when {
+        state.channels.isNotEmpty() -> Section.CHANNELS
+        state.movies.isNotEmpty() -> Section.MOVIES
+        state.series.isNotEmpty() -> Section.SERIES
+        else -> null
+    }
+
+    /**
+     * Tastatur schließen und in die Trefferliste springen.
+     *
+     * Auf einem Fernseher verdeckt die eingeblendete Tastatur den halben
+     * Bildschirm; ohne diesen Schritt tippt man einen Suchbegriff und sieht
+     * von den Treffern zunächst nichts.
+     */
+    val goToResults = {
+        keyboard?.hide()
+        runCatching { firstResult.requestFocus() }
+        Unit
+    }
 
     Column(
         modifier = Modifier
@@ -96,10 +123,14 @@ fun SearchScreen(
             onValueChange = viewModel::setQuery,
             label = { androidx.compose.material3.Text(stringResource(R.string.search_field_label)) },
             singleLine = true,
+            // "Weiter" statt "Suchen": Gesucht wird ohnehin schon während des
+            // Tippens, die Taste führt also nicht die Suche aus, sondern
+            // weiter zu den Treffern – genau das sagt "Weiter" auch aus.
             keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Search,
+                imeAction = ImeAction.Next,
                 autoCorrectEnabled = false,
             ),
+            keyboardActions = KeyboardActions(onNext = { goToResults() }),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = TvSurfaceVariant,
                 unfocusedContainerColor = TvSurfaceVariant,
@@ -129,7 +160,7 @@ fun SearchScreen(
                     item(key = "h-live") {
                         SectionHeader(stringResource(R.string.content_channels), state.channels.size)
                     }
-                    items(state.channels, key = { "c-${it.streamId}" }) { channel ->
+                    itemsIndexed(state.channels, key = { _, it -> "c-${it.streamId}" }) { index, channel ->
                         ResultRow(
                             title = channel.name,
                             subtitle = channel.number.takeIf { it > 0 }
@@ -137,6 +168,7 @@ fun SearchScreen(
                             icon = Icons.Default.LiveTv,
                             logoUrl = channel.logoUrl,
                             onClick = { onPlayChannel(channel) },
+                            modifier = anchorIfFirst(index, Section.CHANNELS, firstSection, firstResult),
                         )
                     }
                 }
@@ -144,13 +176,14 @@ fun SearchScreen(
                     item(key = "h-vod") {
                         SectionHeader(stringResource(R.string.content_movies), state.movies.size)
                     }
-                    items(state.movies, key = { "m-${it.streamId}" }) { movie ->
+                    itemsIndexed(state.movies, key = { _, it -> "m-${it.streamId}" }) { index, movie ->
                         ResultRow(
                             title = movie.name,
                             subtitle = movie.year,
                             icon = Icons.Default.Movie,
                             logoUrl = movie.posterUrl,
                             onClick = { onPlayMovie(movie.streamId) },
+                            modifier = anchorIfFirst(index, Section.MOVIES, firstSection, firstResult),
                         )
                     }
                 }
@@ -158,13 +191,14 @@ fun SearchScreen(
                     item(key = "h-series") {
                         SectionHeader(stringResource(R.string.content_series), state.series.size)
                     }
-                    items(state.series, key = { "s-${it.seriesId}" }) { series ->
+                    itemsIndexed(state.series, key = { _, it -> "s-${it.seriesId}" }) { index, series ->
                         ResultRow(
                             title = series.name,
                             subtitle = series.year,
                             icon = Icons.Default.Subscriptions,
                             logoUrl = series.posterUrl,
                             onClick = { onOpenSeries(series.seriesId) },
+                            modifier = anchorIfFirst(index, Section.SERIES, firstSection, firstResult),
                         )
                     }
                 }
@@ -172,6 +206,21 @@ fun SearchScreen(
         }
     }
 }
+
+/** Die drei Trefferbereiche in ihrer Anzeigereihenfolge. */
+private enum class Section { CHANNELS, MOVIES, SERIES }
+
+/**
+ * Hängt den Fokusanker an genau eine Zeile: die erste des obersten
+ * Bereichs, der überhaupt Treffer hat.
+ */
+private fun anchorIfFirst(
+    index: Int,
+    section: Section,
+    firstSection: Section?,
+    anchor: FocusRequester,
+): Modifier =
+    if (index == 0 && section == firstSection) Modifier.focusRequester(anchor) else Modifier
 
 @Composable
 private fun SectionHeader(title: String, count: Int) {
@@ -193,10 +242,11 @@ private fun ResultRow(
     icon: ImageVector,
     logoUrl: String?,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(60.dp)
             .touchClickable(onClick),
