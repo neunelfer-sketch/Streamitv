@@ -1,11 +1,13 @@
 package de.qwikster.player
 
 import android.app.Application
+import android.content.Context
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
+import de.qwikster.player.data.prefs.LanguageStore
 
 /**
  * Einstiegspunkt der App.
@@ -17,6 +19,18 @@ import dagger.hilt.android.HiltAndroidApp
  */
 @HiltAndroidApp
 class QwiksterApplication : Application(), ImageLoaderFactory {
+
+    /**
+     * Auch der Anwendungskontext bekommt die gewählte Sprache.
+     *
+     * ViewModels und Repositories holen ihre Texte über `@ApplicationContext`
+     * – ohne diesen Schritt blieben Fortschritts- und Fehlermeldungen in der
+     * Gerätesprache stehen, während die restliche Oberfläche längst
+     * umgestellt ist.
+     */
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LanguageStore.wrap(base))
+    }
 
     override fun newImageLoader(): ImageLoader =
         ImageLoader.Builder(this)

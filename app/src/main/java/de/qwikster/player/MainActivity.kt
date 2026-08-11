@@ -1,6 +1,7 @@
 package de.qwikster.player
 
 import android.app.PictureInPictureParams
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Rational
@@ -14,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import de.qwikster.player.data.model.Playlist
+import de.qwikster.player.data.prefs.LanguageStore
 import de.qwikster.player.data.repository.IptvRepository
 import de.qwikster.player.player.PlayerManager
 import de.qwikster.player.ui.navigation.QwiksterNavHost
@@ -41,6 +43,17 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var repository: IptvRepository
 
     @Inject lateinit var playerManager: PlayerManager
+
+    /**
+     * Legt die gewählte App-Sprache über sämtliche Ressourcen dieses
+     * Bildschirms – siehe [LanguageStore]. Muss hier geschehen und nicht in
+     * `onCreate`: Zu dem Zeitpunkt sind Layouts und Texte längst aufgelöst.
+     * Zusammen mit `recreate()` beim Umstellen wechselt die Oberfläche
+     * dadurch sofort und vollständig die Sprache.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LanguageStore.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

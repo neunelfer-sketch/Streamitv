@@ -20,6 +20,7 @@ import de.qwikster.player.data.repository.EpgRepository
 import de.qwikster.player.data.repository.IptvRepository
 import de.qwikster.player.data.repository.PlaylistSyncer
 import de.qwikster.player.data.repository.SyncProgress
+import de.qwikster.player.data.repository.UpdateInfo
 import de.qwikster.player.data.repository.UpdateRepository
 import de.qwikster.player.player.PreviewPlayer
 import de.qwikster.player.ui.settings.UpdateUiState
@@ -140,6 +141,12 @@ class HomeViewModel @Inject constructor(
     /** Version, die der Nutzer per "Später" abgelehnt hat – erst ein neuerer Fund fragt wieder. */
     private var dismissedUpdateVersion: String? = null
 
+    /** Zuletzt gefundene neue Fassung – überlebt einen Fehlversuch. */
+    private var pendingUpdate: UpdateInfo? = null
+
+    /** Läuft gerade ein Download? Wird von "Später" mit abgebrochen. */
+    private var updateJob: Job? = null
+
     /** Sammelt die Nebenzustände, damit `combine` unter fünf Quellen bleibt. */
     private data class AuxState(
         val settings: AppSettings,
@@ -150,13 +157,26 @@ class HomeViewModel @Inject constructor(
     )
 
     /**
-     * Tickt alle 15 Sekunden. Ohne diesen Takt würden Fortschrittsbalken und
-     * "läuft jetzt"-Markierungen einfrieren, solange der Nutzer nichts drückt.
+     * Takt für Fortschrittsbalken und "läuft jetzt"-Markierungen. Ohne ihn
+     * würden beide einfrieren, solange der Nutzer nichts drückt.
+     *
+     * Eine Minute, nicht wie zunächst 15 Sekunden: Jeder Schlag hängt an
+     * [channels] und stößt dort über `flatMapLatest` eine **neue** Abfrage
+     * der laufenden Sendungen an – bei einer großen Playlist zehntausende
+     * Zeilen, dazu ebenso viele frisch erzeugte Objekte, die der
+     * Speicherbereiniger kurz darauf wieder einsammeln muss. Auf einem Fire
+     * TV Stick war das ein spürbarer Ruckler im Viertelminutentakt, und zwar
+     * dauerhaft, auch wenn der Nutzer gar nichts tut.
+     *
+     * Sichtbar verloren geht dabei nichts: Sendungen wechseln zur vollen
+     * Minute, und ein Fortschrittsbalken einer halbstündigen Sendung rückt
+     * pro Minute um gut drei Prozent weiter – das ist genau die Auflösung,
+     * die man auf einem Balken von wenigen Zentimetern überhaupt erkennt.
      */
     private val nowTicker: StateFlow<Long> = flow {
         while (true) {
             emit(System.currentTimeMillis())
-            kotlinx.coroutines.delay(TimeUnit.SECONDS.toMillis(15))
+            kotlinx.coroutines.delay(TimeUnit.MINUTES.toMillis(1))
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), System.currentTimeMillis())
 
@@ -250,7 +270,14 @@ class HomeViewModel @Inject constructor(
             while (isActive) {
                 val info = runCatching { updateRepository.check() }.getOrNull()
                 updateVersion.value = info?.versionName
-                if (info != null && info.versionName != dismissedUpdateVersion) {
+                if (info != null) pendingUpdate = info
+                // Nur vorschlagen, wenn gerade kein Download oder Fehlversuch
+                // offen auf dem Bildschirm steht – sonst risse die Prüfung den
+                // Dialog mitten im Laden auf den Anfangszustand zurück.
+                if (info != null &&
+                    info.versionName != dismissedUpdateVersion &&
+                    updatePrompt.value is UpdateUiState.Unknown
+                ) {
                     updatePrompt.value = UpdateUiState.Available(info)
                 }
                 delay(TimeUnit.HOURS.toMillis(1))
@@ -285,18 +312,32 @@ class HomeViewModel @Inject constructor(
      * "Jetzt installieren": lädt herunter und übergibt die Datei sofort dem
      * Installationsprogramm, ohne einen weiteren Tastendruck zu verlangen –
      * der Nutzer hat sich mit dieser Taste bereits entschieden.
+     *
+     * Die Fassung kommt aus [pendingUpdate] und nicht aus dem Anzeigezustand:
+     * Nach einem Fehlversuch steht dort `Failed`, und der Knopf bliebe sonst
+     * wirkungslos – ausgerechnet in dem Moment, in dem der Nutzer es gerade
+     * noch einmal versuchen will.
      */
     fun installUpdateNow() {
-        val current = (updatePrompt.value as? UpdateUiState.Available)?.info ?: return
-        viewModelScope.launch {
+        val current = pendingUpdate ?: return
+        updateJob?.cancel()
+        updateJob = viewModelScope.launch {
             updateRepository.cleanUp()
             updateRepository.download(current).collect { progress ->
                 when (progress) {
                     is DownloadProgress.Running -> updatePrompt.value = UpdateUiState.Downloading(progress.percent)
-                    is DownloadProgress.Finished -> {
-                        updateRepository.install(progress.file)
-                        updatePrompt.value = UpdateUiState.Unknown
-                    }
+                    is DownloadProgress.Finished ->
+                        // Fehlt die Erlaubnis "unbekannte Apps installieren",
+                        // führt das Repository in die Systemeinstellung. Ohne
+                        // den Hinweis verschwände der Dialog kommentarlos und
+                        // der Nutzer stünde ohne Erklärung in den
+                        // Einstellungen.
+                        updatePrompt.value = if (updateRepository.install(progress.file)) {
+                            UpdateUiState.Unknown
+                        } else {
+                            UpdateUiState.Failed(context.getString(R.string.update_install_permission))
+                        }
+
                     is DownloadProgress.Failed -> updatePrompt.value = UpdateUiState.Failed(progress.message)
                 }
             }
@@ -309,9 +350,19 @@ class HomeViewModel @Inject constructor(
      * genau diese Version also nicht sofort wieder. Ein Neustart der App
      * (neues ViewModel, [dismissedUpdateVersion] beginnt leer) fragt
      * dagegen wie gewünscht erneut.
+     *
+     * Ein laufender Download wird dabei abgebrochen. Ohne das liefe er im
+     * Hintergrund weiter und schöbe am Ende ungefragt das
+     * Installationsprogramm über das Bild – obwohl der Nutzer gerade
+     * "Später" gewählt hat.
      */
     fun dismissUpdatePrompt() {
-        (updatePrompt.value as? UpdateUiState.Available)?.let { dismissedUpdateVersion = it.info.versionName }
+        updateJob?.cancel()
+        updateJob = null
+        // Nicht aus dem Anzeigezustand ableiten: Während des Ladens steht
+        // dort `Downloading`, die Versionsnummer wäre dann nicht greifbar und
+        // der Vorschlag käme sofort bei der nächsten Prüfung wieder.
+        pendingUpdate?.let { dismissedUpdateVersion = it.versionName }
         updatePrompt.value = UpdateUiState.Unknown
     }
 

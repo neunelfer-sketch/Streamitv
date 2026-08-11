@@ -1,8 +1,6 @@
 package de.qwikster.player.ui.settings
 
 import android.content.Context
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -11,6 +9,7 @@ import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.AspectRatioMode
 import de.qwikster.player.data.prefs.AppLanguage
 import de.qwikster.player.data.prefs.AppSettings
+import de.qwikster.player.data.prefs.LanguageStore
 import de.qwikster.player.data.prefs.SettingsStore
 import de.qwikster.player.data.repository.DownloadProgress
 import de.qwikster.player.data.repository.EpgSyncProgress
@@ -72,10 +71,9 @@ class SettingsViewModel @Inject constructor(
     private val programCount = MutableStateFlow(0)
     private val update = MutableStateFlow<UpdateUiState>(UpdateUiState.Unknown)
 
-    // AppCompat hält die gewählte Sprache selbst vor (und über App-Starts
-    // hinweg, dank `autoStoreLocales` im Manifest) – hier wird nur der
-    // aktuelle Stand für die Anzeige gespiegelt.
-    private val language = MutableStateFlow(currentAppLanguage())
+    // Nur der aktuelle Stand für die Anzeige – gehalten wird die Wahl in
+    // [LanguageStore].
+    private val language = MutableStateFlow(currentAppLanguage(context))
 
     private val baseState: StateFlow<SettingsUiState> = combine(
         settingsStore.settings,
@@ -234,15 +232,17 @@ class SettingsViewModel @Inject constructor(
     // -----------------------------------------------------------------------
 
     /**
-     * Setzt die App-Sprache um – ohne Neustart, da Compose bei einer
-     * geänderten [android.content.res.Configuration] automatisch neu
-     * komponiert. AppCompat merkt sich die Wahl selbst (siehe
-     * `autoStoreLocales` im Manifest), ein eigener Speicherplatz entfällt.
+     * Setzt die App-Sprache um.
+     *
+     * Zwei Schritte, beide nötig: Der Anwendungskontext wird sofort
+     * umgestellt (davon leben die Texte aus ViewModels und Repositories),
+     * die Oberfläche selbst über das anschließende `recreate()` des
+     * Bildschirms – siehe [LanguageStore] für die Begründung, warum das
+     * hier von Hand geschieht und nicht über `AppCompatDelegate`.
      */
     fun setLanguage(value: AppLanguage) {
-        AppCompatDelegate.setApplicationLocales(
-            value.tag?.let { LocaleListCompat.forLanguageTags(it) } ?: LocaleListCompat.getEmptyLocaleList(),
-        )
+        LanguageStore.setTag(context, value.tag)
+        LanguageStore.applyToRunning(context)
         language.value = value
     }
 
@@ -314,8 +314,8 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
-/** Liest die aktuell wirksame Sprachauswahl aus AppCompat aus. */
-private fun currentAppLanguage(): AppLanguage {
-    val tag = AppCompatDelegate.getApplicationLocales().takeIf { !it.isEmpty }?.toLanguageTags()
+/** Liest die aktuell wirksame Sprachauswahl aus. */
+private fun currentAppLanguage(context: Context): AppLanguage {
+    val tag = LanguageStore.tag(context)
     return AppLanguage.entries.firstOrNull { it.tag == tag } ?: AppLanguage.SYSTEM
 }

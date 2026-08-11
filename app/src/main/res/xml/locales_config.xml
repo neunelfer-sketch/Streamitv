@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Sprachen, die die App über die Systemeinstellungen ("App-Sprachen") und
-  über AppCompatDelegate.setApplicationLocales() anbietet. Reihenfolge ist
-  ohne Bedeutung – die Auswahlliste in den Einstellungen bestimmt sie selbst.
+  Sprachen, für die Übersetzungen vorliegen. Ab Android 13 zeigt das System
+  sie zusätzlich unter "App-Sprachen" an; darunter hat die Angabe keine
+  Wirkung, dort stellt die App selbst um (siehe LanguageStore). Reihenfolge
+  ist ohne Bedeutung – die Auswahlliste in den Einstellungen bestimmt sie
+  selbst.
 -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="de" />

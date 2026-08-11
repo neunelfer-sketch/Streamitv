@@ -123,10 +123,26 @@ fun HomeScreen(
     val previewPlayer = remember { viewModel.previewPlayer() }
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Nur "Zeigt gerade nichts an" lässt Zurück normal wirken – sowohl der
+    // "Was ist neu"-Hinweis als auch der Update-Vorschlag sollen sich
+    // ausschließlich über ihre eigenen Knöpfe schließen lassen, nicht über
+    // Zurück (das würde sonst stattdessen die App verlassen).
+    val isUpdatePromptVisible = !state.showWhatsNew && state.updatePrompt != UpdateUiState.Unknown
+    val isDialogVisible = state.showWhatsNew || isUpdatePromptVisible
+    BackHandler(enabled = isDialogVisible) { }
+
     // Beim Betreten soll der Fokus auf der Senderliste stehen – nicht auf der
     // Kopfzeile. Sonst muss der Nutzer bei jedem Start zweimal nach unten.
-    LaunchedEffect(state.channels.isNotEmpty()) {
-        if (state.channels.isNotEmpty()) {
+    //
+    // Solange ein Hinweis offen ist, bleibt der Fokus aber beim Dialog. Die
+    // Senderliste füllt sich erst kurz nach dem Start, also genau dann, wenn
+    // der "Was ist neu"-Hinweis schon steht – ohne diese Bedingung risse ihm
+    // das Nachladen den Fokus weg. Der Dialog fängt Tasten aber nur ab,
+    // solange einer seiner Knöpfe den Fokus hat: Danach liefe das Steuerkreuz
+    // wieder in die verdeckte Senderliste, OK öffnete den Player hinter dem
+    // Hinweis, und der Hinweis selbst ließe sich gar nicht mehr wegdrücken.
+    LaunchedEffect(state.channels.isNotEmpty(), isDialogVisible) {
+        if (state.channels.isNotEmpty() && !isDialogVisible) {
             runCatching { channelListFocus.requestFocus() }
         }
     }
@@ -160,13 +176,6 @@ fun HomeScreen(
             viewModel.setPreviewEnabled(false)
         }
     }
-
-    // Nur "Zeigt gerade nichts an" lässt Zurück normal wirken – sowohl der
-    // "Was ist neu"-Hinweis als auch der Update-Vorschlag sollen sich
-    // ausschließlich über ihre eigenen Knöpfe schließen lassen, nicht über
-    // Zurück (das würde sonst stattdessen die App verlassen).
-    val isUpdatePromptVisible = !state.showWhatsNew && state.updatePrompt != UpdateUiState.Unknown
-    BackHandler(enabled = state.showWhatsNew || isUpdatePromptVisible) { }
 
     Box(modifier = Modifier.fillMaxSize().background(TvBackground)) {
         Column(

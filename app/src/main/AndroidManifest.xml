@@ -58,17 +58,6 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
-        <!--
-          Ab Android 13 merkt sich das System die gewählte App-Sprache von
-          selbst (auch über App-Updates hinweg) und zeigt sie zusätzlich in
-          den Systemeinstellungen unter "App-Sprachen". Für ältere Fassungen
-          übernimmt das SettingsStore/DataStore dieselbe Aufgabe – siehe
-          QwiksterApplication.
-        -->
-        <meta-data
-            android:name="autoStoreLocales"
-            android:value="true" />
-
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"

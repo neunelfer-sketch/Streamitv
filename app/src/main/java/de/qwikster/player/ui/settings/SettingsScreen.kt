@@ -267,13 +267,15 @@ fun SettingsScreen(
                 onSelect = {
                     viewModel.setLanguage(it)
                     isLanguageMenuOpen = false
-                    // AppCompat setzt die neue Sprache zwar sofort, aber erst
-                    // ein Neuaufbau der Activity übernimmt sie wirklich
-                    // überall – sonst blieben bereits aufgebaute Bildschirme
-                    // (z. B. der Hauptbildschirm im Rückstapel) auf der alten
-                    // Sprache stehen, bis man zufällig neu dorthin navigiert.
-                    // So wechselt die App komplett und sofort, wie bei
-                    // Netflix und anderen Streaming-Apps.
+                    // `setLanguage` stellt den Anwendungskontext sofort um,
+                    // aber erst ein Neuaufbau der Activity übernimmt die
+                    // Sprache wirklich überall – sonst blieben bereits
+                    // aufgebaute Bildschirme (z. B. der Hauptbildschirm im
+                    // Rückstapel) auf der alten Sprache stehen, bis man
+                    // zufällig neu dorthin navigiert. Beim Neuaufbau läuft
+                    // `attachBaseContext` erneut und legt die neue Sprache
+                    // über alle Ressourcen. So wechselt die App komplett und
+                    // sofort, wie bei Netflix und anderen Streaming-Apps.
                     (context as? Activity)?.recreate()
                 },
                 modifier = Modifier
