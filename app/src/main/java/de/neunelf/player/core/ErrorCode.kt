@@ -13,5 +13,18 @@ package de.neunelf.player.core
  */
 fun String.withErrorCode(code: String): String = "$this (Code: $code)"
 
-/** Kurzcode für eine Ausnahme – der Klassenname reicht für die Ferndiagnose. */
-fun Throwable.toErrorCode(): String = this::class.simpleName ?: "UNKNOWN"
+/**
+ * Ausnahmen, die einen eigenen, aussagekräftigeren Diagnosecode mitbringen
+ * (z. B. "HTTP-403" statt nur "IOException"). Ohne das würden mehrere ganz
+ * unterschiedliche Fehlerursachen (falsche URL, Server down, abgelaufener
+ * Zugang, …) alle denselben wenig hilfreichen generischen Klassennamen
+ * zeigen, sobald sie z. B. über Kotlins `error(...)` als schlichte
+ * `IllegalStateException` geworfen werden.
+ */
+interface CodedException {
+    val errorCode: String
+}
+
+/** Kurzcode für eine Ausnahme: eigener Code, wenn vorhanden, sonst der Klassenname. */
+fun Throwable.toErrorCode(): String =
+    (this as? CodedException)?.errorCode ?: this::class.simpleName ?: "UNKNOWN"

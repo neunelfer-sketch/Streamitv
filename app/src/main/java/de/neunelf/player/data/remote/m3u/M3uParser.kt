@@ -77,6 +77,13 @@ object M3uParser {
     /** Gruppenbezeichnungen, die auf Filme hindeuten. */
     private val MOVIE_WORDS = listOf("vod", "film", "movie", "kino", "cinema")
 
+    /**
+     * Dateiendungen, die zuverlässig auf eine einzelne, herunterladbare
+     * Video-Datei hindeuten – im Gegensatz zu `.ts` oder unbekannten
+     * Endungen, die auch ein Dauerstream (Kanal) sein können.
+     */
+    private val VOD_EXTENSIONS = setOf("mp4", "mkv", "avi", "mov", "m4v", "wmv")
+
     private const val EXTM3U = "#EXTM3U"
     private const val EXTINF = "#EXTINF"
     private const val EXTGRP = "#EXTGRP"
@@ -334,7 +341,7 @@ object M3uParser {
             channelNumber = channelNumber,
             userAgent = userAgent,
             referrer = referrer,
-            kind = guessKind(url, title, group),
+            kind = guessKind(url, title, group, tvgId, channelNumber),
         )
     }
 
@@ -392,7 +399,7 @@ object M3uParser {
      * Rät den Inhaltstyp. Xtream-Exporte kodieren ihn im Pfad
      * (`/live/`, `/movie/`, `/series/`); sonst hilft die Gruppenbezeichnung.
      */
-    private fun guessKind(url: String, title: String, group: String?): StreamKind {
+    private fun guessKind(url: String, title: String, group: String?, tvgId: String?, channelNumber: Int): StreamKind {
         val lowerUrl = url.lowercase()
 
         // 1. Der Pfad ist die verlässlichste Angabe – Panels kodieren die Art
@@ -410,7 +417,22 @@ object M3uParser {
             return StreamKind.SERIES
         }
 
-        // 3. Gruppenbezeichnung. Serien **vor** Filmen prüfen: Gruppen heißen
+        // 3. Senderkennzeichen. Viele Panels führen Dauerkanäle ("24/7
+        //    Filme", "Serien TV" und Ähnliches sind reale Kategorienamen für
+        //    laufende Kanäle, keine echten VOD-Angebote) in genau solchen
+        //    Gruppen – ohne diese Prüfung würde Schritt 4 sie fälschlich als
+        //    Film oder Serie einsortieren. Eine EPG-Kennung oder ein
+        //    Senderplatz gehört strukturell zu einem Kanal: Ein einzelner
+        //    Film oder eine Folge hat weder das eine noch das andere. Nur
+        //    eine erkennbare Video-Datei-Endung (statt eines Dauerstreams
+        //    wie `.ts`) widerlegt das wieder.
+        val looksLikeChannel = !tvgId.isNullOrBlank() || channelNumber > 0
+        val hasVodExtension = lowerUrl.substringAfterLast('.', "") in VOD_EXTENSIONS
+        if (looksLikeChannel && !hasVodExtension) {
+            return StreamKind.LIVE
+        }
+
+        // 4. Gruppenbezeichnung. Serien **vor** Filmen prüfen: Gruppen heißen
         //    häufig "VOD | Serien" oder "VOD - Series". Andersherum gewinnt
         //    das enthaltene "vod", und sämtliche Serien landen unter Filmen.
         val lowerGroup = group?.lowercase().orEmpty()
@@ -418,7 +440,7 @@ object M3uParser {
             SERIES_WORDS.any { it in lowerGroup } -> StreamKind.SERIES
             MOVIE_WORDS.any { it in lowerGroup } -> StreamKind.VOD
             // Endet auf eine Container-Endung -> mit hoher Wahrscheinlichkeit VOD.
-            lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".mkv") -> StreamKind.VOD
+            hasVodExtension -> StreamKind.VOD
             else -> StreamKind.LIVE
         }
     }

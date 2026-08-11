@@ -1,6 +1,7 @@
 package de.neunelf.player.data.repository
 
 import android.util.Log
+import de.neunelf.player.core.CodedException
 import de.neunelf.player.core.toErrorCode
 import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.local.CategoryDao
@@ -191,8 +192,10 @@ class PlaylistSyncer @Inject constructor(
             .build()
 
         val parsed = httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Server antwortete mit HTTP ${response.code}")
-            val body = response.body ?: error("Leere Antwort")
+            if (!response.isSuccessful) {
+                throw SyncException("Server antwortete mit HTTP ${response.code}", "HTTP-${response.code}")
+            }
+            val body = response.body ?: throw SyncException("Leere Antwort", "EMPTY_BODY")
             val gzipped = playlist.m3uUrl.endsWith(".gz", ignoreCase = true) ||
                 response.header("Content-Encoding").equals("gzip", ignoreCase = true)
             emit(SyncProgress.Step("Verarbeite Playlist…", 40))
@@ -309,3 +312,13 @@ class PlaylistSyncer @Inject constructor(
         const val USER_AGENT = "9elfPlayer/1.0 (Android TV)"
     }
 }
+
+/**
+ * Fehler beim Import mit eigenem Diagnosecode (z. B. "HTTP-403").
+ *
+ * Ohne das würden ganz unterschiedliche Ursachen (falsche URL, Server down,
+ * abgelaufener Zugang, leere Antwort, …) alle als derselbe generische
+ * `IllegalStateException`-Code beim Nutzer landen – nicht hilfreich für die
+ * Ferndiagnose eines fehlgeschlagenen Playlist-Imports.
+ */
+private class SyncException(message: String, override val errorCode: String) : Exception(message), CodedException
