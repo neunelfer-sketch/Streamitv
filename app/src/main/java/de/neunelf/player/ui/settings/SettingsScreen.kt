@@ -1,5 +1,6 @@
 package de.neunelf.player.ui.settings
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,6 +69,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     var isLanguageMenuOpen by remember { mutableStateOf(false) }
     val languageRowFocus = remember { FocusRequester() }
@@ -264,6 +267,14 @@ fun SettingsScreen(
                 onSelect = {
                     viewModel.setLanguage(it)
                     isLanguageMenuOpen = false
+                    // AppCompat setzt die neue Sprache zwar sofort, aber erst
+                    // ein Neuaufbau der Activity übernimmt sie wirklich
+                    // überall – sonst blieben bereits aufgebaute Bildschirme
+                    // (z. B. der Hauptbildschirm im Rückstapel) auf der alten
+                    // Sprache stehen, bis man zufällig neu dorthin navigiert.
+                    // So wechselt die App komplett und sofort, wie bei
+                    // Netflix und anderen Streaming-Apps.
+                    (context as? Activity)?.recreate()
                 },
                 modifier = Modifier
                     .align(Alignment.Center),
