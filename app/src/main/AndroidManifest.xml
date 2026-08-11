@@ -9,6 +9,19 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <!--
+      Für Aufnahmen: Der Dienst schreibt einen laufenden Sender mit, während
+      der Zuschauer den Fernseher ausgeschaltet hat. Ohne einen
+      Vordergrunddienst beendet Android das binnen Minuten. "dataSync" ist
+      die dafür vorgesehene Art – es wird nichts abgespielt, sondern ein
+      Datenstrom in eine Datei geschrieben. Das WLAN-Recht kommt hinzu, weil
+      sich der Dienst eine Sperre gegen den Funk-Sparmodus holt: Ohne die
+      reicht der Durchsatz im Ruhezustand für einen laufenden Stream nicht.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!--
       Media3 legt für die Medien-Session eine Benachrichtigung an, sobald der
       Dienst in den Vordergrund geht. Ab Android 13 ist dafür dieses Recht
       nötig. Auf einem Fernseher bekommt sie ohnehin niemand zu sehen – ohne
@@ -96,6 +109,15 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!--
+          Schreibt eine laufende Sendung mit. Läuft bewusst weiter, wenn die
+          Oberfläche verschwindet – siehe RecordingService.
+        -->
+        <service
+            android:name=".data.recording.RecordingService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Hintergrund-Wiedergabe / Medien-Session für PiP und TV-Fernbedienungstasten -->
         <service

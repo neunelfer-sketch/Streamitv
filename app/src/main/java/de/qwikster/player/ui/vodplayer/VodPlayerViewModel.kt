@@ -11,6 +11,7 @@ import de.qwikster.player.core.withErrorCode
 import de.qwikster.player.data.model.StreamKind
 import de.qwikster.player.data.prefs.SettingsStore
 import de.qwikster.player.data.repository.IptvRepository
+import de.qwikster.player.data.repository.RecordingRepository
 import de.qwikster.player.di.ApplicationScope
 import de.qwikster.player.player.PlaybackState
 import de.qwikster.player.player.PlayerManager
@@ -52,6 +53,7 @@ class VodPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val repository: IptvRepository,
+    private val recordingRepository: RecordingRepository,
     private val settingsStore: SettingsStore,
     private val playerManager: PlayerManager,
     @ApplicationScope private val appScope: CoroutineScope,
@@ -59,6 +61,7 @@ class VodPlayerViewModel @Inject constructor(
 
     private val movieStreamId: String? = savedStateHandle["streamId"]
     private val episodeId: String? = savedStateHandle["episodeId"]
+    private val recordingId: String? = savedStateHandle["recordingId"]
 
     private val title = MutableStateFlow("")
     private val loadError = MutableStateFlow<String?>(null)
@@ -184,6 +187,23 @@ class VodPlayerViewModel @Inject constructor(
      * sehen.
      */
     private suspend fun resolveSource(): Result<ResolvedSource> {
+        // Eine Aufnahme liegt als Datei vor; eine Adresse muss dafür nicht
+        // erst beim Panel erfragt werden.
+        recordingId?.toLongOrNull()?.let { id ->
+            val recording = recordingRepository.get(id)
+                ?: return Result.failure(IllegalStateException("RECORDING_NOT_FOUND"))
+            return Result.success(
+                ResolvedSource(
+                    url = java.io.File(recording.filePath).toURI().toString(),
+                    title = recording.title,
+                    playlistId = recording.playlistId,
+                    // Der Fortsetzpunkt teilt sich den Schlüsselraum mit Filmen;
+                    // ein eigenes Präfix hält beides auseinander.
+                    streamId = "rec-$id",
+                    kind = StreamKind.VOD,
+                ),
+            )
+        }
         movieStreamId?.let { id ->
             val movie = repository.getMovie(id)
                 ?: return Result.failure(IllegalStateException("MOVIE_NOT_FOUND"))

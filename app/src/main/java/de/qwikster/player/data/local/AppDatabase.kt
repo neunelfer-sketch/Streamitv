@@ -21,6 +21,7 @@ import androidx.room.RoomDatabase
         EpgProgramEntity::class,
         FavoriteEntity::class,
         RecentEntity::class,
+        RecordingEntity::class,
     ],
     // Bei **jeder** Änderung an einer Entity hochzählen. Room legt einen
     // Fingerabdruck des Schemas in der Datei ab und vergleicht ihn beim
@@ -35,7 +36,8 @@ import androidx.room.RoomDatabase
     // 3: Index `(playlistId, startAt)` auf `epg_programs` – trägt die
     //    Abfrage "was läuft gerade" bei sehr großen Playlists
     // 4: `directUrl` in `episodes` (Folgen-URLs aus M3U-Playlists)
-    version = 4,
+    // 5: Tabelle `recordings` (Aufnahmen laufender Sendungen)
+    version = 5,
     // Kein Schema-Export: die Datenbank ist ein reiner Cache mit
     // fallbackToDestructiveMigration, es werden nie Migrationen von Hand
     // geschrieben. Der Export brachte hier nur einen Konflikt, weil die
@@ -50,6 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun vodDao(): VodDao
     abstract fun epgDao(): EpgDao
     abstract fun userDataDao(): UserDataDao
+    abstract fun recordingDao(): RecordingDao
 
     companion object {
         const val NAME = "qwikster.db"

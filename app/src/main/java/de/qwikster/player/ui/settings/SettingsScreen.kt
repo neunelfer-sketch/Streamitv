@@ -66,6 +66,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenContact: () -> Unit,
     onOpenEpgSource: () -> Unit,
+    onOpenRecordings: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -229,6 +230,13 @@ fun SettingsScreen(
                     value = state.language.displayLabel(),
                     onClick = { isLanguageMenuOpen = true },
                     modifier = Modifier.focusRequester(languageRowFocus),
+                )
+            }
+            item {
+                SettingsRow(
+                    title = stringResource(R.string.recordings_title),
+                    value = stringResource(R.string.recordings_settings_desc),
+                    onClick = onOpenRecordings,
                 )
             }
             item {

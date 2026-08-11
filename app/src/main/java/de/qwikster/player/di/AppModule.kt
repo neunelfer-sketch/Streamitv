@@ -2,12 +2,16 @@ package de.qwikster.player.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import de.qwikster.player.BuildConfig
 import de.qwikster.player.data.local.AppDatabase
 import de.qwikster.player.data.local.CategoryDao
 import de.qwikster.player.data.local.ChannelDao
 import de.qwikster.player.data.local.EpgDao
 import de.qwikster.player.data.local.PlaylistDao
+import de.qwikster.player.data.local.RecordingDao
+import de.qwikster.player.data.local.RecordingEntity
 import de.qwikster.player.data.local.UserDataDao
 import de.qwikster.player.data.local.VodDao
 import de.qwikster.player.data.prefs.SettingsStore
@@ -38,6 +42,37 @@ annotation class ApplicationScope
 
 /** "Zugriff verweigert" – siehe den User-Agent-Zweitversuch im OkHttp-Client. */
 private const val HTTP_FORBIDDEN = 403
+
+/**
+ * Legt die Tabelle für Aufnahmen an.
+ *
+ * Der Wortlaut muss genau dem entsprechen, was Room aus [RecordingEntity]
+ * erzeugen würde – Room vergleicht das Schema beim Öffnen und bricht sonst
+ * ab. Kotlin-Standardwerte tauchen dabei bewusst **nicht** als `DEFAULT`
+ * auf: Sie gelten im Code, nicht in der Datenbank.
+ */
+private val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `recordings` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `playlistId` INTEGER NOT NULL,
+                `streamId` TEXT NOT NULL,
+                `channelName` TEXT NOT NULL,
+                `title` TEXT NOT NULL,
+                `filePath` TEXT NOT NULL,
+                `startedAt` INTEGER NOT NULL,
+                `plannedEndAt` INTEGER NOT NULL,
+                `endedAt` INTEGER NOT NULL,
+                `state` TEXT NOT NULL,
+                `sizeBytes` INTEGER NOT NULL,
+                `errorMessage` TEXT
+            )
+            """.trimIndent(),
+        )
+    }
+}
 
 /**
  * Zentrale Objektgraph-Konfiguration.
@@ -122,6 +157,11 @@ object AppModule {
             // Der Cache ist jederzeit neu aufbaubar – bei einem Schema-Sprung
             // ist Neuladen billiger als eine Migration.
             .fallbackToDestructiveMigration()
+            // Von 4 auf 5 aber ausdrücklich **nicht** verwerfen: Neu ist nur
+            // eine leere Tabelle. Ein Verwerfen nähme dem Zuschauer bei einem
+            // Update Favoriten und Verlauf weg – Daten, die es nur hier gibt
+            // und die kein Neuladen vom Panel wiederbringt.
+            .addMigrations(MIGRATION_4_5)
             .build()
 
     @Provides fun providePlaylistDao(db: AppDatabase): PlaylistDao = db.playlistDao()
@@ -130,6 +170,7 @@ object AppModule {
     @Provides fun provideVodDao(db: AppDatabase): VodDao = db.vodDao()
     @Provides fun provideEpgDao(db: AppDatabase): EpgDao = db.epgDao()
     @Provides fun provideUserDataDao(db: AppDatabase): UserDataDao = db.userDataDao()
+    @Provides fun provideRecordingDao(db: AppDatabase): RecordingDao = db.recordingDao()
 
     @Provides
     @Singleton

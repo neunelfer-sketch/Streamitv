@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import de.qwikster.player.data.model.Playlist
 import de.qwikster.player.data.prefs.LanguageStore
 import de.qwikster.player.data.repository.IptvRepository
+import de.qwikster.player.data.repository.RecordingRepository
 import de.qwikster.player.player.PlayerManager
 import de.qwikster.player.ui.navigation.QwiksterNavHost
 import de.qwikster.player.ui.theme.QwiksterTheme
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -43,6 +45,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var repository: IptvRepository
 
     @Inject lateinit var playerManager: PlayerManager
+
+    @Inject lateinit var recordingRepository: RecordingRepository
 
     /**
      * Legt die gewählte App-Sprache über sämtliche Ressourcen dieses
@@ -61,6 +65,11 @@ class MainActivity : ComponentActivity() {
         // Vollflächig zeichnen: TVs haben keine System-Leisten, die Ränder
         // gehören dem Inhalt (Overscan wird im Layout berücksichtigt).
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Aufnahmen, die ein Absturz oder ein Stromausfall unterbrochen hat,
+        // stünden sonst für immer als "läuft" in der Liste – mit einem
+        // Stopp-Knopf, der nichts mehr stoppen kann.
+        lifecycleScope.launch { recordingRepository.closeDangling() }
 
         // Nullable statt Boolean: `null` heißt "die Datenbankabfrage läuft
         // noch". Ohne diese Unterscheidung würde der Navigationsgraph beim
