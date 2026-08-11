@@ -1,5 +1,8 @@
 package de.neunelf.player.data.prefs
 
+import androidx.annotation.StringRes
+import de.neunelf.player.R
+
 /**
  * Sprachen, zwischen denen in den Einstellungen gewechselt werden kann.
  *
@@ -11,8 +14,17 @@ package de.neunelf.player.data.prefs
  * Übersteuerung wieder – die App folgt dann wieder der Gerätesprache, wie
  * bisher.
  */
-enum class AppLanguage(val tag: String?, val label: String) {
-    SYSTEM(null, "Systemsprache"),
+enum class AppLanguage(
+    val tag: String?,
+    /** Eigenname der Sprache – bleibt in jeder Anzeigesprache gleich. */
+    val label: String,
+    /**
+     * Nur für [SYSTEM] gesetzt: Der Eintrag benennt keine Sprache, sondern
+     * eine Einstellung, und wird deshalb als einziger mitübersetzt.
+     */
+    @StringRes val labelRes: Int? = null,
+) {
+    SYSTEM(null, "", R.string.settings_language_system),
     GERMAN("de", "Deutsch"),
     ENGLISH("en", "English"),
     TURKISH("tr", "Türkçe"),

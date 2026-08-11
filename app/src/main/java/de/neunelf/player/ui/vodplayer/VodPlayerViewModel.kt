@@ -1,9 +1,12 @@
 package de.neunelf.player.ui.vodplayer
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.exoplayer.ExoPlayer
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.prefs.SettingsStore
@@ -46,6 +49,7 @@ data class VodPlayerUiState(
  */
 @HiltViewModel
 class VodPlayerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val repository: IptvRepository,
     private val settingsStore: SettingsStore,
@@ -88,7 +92,8 @@ class VodPlayerViewModel @Inject constructor(
             )
 
             val resolved = resolveSource().getOrElse { error ->
-                loadError.value = "Inhalt konnte nicht geladen werden".withErrorCode(error.message ?: "UNKNOWN")
+                loadError.value = context.getString(R.string.error_content_not_loaded)
+                    .withErrorCode(error.message ?: "UNKNOWN")
                 return@launch
             }
             source = resolved

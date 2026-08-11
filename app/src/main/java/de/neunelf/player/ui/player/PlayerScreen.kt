@@ -46,6 +46,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -56,6 +58,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import de.neunelf.player.R
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.AspectRatioMode
 import de.neunelf.player.data.model.Channel
@@ -297,20 +300,20 @@ private fun PlaybackStatusOverlay(
                 )
                 Spacer(Modifier.height(TvSpacing.small))
                 Text(
-                    text = "Mit ◀ / ▶ einen anderen Sender wählen",
+                    text = stringResource(R.string.player_switch_channel_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TvOnSurfaceMuted,
                 )
             }
 
             retryCount > 0 -> Text(
-                text = "Verbindung wird wiederhergestellt… ($retryCount/3)",
+                text = stringResource(R.string.player_reconnecting, retryCount, 3),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
             )
 
             isBuffering -> Text(
-                text = "Puffert…",
+                text = stringResource(R.string.player_buffering),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
             )
@@ -350,7 +353,9 @@ private fun InfoBar(state: PlayerUiState) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = channel.number.takeIf { it > 0 }?.let { "$it · " }.orEmpty() + channel.name,
+                        text = channel.number.takeIf { it > 0 }
+                            ?.let { stringResource(R.string.player_channel_number_prefix, it) }
+                            .orEmpty() + channel.name,
                         style = MaterialTheme.typography.headlineMedium,
                         color = Color.White,
                     )
@@ -375,7 +380,11 @@ private fun InfoBar(state: PlayerUiState) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "${TimeFormat.range(current.startAt, current.endAt)} · ${TimeFormat.remaining(current.endAt)}",
+                        text = stringResource(
+                            R.string.program_time_remaining,
+                            TimeFormat.range(current.startAt, current.endAt),
+                            TimeFormat.remaining(LocalContext.current, current.endAt),
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TvOnSurfaceMuted,
                     )
@@ -387,7 +396,11 @@ private fun InfoBar(state: PlayerUiState) {
                     state.nextProgram?.let { next ->
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = "Danach: ${TimeFormat.clock(next.startAt)} ${next.title}",
+                            text = stringResource(
+                                R.string.player_up_next,
+                                TimeFormat.clock(next.startAt),
+                                next.title,
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = TvOnSurfaceMuted,
                             maxLines = 1,
@@ -396,7 +409,7 @@ private fun InfoBar(state: PlayerUiState) {
                     }
                 } else {
                     Text(
-                        text = "Keine Programminformationen",
+                        text = stringResource(R.string.player_no_program),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TvOnSurfaceMuted,
                     )
@@ -449,32 +462,36 @@ private fun QuickOptionsBar(
         Row(horizontalArrangement = Arrangement.spacedBy(TvSpacing.small)) {
             QuickAction(
                 icon = Icons.Default.VolumeUp,
-                label = "Tonspur",
+                label = stringResource(R.string.player_audio_track),
                 value = audioTracks.firstOrNull { it.isSelected }?.label,
                 modifier = Modifier.focusRequester(firstItemFocus),
                 onClick = { expanded = if (expanded == "audio") null else "audio" },
             )
             QuickAction(
                 icon = Icons.Default.ClosedCaption,
-                label = "Untertitel",
+                label = stringResource(R.string.player_subtitles),
                 value = subtitleTracks.firstOrNull { it.isSelected }?.label,
                 onClick = { expanded = if (expanded == "subs") null else "subs" },
             )
             QuickAction(
                 icon = Icons.Default.AspectRatio,
-                label = "Format",
-                value = aspectRatio.label,
+                label = stringResource(R.string.player_format),
+                value = stringResource(aspectRatio.labelRes),
                 onClick = onCycleAspectRatio,
             )
             QuickAction(
                 icon = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                label = if (isFavorite) "Favorit entfernen" else "Zu Favoriten",
+                label = if (isFavorite) {
+                    stringResource(R.string.player_remove_favorite)
+                } else {
+                    stringResource(R.string.player_add_favorite)
+                },
                 tint = if (isFavorite) TvFavorite else Color.White,
                 onClick = onToggleFavorite,
             )
             QuickAction(
                 icon = Icons.Default.PictureInPictureAlt,
-                label = "Bild-in-Bild",
+                label = stringResource(R.string.player_pip),
                 onClick = onEnterPip,
             )
         }

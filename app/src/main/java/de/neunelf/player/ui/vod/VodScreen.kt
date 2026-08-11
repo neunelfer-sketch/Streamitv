@@ -40,6 +40,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,6 +50,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
+import de.neunelf.player.R
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.data.model.VodSort
 import de.neunelf.player.ui.common.COMPACT_WIDTH_BREAKPOINT
@@ -105,8 +107,12 @@ fun VodScreen(
     Box(modifier = Modifier.fillMaxSize().background(TvBackground)) {
         Column(modifier = Modifier.fillMaxSize()) {
             VodHeader(
-                title = if (kind == StreamKind.SERIES) "Serien" else "Filme",
-                sortLabel = state.sort.label,
+                title = if (kind == StreamKind.SERIES) {
+                    stringResource(R.string.content_series)
+                } else {
+                    stringResource(R.string.content_movies)
+                },
+                sortLabel = stringResource(state.sort.labelRes),
                 buttonFocusRequester = sortButtonFocus,
                 onOpenSortMenu = { isSortMenuOpen = true },
             )
@@ -175,7 +181,7 @@ private fun VodHeader(
         ) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
-                contentDescription = "Sortieren",
+                contentDescription = stringResource(R.string.vod_sort_action),
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 6.dp)
                     .size(24.dp),
@@ -208,7 +214,7 @@ private fun SortMenu(
     ) {
         Column(modifier = Modifier.padding(vertical = 6.dp)) {
             Text(
-                text = "Sortieren nach",
+                text = stringResource(R.string.vod_sort_by),
                 style = MaterialTheme.typography.labelMedium,
                 color = TvOnSurfaceMuted,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -234,14 +240,14 @@ private fun SortMenu(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = option.label,
+                            text = stringResource(option.labelRes),
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f),
                         )
                         if (option == current) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Ausgewählt",
+                                contentDescription = stringResource(R.string.selected),
                                 modifier = Modifier.size(18.dp),
                             )
                         }

@@ -31,6 +31,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -42,6 +43,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import de.neunelf.player.R
 import de.neunelf.player.data.model.PlaylistType
 import de.neunelf.player.ui.components.DeveloperCredit
 import de.neunelf.player.ui.theme.TvAccent
@@ -95,10 +97,13 @@ fun LoginScreen(
                     .padding(TvSpacing.large)
                     .verticalScroll(rememberScrollState()),
             ) {
-                Text("9elf Player einrichten", style = MaterialTheme.typography.headlineLarge)
+                Text(
+                    stringResource(R.string.login_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                )
                 Spacer(Modifier.height(TvSpacing.small))
                 Text(
-                    text = "Wähle den Typ deiner Playlist",
+                    text = stringResource(R.string.login_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = TvOnSurfaceMuted,
                 )
@@ -108,12 +113,12 @@ fun LoginScreen(
                 // --- Typauswahl -------------------------------------------------
                 Row(horizontalArrangement = Arrangement.spacedBy(TvSpacing.small)) {
                     TypeChip(
-                        label = "Xtream Codes",
+                        label = stringResource(R.string.login_type_xtream),
                         isSelected = state.type == PlaylistType.XTREAM,
                         onClick = { viewModel.setType(PlaylistType.XTREAM) },
                     )
                     TypeChip(
-                        label = "M3U / M3U8 Link",
+                        label = stringResource(R.string.login_type_m3u),
                         isSelected = state.type == PlaylistType.M3U,
                         onClick = { viewModel.setType(PlaylistType.M3U) },
                     )
@@ -125,7 +130,7 @@ fun LoginScreen(
                 TvTextField(
                     value = state.name,
                     onValueChange = viewModel::setName,
-                    label = "Name der Playlist",
+                    label = stringResource(R.string.login_playlist_name),
                     modifier = Modifier.focusRequester(firstField),
                 )
 
@@ -133,25 +138,25 @@ fun LoginScreen(
                     TvTextField(
                         value = state.serverUrl,
                         onValueChange = viewModel::setServerUrl,
-                        label = "Server-URL (z. B. http://server.tv:8080)",
+                        label = stringResource(R.string.login_server_url),
                         keyboardType = KeyboardType.Uri,
                     )
                     TvTextField(
                         value = state.username,
                         onValueChange = viewModel::setUsername,
-                        label = "Benutzername",
+                        label = stringResource(R.string.login_username),
                     )
                     TvTextField(
                         value = state.password,
                         onValueChange = viewModel::setPassword,
-                        label = "Passwort",
+                        label = stringResource(R.string.login_password),
                         isPassword = true,
                     )
                 } else {
                     TvTextField(
                         value = state.m3uUrl,
                         onValueChange = viewModel::setM3uUrl,
-                        label = "M3U-URL",
+                        label = stringResource(R.string.login_m3u_url),
                         keyboardType = KeyboardType.Uri,
                     )
                 }
@@ -159,7 +164,7 @@ fun LoginScreen(
                 TvTextField(
                     value = state.epgUrl,
                     onValueChange = viewModel::setEpgUrl,
-                    label = "EPG-URL (XMLTV, optional)",
+                    label = stringResource(R.string.login_epg_url),
                     keyboardType = KeyboardType.Uri,
                     imeAction = ImeAction.Done,
                 )
@@ -185,7 +190,13 @@ fun LoginScreen(
                     enabled = state.canSubmit,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (state.isBusy) "Verbinde…" else "Verbinden")
+                    Text(
+                        if (state.isBusy) {
+                            stringResource(R.string.login_connecting)
+                        } else {
+                            stringResource(R.string.login_connect)
+                        },
+                    )
                 }
 
                 DeveloperCredit()

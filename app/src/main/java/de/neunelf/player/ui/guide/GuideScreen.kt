@@ -37,7 +37,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -48,6 +50,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import de.neunelf.player.R
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.EpgProgram
@@ -153,7 +156,7 @@ fun GuideScreen(
         Row(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 GuideHeader(
-                    dayLabel = state.dayLabel,
+                    dayLabel = state.dayLabel(),
                     selectedProgram = state.selectedProgram,
                     onPreviousDay = viewModel::previousDay,
                     onNextDay = viewModel::nextDay,
@@ -179,7 +182,10 @@ fun GuideScreen(
                 // --- Rasterzeilen -------------------------------------------------
                 if (state.isLoading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Lade Programmzeitschrift…", color = TvOnSurfaceMuted)
+                        Text(
+                            stringResource(R.string.guide_loading),
+                            color = TvOnSurfaceMuted,
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -242,7 +248,7 @@ private fun GuidePreviewPane(
 ) {
     if (channel == null) {
         Box(modifier, contentAlignment = Alignment.Center) {
-            Text("Sender auswählen", color = TvOnSurfaceMuted)
+            Text(stringResource(R.string.home_select_channel), color = TvOnSurfaceMuted)
         }
         return
     }
@@ -275,7 +281,11 @@ private fun GuidePreviewPane(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "${TimeFormat.range(current.startAt, current.endAt)} · ${TimeFormat.remaining(current.endAt, now)}",
+                text = stringResource(
+                    R.string.program_time_remaining,
+                    TimeFormat.range(current.startAt, current.endAt),
+                    TimeFormat.remaining(LocalContext.current, current.endAt, now),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TvOnSurfaceMuted,
             )
@@ -297,7 +307,7 @@ private fun GuidePreviewPane(
         } else {
             Spacer(Modifier.height(TvSpacing.small))
             Text(
-                text = "Keine Programminformationen",
+                text = stringResource(R.string.player_no_program),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TvOnSurfaceMuted,
             )
@@ -306,13 +316,17 @@ private fun GuidePreviewPane(
         if (next != null) {
             Spacer(Modifier.height(TvSpacing.large))
             Text(
-                text = "Danach",
+                text = stringResource(R.string.program_up_next),
                 style = MaterialTheme.typography.titleMedium,
                 color = TvOnSurfaceMuted,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "${TimeFormat.clock(next.startAt)}  ${next.title}",
+                text = stringResource(
+                    R.string.program_time_title,
+                    TimeFormat.clock(next.startAt),
+                    next.title,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -324,6 +338,18 @@ private fun GuidePreviewPane(
 // ---------------------------------------------------------------------------
 // Kopfbereich
 // ---------------------------------------------------------------------------
+
+/**
+ * Beschriftung des gewählten Tages: die drei Tage rund um heute bekommen
+ * einen Namen, alles weiter weg das kurze Datum.
+ */
+@Composable
+private fun GuideUiState.dayLabel(): String = when (dayOffset) {
+    0 -> stringResource(R.string.guide_today)
+    1 -> stringResource(R.string.guide_tomorrow)
+    -1 -> stringResource(R.string.guide_yesterday)
+    else -> TimeFormat.dayShort(window.start)
+}
 
 @Composable
 private fun GuideHeader(
@@ -344,13 +370,16 @@ private fun GuideHeader(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "TV-Guide",
+                text = stringResource(R.string.nav_guide),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(end = TvSpacing.large),
             )
 
             HeaderButton(onClick = onPreviousDay) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Vorheriger Tag")
+                Icon(
+                    Icons.Default.ChevronLeft,
+                    contentDescription = stringResource(R.string.guide_previous_day),
+                )
             }
             Text(
                 text = dayLabel,
@@ -360,12 +389,18 @@ private fun GuideHeader(
                     .width(110.dp),
             )
             HeaderButton(onClick = onNextDay) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Nächster Tag")
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = stringResource(R.string.guide_next_day),
+                )
             }
 
             Spacer(Modifier.width(TvSpacing.medium))
             HeaderButton(onClick = onJumpToNow) {
-                Text("Jetzt", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    stringResource(R.string.guide_now),
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
         }
 
@@ -374,7 +409,11 @@ private fun GuideHeader(
         if (selectedProgram != null) {
             Spacer(Modifier.height(TvSpacing.small))
             Text(
-                text = "${TimeFormat.range(selectedProgram.startAt, selectedProgram.endAt)}  ·  ${selectedProgram.title}",
+                text = stringResource(
+                    R.string.guide_selected_program,
+                    TimeFormat.range(selectedProgram.startAt, selectedProgram.endAt),
+                    selectedProgram.title,
+                ),
                 style = MaterialTheme.typography.titleMedium,
                 color = TvAccent,
                 maxLines = 1,
@@ -528,7 +567,7 @@ private fun GuideRow(
                 // Ohne EPG-Daten eine durchgehende Platzhalterkachel über die
                 // volle Fensterbreite – sonst wirkt die Zeile "kaputt".
                 ProgramCell(
-                    title = "Keine Programminformationen",
+                    title = stringResource(R.string.player_no_program),
                     widthMinutes = ((windowEnd - windowStart) / 60_000L).toInt(),
                     isPlaceholder = true,
                     isLive = false,

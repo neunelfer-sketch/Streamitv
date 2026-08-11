@@ -47,6 +47,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,6 +66,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import de.neunelf.player.R
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.ChannelWithProgram
@@ -170,7 +173,9 @@ fun HomeScreen(
             // schiefging, ist dringlicher als eine verfügbare neue Fassung.
             statusMessage = state.syncMessage
                 ?: state.errorMessage
-                ?: state.updateVersion?.let { "Version $it verfügbar – siehe Einstellungen" },
+                ?: state.updateVersion?.let {
+                    stringResource(R.string.home_update_available, it)
+                },
             isError = state.errorMessage != null,
             onOpenGuide = onOpenGuide,
             onOpenMovies = onOpenMovies,
@@ -269,12 +274,37 @@ private fun HomeTopBar(
             .padding(horizontal = TvSpacing.overscanHorizontal),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TopBarAction(Icons.Default.LiveTv, "Live TV", isActive = true, onClick = {})
-        TopBarAction(Icons.Default.CalendarMonth, "TV-Guide", onClick = onOpenGuide)
-        TopBarAction(Icons.Default.Movie, "Filme", onClick = onOpenMovies)
-        TopBarAction(Icons.Default.Subscriptions, "Serien", onClick = onOpenSeries)
-        TopBarAction(Icons.Default.Search, "Suche", onClick = onOpenSearch)
-        TopBarAction(Icons.Default.Settings, "Einstellungen", onClick = onOpenSettings)
+        TopBarAction(
+            Icons.Default.LiveTv,
+            stringResource(R.string.nav_live),
+            isActive = true,
+            onClick = {},
+        )
+        TopBarAction(
+            Icons.Default.CalendarMonth,
+            stringResource(R.string.nav_guide),
+            onClick = onOpenGuide,
+        )
+        TopBarAction(
+            Icons.Default.Movie,
+            stringResource(R.string.content_movies),
+            onClick = onOpenMovies,
+        )
+        TopBarAction(
+            Icons.Default.Subscriptions,
+            stringResource(R.string.content_series),
+            onClick = onOpenSeries,
+        )
+        TopBarAction(
+            Icons.Default.Search,
+            stringResource(R.string.search_title),
+            onClick = onOpenSearch,
+        )
+        TopBarAction(
+            Icons.Default.Settings,
+            stringResource(R.string.settings_title),
+            onClick = onOpenSettings,
+        )
 
         Spacer(Modifier.weight(1f))
 
@@ -361,6 +391,21 @@ private fun CategoryColumn(
     }
 }
 
+/**
+ * Beschriftung eines Kategorie-Eintrags.
+ *
+ * Die drei virtuellen Kategorien sind Oberflächentext und werden übersetzt;
+ * der Name einer echten Kategorie stammt aus der Playlist des Nutzers und
+ * bleibt deshalb unverändert stehen.
+ */
+@Composable
+private fun CategoryItem.label(): String = when (this) {
+    is CategoryItem.All -> stringResource(R.string.category_all)
+    is CategoryItem.Favorites -> stringResource(R.string.category_favorites)
+    is CategoryItem.Recent -> stringResource(R.string.category_recent)
+    is CategoryItem.Group -> category.name
+}
+
 @Composable
 private fun CategoryRow(
     item: CategoryItem,
@@ -390,7 +435,7 @@ private fun CategoryRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = item.title,
+                text = item.label(),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
@@ -425,8 +470,8 @@ private fun ChannelColumn(
 
     Box(modifier = modifier) {
         when {
-            isLoading -> CenteredHint("Lade Sender…")
-            channels.isEmpty() -> CenteredHint("Keine Sender in dieser Kategorie")
+            isLoading -> CenteredHint(stringResource(R.string.home_loading_channels))
+            channels.isEmpty() -> CenteredHint(stringResource(R.string.home_no_channels))
             else -> LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -465,7 +510,7 @@ private fun DetailPane(
 ) {
     if (item == null) {
         Box(modifier, contentAlignment = Alignment.Center) {
-            CenteredHint("Sender auswählen")
+            CenteredHint(stringResource(R.string.home_select_channel))
         }
         return
     }
@@ -542,7 +587,11 @@ private fun DetailPane(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "${TimeFormat.range(current.startAt, current.endAt)} · ${TimeFormat.remaining(current.endAt)}",
+                text = stringResource(
+                    R.string.program_time_remaining,
+                    TimeFormat.range(current.startAt, current.endAt),
+                    TimeFormat.remaining(LocalContext.current, current.endAt),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TvOnSurfaceMuted,
             )
@@ -565,7 +614,7 @@ private fun DetailPane(
         } else {
             Spacer(Modifier.height(TvSpacing.small))
             Text(
-                text = "Keine Programminformationen",
+                text = stringResource(R.string.player_no_program),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TvOnSurfaceMuted,
             )
@@ -575,7 +624,7 @@ private fun DetailPane(
         if (upcoming.size > 1) {
             Spacer(Modifier.height(TvSpacing.large))
             Text(
-                text = "Danach",
+                text = stringResource(R.string.program_up_next),
                 style = MaterialTheme.typography.titleMedium,
                 color = TvOnSurfaceMuted,
             )

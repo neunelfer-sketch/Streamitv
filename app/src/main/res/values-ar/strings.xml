@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">9elf Player</string>
+
+    <!-- التنقل -->
+    <string name="nav_live">البث المباشر</string>
+    <string name="nav_guide">دليل البرامج</string>
+    <string name="content_channels">القنوات</string>
+    <string name="content_movies">الأفلام</string>
+    <string name="content_series">المسلسلات</string>
+    <string name="search_title">البحث</string>
+    <string name="settings_title">الإعدادات</string>
+
+    <!-- الفئات -->
+    <string name="category_all">كل القنوات</string>
+    <string name="category_favorites">المفضلة</string>
+    <string name="category_recent">شوهد مؤخرًا</string>
+    <string name="favorite">مفضلة</string>
+    <string name="selected">محدد</string>
+
+    <!-- الإعداد -->
+    <string name="login_title">إعداد 9elf Player</string>
+    <string name="login_subtitle">اختر نوع قائمة التشغيل</string>
+    <string name="login_type_xtream">Xtream Codes</string>
+    <string name="login_type_m3u">رابط M3U / M3U8</string>
+    <string name="login_playlist_name">اسم القائمة</string>
+    <string name="login_server_url">عنوان الخادم (مثال: http://server.tv:8080)</string>
+    <string name="login_username">اسم المستخدم</string>
+    <string name="login_password">كلمة المرور</string>
+    <string name="login_m3u_url">عنوان M3U</string>
+    <string name="login_epg_url">عنوان EPG ‏(XMLTV، اختياري)</string>
+    <string name="login_connect">اتصال</string>
+    <string name="login_connecting">جارٍ الاتصال…</string>
+    <string name="login_subscription_expired">انتهت صلاحية الاشتراك</string>
+    <string name="playlist_default_name">قائمتي</string>
+
+    <!-- الشاشة الرئيسية -->
+    <string name="home_loading_channels">جارٍ تحميل القنوات…</string>
+    <string name="home_no_channels">لا توجد قنوات في هذه الفئة</string>
+    <string name="home_select_channel">اختر قناة</string>
+    <string name="home_update_available">الإصدار %1$s متاح – راجع الإعدادات</string>
+
+    <!-- معلومات البرامج -->
+    <string name="program_time_title">%1$s  %2$s</string>
+    <string name="program_time_remaining">%1$s · %2$s</string>
+    <string name="program_up_next">التالي</string>
+    <string name="player_no_program">لا تتوفر معلومات عن البرنامج</string>
+
+    <!-- دليل البرامج -->
+    <string name="guide_loading">جارٍ تحميل دليل البرامج…</string>
+    <string name="guide_today">اليوم</string>
+    <string name="guide_tomorrow">غدًا</string>
+    <string name="guide_yesterday">أمس</string>
+    <string name="guide_previous_day">اليوم السابق</string>
+    <string name="guide_next_day">اليوم التالي</string>
+    <string name="guide_now">الآن</string>
+    <string name="guide_selected_program">%1$s  ·  %2$s</string>
+
+    <!-- المشغّل -->
+    <string name="player_audio_track">المسار الصوتي</string>
+    <string name="player_subtitles">الترجمة</string>
+    <string name="player_subtitles_off">إيقاف</string>
+    <string name="player_format">التنسيق</string>
+    <string name="player_add_favorite">إضافة إلى المفضلة</string>
+    <string name="player_remove_favorite">إزالة من المفضلة</string>
+    <string name="player_pip">صورة داخل صورة</string>
+    <string name="player_buffering">جارٍ التخزين المؤقت…</string>
+    <string name="player_reconnecting">جارٍ إعادة الاتصال… (%1$d/%2$d)</string>
+    <string name="player_switch_channel_hint">استخدم ◀ / ▶ لاختيار قناة أخرى</string>
+    <string name="player_channel_number_prefix">"%1$d · "</string>
+    <string name="player_up_next">التالي: %1$s %2$s</string>
+    <string name="player_play">تشغيل</string>
+    <string name="player_pause">إيقاف مؤقت</string>
+    <string name="player_position_of_duration">%1$s / %2$s</string>
+    <string name="player_track_fallback">المسار %1$d</string>
+    <string name="audio_mono">أحادي</string>
+    <string name="audio_stereo">ستيريو</string>
+
+    <string name="aspect_ratio_fit">ملاءمة</string>
+    <string name="aspect_ratio_fill">ملء الشاشة</string>
+    <string name="aspect_ratio_zoom">تكبير</string>
+    <string name="aspect_ratio_16_9">16:9</string>
+    <string name="aspect_ratio_4_3">4:3</string>
+
+    <!-- الأفلام والمسلسلات -->
+    <string name="vod_sort_recent">المضاف حديثًا</string>
+    <string name="vod_sort_name_asc">الاسم أ–ي</string>
+    <string name="vod_sort_name_desc">الاسم ي–أ</string>
+    <string name="vod_sort_by">الترتيب حسب</string>
+    <string name="vod_sort_action">ترتيب</string>
+    <string name="rating_stars">★ %1$s</string>
+    <string name="series_loading_episodes">جارٍ تحميل الحلقات…</string>
+    <string name="series_no_episodes">لم يتم العثور على حلقات</string>
+    <string name="series_season">الموسم %1$d</string>
+
+    <!-- البحث -->
+    <string name="search_field_label">عنوان أو قناة</string>
+    <string name="search_hint_empty">اكتب عنوانًا – يشمل البحث القنوات والأفلام والمسلسلات.</string>
+    <string name="search_no_results">لا توجد نتائج لـ ”%1$s“.</string>
+    <string name="search_channel_position">الترتيب %1$d</string>
+    <string name="search_section_header">%1$s  ·  %2$d</string>
+
+    <!-- الإعدادات -->
+    <string name="settings_section_playlist">قائمة التشغيل</string>
+    <string name="settings_active_playlist">القائمة النشطة</string>
+    <string name="settings_playlist_none">لا شيء</string>
+    <string name="settings_refresh_channels">تحديث قائمة القنوات</string>
+    <string name="settings_epg_source">مصدر EPG</string>
+    <string name="settings_epg_source_auto">تلقائي (بيانات اللوحة)</string>
+    <string name="settings_refresh_epg">تحديث دليل البرامج</string>
+    <string name="settings_remove_playlist">إزالة القائمة</string>
+    <string name="settings_remove_playlist_desc">يحذف كل البيانات المحفوظة لهذه القائمة</string>
+
+    <string name="settings_section_playback">التشغيل</string>
+    <string name="settings_buffer_size">حجم التخزين المؤقت</string>
+    <string name="settings_buffer_seconds">%1$d ث</string>
+    <string name="settings_buffer_small">صغير (5 ث) – أسرع تنقل بين القنوات</string>
+    <string name="settings_buffer_medium">متوسط (15 ث) – الافتراضي</string>
+    <string name="settings_buffer_large">كبير (30 ث) – شبكة Wi-Fi ضعيفة</string>
+    <string name="settings_buffer_xlarge">كبير جدًا (60 ث)</string>
+    <string name="settings_stream_format">تنسيق البث</string>
+    <string name="settings_stream_format_hls">HLS ‏(.m3u8) – تبديل أفضل للجودة</string>
+    <string name="settings_stream_format_ts">MPEG-TS ‏(.ts) – بدء أسرع</string>
+    <string name="settings_aspect_ratio">نسبة العرض إلى الارتفاع</string>
+    <string name="settings_preferred_audio">المسار الصوتي المفضل</string>
+    <string name="settings_audio_auto">تلقائي</string>
+    <string name="settings_subtitles">الترجمة</string>
+    <string name="settings_on">تشغيل</string>
+    <string name="settings_off">إيقاف</string>
+    <string name="settings_live_preview">المعاينة المباشرة</string>
+    <string name="settings_live_preview_on">مفعّلة – تُعرض القناة المحددة في المعاينة الجانبية</string>
+    <string name="settings_live_preview_off">متوقفة – توفّر اتصالًا واحدًا بالخادم</string>
+
+    <string name="settings_section_app">التطبيق</string>
+    <string name="settings_language">اللغة</string>
+    <string name="settings_language_system">لغة النظام</string>
+    <string name="settings_extend_access">تمديد الاشتراك</string>
+    <string name="settings_extend_access_desc">رمز QR للدردشة مع 9elf</string>
+    <string name="settings_update">التحديث</string>
+    <string name="settings_about_value">الإصدار %1$s · ‏%2$d مدخل EPG في الذاكرة</string>
+    <string name="settings_sync_never">أبدًا</string>
+    <string name="settings_sync_today">اليوم %1$s</string>
+    <string name="settings_sync_datetime">%1$s %2$s</string>
+
+    <!-- التحديث المدمج -->
+    <string name="update_unknown">اضغط OK للبحث عن إصدار جديد</string>
+    <string name="update_checking">جارٍ البحث…</string>
+    <string name="update_up_to_date">هذا الإصدار هو الأحدث</string>
+    <string name="update_available">الإصدار %1$s متاح · اضغط OK للتنزيل</string>
+    <string name="update_downloading">جارٍ التنزيل… %1$d %%</string>
+    <string name="update_ready">تم تنزيل الإصدار %1$s · اضغط OK للتثبيت</string>
+    <string name="update_failed">فشل: %1$s · اضغط OK للمحاولة مجددًا</string>
+    <string name="update_check_failed">فشل التحقق</string>
+    <string name="update_install_permission">يرجى السماح بالتثبيت لتطبيق 9elf Player ثم الضغط على OK مجددًا</string>
+
+    <!-- التواصل -->
+    <string name="contact_scan_hint">امسح الرمز بكاميرا هاتفك – ستفتح الدردشة مباشرةً في SimpleX.</string>
+    <string name="contact_qr_description">رمز QR للدردشة مع 9elf</string>
+
+    <!-- مصدر EPG -->
+    <string name="epg_source_hint">عنوان ملف XMLTV. اتركه فارغًا لاستخدام بيانات البرامج الخاصة باللوحة مع Xtream.</string>
+    <string name="epg_source_xmltv_url">عنوان XMLTV</string>
+    <string name="epg_source_save">حفظ وتحميل بيانات البرامج</string>
+    <string name="epg_source_note">سيتم تحميل بيانات البرامج عند فتح الشاشة الرئيسية في المرة القادمة. قد يستغرق ذلك بضع دقائق مع الملفات الكبيرة.</string>
+    <string name="epg_source_removed">تمت إزالة مصدر EPG – سيتم استخدام بيانات اللوحة</string>
+    <string name="epg_source_saved">تم حفظ مصدر EPG</string>
+    <string name="epg_no_source_configured">لم يتم ضبط مصدر EPG</string>
+    <string name="epg_parsing">جارٍ معالجة بيانات البرامج…</string>
+    <string name="epg_programs_loaded">تم تحميل %1$d برنامج</string>
+
+    <!-- استيراد القائمة -->
+    <string name="sync_connecting">جارٍ الاتصال بالخادم…</string>
+    <string name="sync_loading_channels">جارٍ تحميل القنوات…</string>
+    <string name="sync_saving_channels">جارٍ حفظ %1$d قناة…</string>
+    <string name="sync_loading_movies">جارٍ تحميل الأفلام…</string>
+    <string name="sync_loading_series">جارٍ تحميل المسلسلات…</string>
+    <string name="sync_saving_series">جارٍ حفظ %1$d مسلسل…</string>
+    <string name="sync_loading_playlist">جارٍ تحميل القائمة…</string>
+    <string name="sync_parsing_playlist">جارٍ معالجة القائمة…</string>
+    <string name="sync_done">تم</string>
+    <string name="sync_live_ready">تم تحميل %1$d قناة، وتليها الأفلام والمسلسلات…</string>
+    <string name="sync_channels_updated">تم تحديث %1$d قناة</string>
+    <string name="sync_vod_in_background">يجري تحميل الأفلام والمسلسلات في الخلفية…</string>
+
+    <!-- المدة -->
+    <string name="duration_minutes">%1$d د</string>
+    <string name="duration_hours">%1$d س</string>
+    <string name="duration_hours_minutes">%1$d س %2$d د</string>
+    <string name="duration_remaining">يتبقى %1$s</string>
+
+    <!-- الأخطاء -->
+    <string name="error_with_message">خطأ: %1$s</string>
+    <string name="error_unknown">خطأ غير معروف</string>
+    <string name="error_no_connection">تعذّر الاتصال بالخادم</string>
+    <string name="error_stream_rejected">رفض الخادم البث (ربما بسبب كثرة الاتصالات)</string>
+    <string name="error_channel_unavailable">هذه القناة غير متاحة حاليًا</string>
+    <string name="error_format_unsupported">هذا الجهاز لا يدعم هذا التنسيق</string>
+    <string name="error_playback_failed">فشل التشغيل</string>
+    <string name="error_content_not_loaded">تعذّر تحميل المحتوى</string>
+    <string name="error_connection_failed">فشل الاتصال</string>
+    <string name="error_http_status">استجاب الخادم برمز HTTP %1$d</string>
+    <string name="error_github_http_status">استجاب GitHub برمز HTTP %1$d</string>
+    <string name="error_empty_response">استجابة فارغة</string>
+    <string name="error_empty_server_response">استجابة فارغة من الخادم</string>
+    <string name="error_no_account_data">لم يُرجع الخادم بيانات الحساب</string>
+    <string name="error_wrong_credentials">اسم المستخدم أو كلمة المرور غير صحيحة</string>
+    <string name="error_login_failed">فشل تسجيل الدخول: %1$s</string>
+    <string name="error_invalid_server_url">عنوان خادم غير صالح: %1$s</string>
+    <string name="error_http_at_url">HTTP %1$d عند %2$s</string>
+    <string name="error_response_unreadable">تعذّرت قراءة استجابة %1$s</string>
+    <string name="error_update_file_move">تعذّر حفظ الملف الذي تم تنزيله</string>
+
+</resources>

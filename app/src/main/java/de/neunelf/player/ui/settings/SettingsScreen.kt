@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,8 +40,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
-import de.neunelf.player.core.TimeFormat
-import de.neunelf.player.data.model.AspectRatioMode
+import de.neunelf.player.R
 import de.neunelf.player.data.prefs.AppLanguage
 import de.neunelf.player.data.prefs.SettingsStore
 import de.neunelf.player.ui.components.DeveloperCredit
@@ -92,7 +92,10 @@ fun SettingsScreen(
                     vertical = TvSpacing.overscanVertical,
                 ),
         ) {
-            Text("Einstellungen", style = MaterialTheme.typography.headlineLarge)
+            Text(
+                stringResource(R.string.settings_title),
+                style = MaterialTheme.typography.headlineLarge,
+            )
             Spacer(Modifier.height(TvSpacing.medium))
 
             state.message?.let {
@@ -106,40 +109,44 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             item {
-                SettingsSection("Playlist")
+                SettingsSection(stringResource(R.string.settings_section_playlist))
             }
             item {
                 SettingsRow(
-                    title = "Aktive Playlist",
-                    value = state.playlistName ?: "Keine",
+                    title = stringResource(R.string.settings_active_playlist),
+                    value = state.playlistName ?: stringResource(R.string.settings_playlist_none),
                     onClick = {},
                 )
             }
             item {
                 SettingsRow(
-                    title = "Senderliste aktualisieren",
-                    value = state.lastSyncLabel,
+                    title = stringResource(R.string.settings_refresh_channels),
+                    value = state.lastSyncLabel
+                        .ifBlank { stringResource(R.string.settings_sync_never) },
                     onClick = viewModel::refreshPlaylist,
                 )
             }
             item {
                 SettingsRow(
-                    title = "EPG-Quelle",
-                    value = state.epgUrl.ifBlank { "Automatisch (Panel-Daten)" },
+                    title = stringResource(R.string.settings_epg_source),
+                    value = state.epgUrl.ifBlank {
+                        stringResource(R.string.settings_epg_source_auto)
+                    },
                     onClick = onOpenEpgSource,
                 )
             }
             item {
                 SettingsRow(
-                    title = "Programmzeitschrift aktualisieren",
-                    value = state.lastEpgSyncLabel,
+                    title = stringResource(R.string.settings_refresh_epg),
+                    value = state.lastEpgSyncLabel
+                        .ifBlank { stringResource(R.string.settings_sync_never) },
                     onClick = viewModel::refreshEpg,
                 )
             }
             item {
                 SettingsRow(
-                    title = "Playlist entfernen",
-                    value = "Löscht alle lokalen Daten dieser Playlist",
+                    title = stringResource(R.string.settings_remove_playlist),
+                    value = stringResource(R.string.settings_remove_playlist_desc),
                     onClick = {
                         viewModel.removePlaylist()
                         onPlaylistRemoved()
@@ -147,87 +154,101 @@ fun SettingsScreen(
                 )
             }
 
-            item { SettingsSection("Wiedergabe") }
+            item { SettingsSection(stringResource(R.string.settings_section_playback)) }
             item {
+                val preset = SettingsStore.BUFFER_PRESETS
+                    .firstOrNull { it.valueMs == state.settings.bufferMs }
                 SettingsRow(
-                    title = "Puffergröße",
-                    value = SettingsStore.BUFFER_PRESETS.entries
-                        .firstOrNull { it.value == state.settings.bufferMs }?.key
-                        ?: "${state.settings.bufferMs / 1000} s",
+                    title = stringResource(R.string.settings_buffer_size),
+                    value = preset?.let { stringResource(it.labelRes) }
+                        ?: stringResource(
+                            R.string.settings_buffer_seconds,
+                            state.settings.bufferMs / 1000,
+                        ),
                     onClick = viewModel::cycleBuffer,
                 )
             }
             item {
                 SettingsRow(
-                    title = "Stream-Format",
+                    title = stringResource(R.string.settings_stream_format),
                     value = if (state.settings.preferHls) {
-                        "HLS (.m3u8) – besseres Umschalten der Qualität"
+                        stringResource(R.string.settings_stream_format_hls)
                     } else {
-                        "MPEG-TS (.ts) – startet schneller"
+                        stringResource(R.string.settings_stream_format_ts)
                     },
                     onClick = viewModel::togglePreferHls,
                 )
             }
             item {
                 SettingsRow(
-                    title = "Seitenverhältnis",
-                    value = state.settings.aspectRatio.label,
+                    title = stringResource(R.string.settings_aspect_ratio),
+                    value = stringResource(state.settings.aspectRatio.labelRes),
                     onClick = { viewModel.setAspectRatio(state.settings.aspectRatio.next()) },
                 )
             }
             item {
                 SettingsRow(
-                    title = "Bevorzugte Tonspur",
-                    value = state.settings.preferredAudioLanguage.ifBlank { "Automatisch" },
+                    title = stringResource(R.string.settings_preferred_audio),
+                    value = state.settings.preferredAudioLanguage.ifBlank {
+                        stringResource(R.string.settings_audio_auto)
+                    },
                     onClick = viewModel::cycleAudioLanguage,
                 )
             }
             item {
                 SettingsRow(
-                    title = "Untertitel",
-                    value = if (state.settings.subtitlesEnabled) "An" else "Aus",
+                    title = stringResource(R.string.settings_subtitles),
+                    value = if (state.settings.subtitlesEnabled) {
+                        stringResource(R.string.settings_on)
+                    } else {
+                        stringResource(R.string.settings_off)
+                    },
                     onClick = viewModel::toggleSubtitles,
                 )
             }
             item {
                 SettingsRow(
-                    title = "Live-Vorschau",
+                    title = stringResource(R.string.settings_live_preview),
                     value = if (state.settings.showPreviewPlayer) {
-                        "An – der gewählte Sender läuft rechts in der Vorschau"
+                        stringResource(R.string.settings_live_preview_on)
                     } else {
-                        "Aus – spart eine Verbindung zum Server"
+                        stringResource(R.string.settings_live_preview_off)
                     },
                     onClick = viewModel::togglePreviewPlayer,
                 )
             }
 
-            item { SettingsSection("App") }
+            item { SettingsSection(stringResource(R.string.settings_section_app)) }
             item {
                 SettingsRow(
-                    title = "Sprache",
-                    value = state.language.label,
+                    title = stringResource(R.string.settings_language),
+                    value = state.language.displayLabel(),
                     onClick = { isLanguageMenuOpen = true },
                     modifier = Modifier.focusRequester(languageRowFocus),
                 )
             }
             item {
                 SettingsRow(
-                    title = "Zugang verlängern",
-                    value = "QR-Code zum Chat mit 9elf",
+                    title = stringResource(R.string.settings_extend_access),
+                    value = stringResource(R.string.settings_extend_access_desc),
                     onClick = onOpenContact,
                 )
             }
             item {
                 SettingsRow(
-                    title = "Aktualisierung",
+                    title = stringResource(R.string.settings_update),
                     value = state.update.describe(),
                     onClick = viewModel::onUpdateRowClick,
                 )
             }
             item {
                 SettingsRow(
-                    title = "9elf Player",
-                    value = "Version ${state.currentVersion} · ${state.programCount} EPG-Einträge im Cache",
+                    title = stringResource(R.string.app_name),
+                    value = stringResource(
+                        R.string.settings_about_value,
+                        state.currentVersion,
+                        state.programCount,
+                    ),
                     onClick = onBack,
                 )
             }
@@ -252,15 +273,28 @@ fun SettingsScreen(
 }
 
 /** Beschriftung der Aktualisierungs-Zeile – sagt zugleich, was OK bewirkt. */
+@Composable
 private fun UpdateUiState.describe(): String = when (this) {
-    UpdateUiState.Unknown -> "OK drücken, um nach einer neuen Fassung zu suchen"
-    UpdateUiState.Checking -> "Suche…"
-    UpdateUiState.UpToDate -> "Diese Fassung ist aktuell"
-    is UpdateUiState.Available -> "Version ${info.versionName} verfügbar · OK zum Laden"
-    is UpdateUiState.Downloading -> "Wird geladen… $percent %"
-    is UpdateUiState.ReadyToInstall -> "Version $versionName geladen · OK zum Installieren"
-    is UpdateUiState.Failed -> "Fehlgeschlagen: $message · OK für erneuten Versuch"
+    UpdateUiState.Unknown -> stringResource(R.string.update_unknown)
+    UpdateUiState.Checking -> stringResource(R.string.update_checking)
+    UpdateUiState.UpToDate -> stringResource(R.string.update_up_to_date)
+    is UpdateUiState.Available -> stringResource(R.string.update_available, info.versionName)
+    is UpdateUiState.Downloading -> stringResource(R.string.update_downloading, percent)
+    is UpdateUiState.ReadyToInstall -> stringResource(R.string.update_ready, versionName)
+    is UpdateUiState.Failed -> stringResource(R.string.update_failed, message)
 }
+
+/**
+ * Beschriftung eines Spracheintrags.
+ *
+ * Die echten Sprachen tragen ihren Eigennamen ("Türkçe"), der bewusst
+ * unübersetzt bleibt – so findet man seine Sprache auch dann, wenn die App
+ * gerade in einer fremden angezeigt wird. Nur "Systemsprache" ist ein
+ * gewöhnlicher Oberflächentext und kommt deshalb aus den Ressourcen.
+ */
+@Composable
+private fun AppLanguage.displayLabel(): String =
+    labelRes?.let { stringResource(it) } ?: label
 
 /**
  * Auswahlliste der Sprachen.
@@ -291,7 +325,7 @@ private fun LanguageMenu(
         LazyColumn(modifier = Modifier.padding(vertical = 6.dp)) {
             item {
                 Text(
-                    text = "Sprache",
+                    text = stringResource(R.string.settings_language),
                     style = MaterialTheme.typography.labelMedium,
                     color = TvOnSurfaceMuted,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -319,14 +353,14 @@ private fun LanguageMenu(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = option.label,
+                            text = option.displayLabel(),
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f),
                         )
                         if (option == current) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Ausgewählt",
+                                contentDescription = stringResource(R.string.selected),
                                 modifier = Modifier.size(18.dp),
                             )
                         }

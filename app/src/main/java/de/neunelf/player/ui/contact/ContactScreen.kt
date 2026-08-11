@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -53,10 +54,13 @@ fun ContactScreen(onBack: () -> Unit) {
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Zugang verlängern", style = MaterialTheme.typography.headlineLarge)
+        Text(
+            stringResource(R.string.settings_extend_access),
+            style = MaterialTheme.typography.headlineLarge,
+        )
         Spacer(Modifier.height(TvSpacing.small))
         Text(
-            text = "Code mit der Handykamera scannen – der Chat öffnet sich direkt in SimpleX.",
+            text = stringResource(R.string.contact_scan_hint),
             style = MaterialTheme.typography.bodyLarge,
             color = TvOnSurfaceMuted,
         )
@@ -66,7 +70,7 @@ fun ContactScreen(onBack: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
                 painter = painterResource(R.drawable.qr_9elf),
-                contentDescription = "QR-Code für den Chat mit 9elf",
+                contentDescription = stringResource(R.string.contact_qr_description),
                 modifier = Modifier
                     .size(300.dp)
                     .clip(RoundedCornerShape(8.dp)),

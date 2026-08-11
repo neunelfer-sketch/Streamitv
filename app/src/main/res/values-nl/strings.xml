@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">9elf Player</string>
+
+    <!-- Navigatie -->
+    <string name="nav_live">Live tv</string>
+    <string name="nav_guide">Tv-gids</string>
+    <string name="content_channels">Zenders</string>
+    <string name="content_movies">Films</string>
+    <string name="content_series">Series</string>
+    <string name="search_title">Zoeken</string>
+    <string name="settings_title">Instellingen</string>
+
+    <!-- Categorieën -->
+    <string name="category_all">Alle zenders</string>
+    <string name="category_favorites">Favorieten</string>
+    <string name="category_recent">Recent bekeken</string>
+    <string name="favorite">Favoriet</string>
+    <string name="selected">Geselecteerd</string>
+
+    <!-- Instellen -->
+    <string name="login_title">9elf Player instellen</string>
+    <string name="login_subtitle">Kies het type afspeellijst</string>
+    <string name="login_type_xtream">Xtream Codes</string>
+    <string name="login_type_m3u">M3U-/M3U8-link</string>
+    <string name="login_playlist_name">Naam van de afspeellijst</string>
+    <string name="login_server_url">Serveradres (bijv. http://server.tv:8080)</string>
+    <string name="login_username">Gebruikersnaam</string>
+    <string name="login_password">Wachtwoord</string>
+    <string name="login_m3u_url">M3U-adres</string>
+    <string name="login_epg_url">EPG-adres (XMLTV, optioneel)</string>
+    <string name="login_connect">Verbinden</string>
+    <string name="login_connecting">Verbinden…</string>
+    <string name="login_subscription_expired">Het abonnement is verlopen</string>
+    <string name="playlist_default_name">Mijn afspeellijst</string>
+
+    <!-- Startscherm -->
+    <string name="home_loading_channels">Zenders laden…</string>
+    <string name="home_no_channels">Geen zenders in deze categorie</string>
+    <string name="home_select_channel">Kies een zender</string>
+    <string name="home_update_available">Versie %1$s beschikbaar – zie Instellingen</string>
+
+    <!-- Programma -->
+    <string name="program_time_title">%1$s  %2$s</string>
+    <string name="program_time_remaining">%1$s · %2$s</string>
+    <string name="program_up_next">Hierna</string>
+    <string name="player_no_program">Geen programmagegevens</string>
+
+    <!-- Tv-gids -->
+    <string name="guide_loading">Tv-gids laden…</string>
+    <string name="guide_today">Vandaag</string>
+    <string name="guide_tomorrow">Morgen</string>
+    <string name="guide_yesterday">Gisteren</string>
+    <string name="guide_previous_day">Vorige dag</string>
+    <string name="guide_next_day">Volgende dag</string>
+    <string name="guide_now">Nu</string>
+    <string name="guide_selected_program">%1$s  ·  %2$s</string>
+
+    <!-- Speler -->
+    <string name="player_audio_track">Audiospoor</string>
+    <string name="player_subtitles">Ondertiteling</string>
+    <string name="player_subtitles_off">Uit</string>
+    <string name="player_format">Formaat</string>
+    <string name="player_add_favorite">Aan favorieten toevoegen</string>
+    <string name="player_remove_favorite">Uit favorieten verwijderen</string>
+    <string name="player_pip">Beeld-in-beeld</string>
+    <string name="player_buffering">Bufferen…</string>
+    <string name="player_reconnecting">Opnieuw verbinden… (%1$d/%2$d)</string>
+    <string name="player_switch_channel_hint">Kies met ◀ / ▶ een andere zender</string>
+    <string name="player_channel_number_prefix">"%1$d · "</string>
+    <string name="player_up_next">Hierna: %1$s %2$s</string>
+    <string name="player_play">Afspelen</string>
+    <string name="player_pause">Pauzeren</string>
+    <string name="player_position_of_duration">%1$s / %2$s</string>
+    <string name="player_track_fallback">Spoor %1$d</string>
+    <string name="audio_mono">Mono</string>
+    <string name="audio_stereo">Stereo</string>
+
+    <string name="aspect_ratio_fit">Passend</string>
+    <string name="aspect_ratio_fill">Vullen</string>
+    <string name="aspect_ratio_zoom">Zoomen</string>
+    <string name="aspect_ratio_16_9">16:9</string>
+    <string name="aspect_ratio_4_3">4:3</string>
+
+    <!-- Films en series -->
+    <string name="vod_sort_recent">Onlangs toegevoegd</string>
+    <string name="vod_sort_name_asc">Naam A–Z</string>
+    <string name="vod_sort_name_desc">Naam Z–A</string>
+    <string name="vod_sort_by">Sorteren op</string>
+    <string name="vod_sort_action">Sorteren</string>
+    <string name="rating_stars">★ %1$s</string>
+    <string name="series_loading_episodes">Afleveringen laden…</string>
+    <string name="series_no_episodes">Geen afleveringen gevonden</string>
+    <string name="series_season">Seizoen %1$d</string>
+
+    <!-- Zoeken -->
+    <string name="search_field_label">Titel of zender</string>
+    <string name="search_hint_empty">Typ een titel – er wordt gezocht in zenders, films en series.</string>
+    <string name="search_no_results">Niets gevonden voor ‘%1$s’.</string>
+    <string name="search_channel_position">Nr. %1$d</string>
+    <string name="search_section_header">%1$s  ·  %2$d</string>
+
+    <!-- Instellingen -->
+    <string name="settings_section_playlist">Afspeellijst</string>
+    <string name="settings_active_playlist">Actieve afspeellijst</string>
+    <string name="settings_playlist_none">Geen</string>
+    <string name="settings_refresh_channels">Zenderlijst vernieuwen</string>
+    <string name="settings_epg_source">EPG-bron</string>
+    <string name="settings_epg_source_auto">Automatisch (paneelgegevens)</string>
+    <string name="settings_refresh_epg">Tv-gids vernieuwen</string>
+    <string name="settings_remove_playlist">Afspeellijst verwijderen</string>
+    <string name="settings_remove_playlist_desc">Wist alle lokale gegevens van deze afspeellijst</string>
+
+    <string name="settings_section_playback">Afspelen</string>
+    <string name="settings_buffer_size">Buffergrootte</string>
+    <string name="settings_buffer_seconds">%1$d s</string>
+    <string name="settings_buffer_small">Klein (5 s) – snelst zappen</string>
+    <string name="settings_buffer_medium">Gemiddeld (15 s) – standaard</string>
+    <string name="settings_buffer_large">Groot (30 s) – zwakke wifi</string>
+    <string name="settings_buffer_xlarge">Zeer groot (60 s)</string>
+    <string name="settings_stream_format">Streamformaat</string>
+    <string name="settings_stream_format_hls">HLS (.m3u8) – vlotter wisselen van kwaliteit</string>
+    <string name="settings_stream_format_ts">MPEG-TS (.ts) – start sneller</string>
+    <string name="settings_aspect_ratio">Beeldverhouding</string>
+    <string name="settings_preferred_audio">Voorkeursaudiospoor</string>
+    <string name="settings_audio_auto">Automatisch</string>
+    <string name="settings_subtitles">Ondertiteling</string>
+    <string name="settings_on">Aan</string>
+    <string name="settings_off">Uit</string>
+    <string name="settings_live_preview">Live voorbeeld</string>
+    <string name="settings_live_preview_on">Aan – de gekozen zender speelt in het voorbeeld rechts</string>
+    <string name="settings_live_preview_off">Uit – bespaart één verbinding met de server</string>
+
+    <string name="settings_section_app">App</string>
+    <string name="settings_language">Taal</string>
+    <string name="settings_language_system">Systeemtaal</string>
+    <string name="settings_extend_access">Toegang verlengen</string>
+    <string name="settings_extend_access_desc">QR-code voor de chat met 9elf</string>
+    <string name="settings_update">Update</string>
+    <string name="settings_about_value">Versie %1$s · %2$d EPG-items in cache</string>
+    <string name="settings_sync_never">Nooit</string>
+    <string name="settings_sync_today">Vandaag %1$s</string>
+    <string name="settings_sync_datetime">%1$s %2$s</string>
+
+    <!-- Ingebouwde update -->
+    <string name="update_unknown">Druk op OK om naar een nieuwe versie te zoeken</string>
+    <string name="update_checking">Zoeken…</string>
+    <string name="update_up_to_date">Deze versie is actueel</string>
+    <string name="update_available">Versie %1$s beschikbaar · OK om te downloaden</string>
+    <string name="update_downloading">Downloaden… %1$d %%</string>
+    <string name="update_ready">Versie %1$s gedownload · OK om te installeren</string>
+    <string name="update_failed">Mislukt: %1$s · OK om het opnieuw te proberen</string>
+    <string name="update_check_failed">Controle mislukt</string>
+    <string name="update_install_permission">Sta de installatie voor 9elf Player toe en druk opnieuw op OK</string>
+
+    <!-- Contact -->
+    <string name="contact_scan_hint">Scan de code met je telefooncamera – de chat opent meteen in SimpleX.</string>
+    <string name="contact_qr_description">QR-code voor de chat met 9elf</string>
+
+    <!-- EPG-bron -->
+    <string name="epg_source_hint">Adres van een XMLTV-bestand. Laat leeg om bij Xtream de programmagegevens van het paneel te gebruiken.</string>
+    <string name="epg_source_xmltv_url">XMLTV-adres</string>
+    <string name="epg_source_save">Opslaan en programmagegevens laden</string>
+    <string name="epg_source_note">De programmagegevens worden geladen zodra je het startscherm de volgende keer opent. Bij grote bestanden duurt dat enkele minuten.</string>
+    <string name="epg_source_removed">EPG-bron verwijderd – de gegevens van het paneel worden gebruikt</string>
+    <string name="epg_source_saved">EPG-bron opgeslagen</string>
+    <string name="epg_no_source_configured">Geen EPG-bron ingesteld</string>
+    <string name="epg_parsing">Programmagegevens verwerken…</string>
+    <string name="epg_programs_loaded">%1$d programma\'s geladen</string>
+
+    <!-- Afspeellijst importeren -->
+    <string name="sync_connecting">Verbinden met de server…</string>
+    <string name="sync_loading_channels">Zenders laden…</string>
+    <string name="sync_saving_channels">%1$d zenders opslaan…</string>
+    <string name="sync_loading_movies">Films laden…</string>
+    <string name="sync_loading_series">Series laden…</string>
+    <string name="sync_saving_series">%1$d series opslaan…</string>
+    <string name="sync_loading_playlist">Afspeellijst laden…</string>
+    <string name="sync_parsing_playlist">Afspeellijst verwerken…</string>
+    <string name="sync_done">Klaar</string>
+    <string name="sync_live_ready">%1$d zenders geladen, films en series volgen…</string>
+    <string name="sync_channels_updated">%1$d zenders bijgewerkt</string>
+    <string name="sync_vod_in_background">Films en series worden op de achtergrond geladen…</string>
+
+    <!-- Duur -->
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d u</string>
+    <string name="duration_hours_minutes">%1$d u %2$d min</string>
+    <string name="duration_remaining">nog %1$s</string>
+
+    <!-- Foutmeldingen -->
+    <string name="error_with_message">Fout: %1$s</string>
+    <string name="error_unknown">Onbekende fout</string>
+    <string name="error_no_connection">Geen verbinding met de server</string>
+    <string name="error_stream_rejected">De server heeft de stream geweigerd (mogelijk te veel verbindingen)</string>
+    <string name="error_channel_unavailable">Deze zender is momenteel niet beschikbaar</string>
+    <string name="error_format_unsupported">Dit apparaat ondersteunt het formaat niet</string>
+    <string name="error_playback_failed">Afspelen mislukt</string>
+    <string name="error_content_not_loaded">Kan deze inhoud niet laden</string>
+    <string name="error_connection_failed">Verbinding mislukt</string>
+    <string name="error_http_status">Server antwoordde met HTTP %1$d</string>
+    <string name="error_github_http_status">GitHub antwoordde met HTTP %1$d</string>
+    <string name="error_empty_response">Leeg antwoord</string>
+    <string name="error_empty_server_response">Leeg antwoord van de server</string>
+    <string name="error_no_account_data">De server gaf geen accountgegevens terug</string>
+    <string name="error_wrong_credentials">Onjuiste gebruikersnaam of wachtwoord</string>
+    <string name="error_login_failed">Aanmelden mislukt: %1$s</string>
+    <string name="error_invalid_server_url">Ongeldig serveradres: %1$s</string>
+    <string name="error_http_at_url">HTTP %1$d bij %2$s</string>
+    <string name="error_response_unreadable">Kan het antwoord van %1$s niet lezen</string>
+    <string name="error_update_file_move">Kan het gedownloade bestand niet opslaan</string>
+
+</resources>

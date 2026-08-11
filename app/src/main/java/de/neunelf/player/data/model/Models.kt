@@ -1,5 +1,8 @@
 package de.neunelf.player.data.model
 
+import androidx.annotation.StringRes
+import de.neunelf.player.R
+
 /**
  * Domänenmodelle der App.
  *
@@ -178,19 +181,20 @@ data class ChannelWithProgram(
  * die alphabetische – Serienkataloge ändern sich selten, und man sucht
  * dort meist einen bestimmten Titel.
  */
-enum class VodSort(val label: String) {
+enum class VodSort(@StringRes val labelRes: Int) {
     /** Neuzugänge zuerst. Bei Serien zählt die letzte Änderung am Eintrag. */
-    RECENT("Neu hinzugefügt"),
-    NAME_ASC("Name A–Z"),
-    NAME_DESC("Name Z–A"),
+    RECENT(R.string.vod_sort_recent),
+    NAME_ASC(R.string.vod_sort_name_asc),
+    NAME_DESC(R.string.vod_sort_name_desc),
 }
 
 /** Seitenverhältnis-Modi des Players (zyklisch per Schnellmenü umschaltbar). */
-enum class AspectRatioMode(val label: String) {    FIT("Anpassen"),
-    FILL("Ausfüllen"),
-    ZOOM("Zoom"),
-    FIXED_16_9("16:9"),
-    FIXED_4_3("4:3"),
+enum class AspectRatioMode(@StringRes val labelRes: Int) {
+    FIT(R.string.aspect_ratio_fit),
+    FILL(R.string.aspect_ratio_fill),
+    ZOOM(R.string.aspect_ratio_zoom),
+    FIXED_16_9(R.string.aspect_ratio_16_9),
+    FIXED_4_3(R.string.aspect_ratio_4_3),
     ;
 
     fun next(): AspectRatioMode = entries[(ordinal + 1) % entries.size]

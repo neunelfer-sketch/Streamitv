@@ -1,7 +1,10 @@
 package de.neunelf.player.ui.login
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.data.model.Playlist
 import de.neunelf.player.data.model.PlaylistType
 import de.neunelf.player.data.remote.xtream.XtreamApi
@@ -20,7 +23,8 @@ import javax.inject.Inject
 
 data class LoginUiState(
     val type: PlaylistType = PlaylistType.XTREAM,
-    val name: String = "Meine Playlist",
+    /** Wird vom ViewModel mit dem übersetzten Vorschlagsnamen belegt. */
+    val name: String = "",
     val serverUrl: String = "",
     val username: String = "",
     val password: String = "",
@@ -50,12 +54,15 @@ data class LoginUiState(
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: IptvRepository,
     private val syncer: PlaylistSyncer,
     private val xtreamApi: XtreamApi,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LoginUiState())
+    private val _uiState = MutableStateFlow(
+        LoginUiState(name = context.getString(R.string.playlist_default_name)),
+    )
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun setType(type: PlaylistType) = _uiState.update { it.copy(type = type, errorMessage = null) }
@@ -72,7 +79,13 @@ class LoginViewModel @Inject constructor(
         if (!state.canSubmit) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true, errorMessage = null, statusMessage = "Verbinde…") }
+            _uiState.update {
+                it.copy(
+                    isBusy = true,
+                    errorMessage = null,
+                    statusMessage = context.getString(R.string.login_connecting),
+                )
+            }
 
             try {
                 if (state.type == PlaylistType.XTREAM) {
@@ -88,14 +101,19 @@ class LoginViewModel @Inject constructor(
                     // Streams – deshalb hier explizit warnen.
                     if (info != null && info.status.equals("Expired", ignoreCase = true)) {
                         _uiState.update {
-                            it.copy(isBusy = false, errorMessage = "Das Abonnement ist abgelaufen")
+                            it.copy(
+                                isBusy = false,
+                                errorMessage = context.getString(R.string.login_subscription_expired),
+                            )
                         }
                         return@launch
                     }
                 }
 
                 val playlist = Playlist(
-                    name = state.name.ifBlank { "Playlist" },
+                    name = state.name.ifBlank {
+                        context.getString(R.string.playlist_default_name)
+                    },
                     type = state.type,
                     serverUrl = state.serverUrl.trim(),
                     username = state.username.trim(),
@@ -112,7 +130,8 @@ class LoginViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        errorMessage = e.message ?: "Verbindung fehlgeschlagen",
+                        errorMessage = e.message
+                            ?: context.getString(R.string.error_connection_failed),
                     )
                 }
             }

@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil.compose.SubcomposeAsyncImage
+import de.neunelf.player.R
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.ChannelWithProgram
 import de.neunelf.player.ui.theme.TvAccent
@@ -129,7 +131,11 @@ fun ChannelListItem(
                 if (current != null) {
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "${TimeFormat.clock(current.startAt)}  ${current.title}",
+                        text = stringResource(
+                            R.string.program_time_title,
+                            TimeFormat.clock(current.startAt),
+                            current.title,
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isFocused) Color.White.copy(alpha = 0.85f) else TvOnSurfaceMuted,
                         maxLines = 1,
@@ -149,7 +155,7 @@ fun ChannelListItem(
             if (channel.isFavorite) {
                 Icon(
                     imageVector = Icons.Default.Star,
-                    contentDescription = "Favorit",
+                    contentDescription = stringResource(R.string.favorite),
                     tint = if (isFocused) Color.White else TvFavorite,
                     modifier = Modifier
                         .padding(start = 6.dp)

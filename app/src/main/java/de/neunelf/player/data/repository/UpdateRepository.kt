@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import de.neunelf.player.BuildConfig
+import de.neunelf.player.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -76,7 +77,9 @@ class UpdateRepository @Inject constructor(
             .build()
 
         val body = httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("GitHub antwortete mit HTTP ${response.code}")
+            if (!response.isSuccessful) {
+                error(context.getString(R.string.error_github_http_status, response.code))
+            }
             response.body?.string().orEmpty()
         }
         if (body.isBlank()) return@withContext null
@@ -110,8 +113,11 @@ class UpdateRepository @Inject constructor(
         try {
             val request = Request.Builder().url(info.downloadUrl).build()
             httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) error("Server antwortete mit HTTP ${response.code}")
-                val responseBody = response.body ?: error("Leere Antwort")
+                if (!response.isSuccessful) {
+                    error(context.getString(R.string.error_http_status, response.code))
+                }
+                val responseBody = response.body
+                    ?: error(context.getString(R.string.error_empty_response))
                 val total = responseBody.contentLength()
 
                 // Erst in eine Nebendatei schreiben und am Ende umbenennen:
@@ -144,12 +150,14 @@ class UpdateRepository @Inject constructor(
                 }
 
                 target.delete()
-                if (!partial.renameTo(target)) error("Heruntergeladene Datei konnte nicht abgelegt werden")
+                if (!partial.renameTo(target)) {
+                    error(context.getString(R.string.error_update_file_move))
+                }
             }
             emit(DownloadProgress.Finished(target))
         } catch (e: Exception) {
             Log.e(TAG, "Aktualisierung konnte nicht geladen werden", e)
-            emit(DownloadProgress.Failed(e.message ?: "Unbekannter Fehler"))
+            emit(DownloadProgress.Failed(e.message ?: context.getString(R.string.error_unknown)))
         }
     }.flowOn(Dispatchers.IO)
 

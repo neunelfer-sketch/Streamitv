@@ -45,15 +45,10 @@ data class GuideUiState(
     val selectedProgram: EpgProgram? = null,
     val selectedChannel: Channel? = null,
     val isLoading: Boolean = true,
-) {
-    val dayLabel: String
-        get() = when (dayOffset) {
-            0 -> "Heute"
-            1 -> "Morgen"
-            -1 -> "Gestern"
-            else -> TimeFormat.dayShort(window.start)
-        }
-}
+)
+// Die Tagesbeschriftung ("Heute"/"Morgen"/…) liefert `GuideUiState.dayLabel()`
+// in GuideScreen – als Oberflächentext gehört sie in die Ressourcen, und die
+// erreicht ein reines Zustandsobjekt ohne Context nicht.
 
 /**
  * Zustand des TV-Guides.

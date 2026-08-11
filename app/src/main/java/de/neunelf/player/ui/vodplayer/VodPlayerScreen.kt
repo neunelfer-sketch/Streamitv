@@ -34,6 +34,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +44,7 @@ import androidx.media3.ui.PlayerView
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import de.neunelf.player.R
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.ui.common.KeepScreenOn
 import de.neunelf.player.ui.common.LockScreenOrientation
@@ -137,7 +139,7 @@ fun VodPlayerScreen(
                 )
 
                 state.playback.isBuffering -> Text(
-                    text = "Puffert…",
+                    text = stringResource(R.string.player_buffering),
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                 )
@@ -213,13 +215,21 @@ private fun ControlsBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Wiedergabe",
+                contentDescription = if (isPlaying) {
+                    stringResource(R.string.player_pause)
+                } else {
+                    stringResource(R.string.player_play)
+                },
                 tint = Color.White,
                 modifier = Modifier.size(20.dp),
             )
             Text(
                 text = if (durationMs > 0) {
-                    "${TimeFormat.position(positionMs)} / ${TimeFormat.position(durationMs)}"
+                    stringResource(
+                        R.string.player_position_of_duration,
+                        TimeFormat.position(positionMs),
+                        TimeFormat.position(durationMs),
+                    )
                 } else {
                     TimeFormat.position(positionMs)
                 },

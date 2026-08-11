@@ -33,6 +33,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import de.neunelf.player.R
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.ui.components.ChannelLogo
 import de.neunelf.player.ui.theme.TvAccent
@@ -85,13 +87,13 @@ fun SearchScreen(
                 vertical = TvSpacing.overscanVertical,
             ),
     ) {
-        Text("Suche", style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(R.string.search_title), style = MaterialTheme.typography.headlineLarge)
         Spacer(Modifier.height(TvSpacing.small))
 
         OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::setQuery,
-            label = { androidx.compose.material3.Text("Titel oder Sender") },
+            label = { androidx.compose.material3.Text(stringResource(R.string.search_field_label)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Search,
@@ -115,19 +117,22 @@ fun SearchScreen(
         Spacer(Modifier.height(TvSpacing.medium))
 
         when {
-            !state.hasQuery -> Hint("Titel eingeben – gesucht wird in Sendern, Filmen und Serien.")
-            state.isEmpty -> Hint("Nichts gefunden für „${state.query}“.")
+            !state.hasQuery -> Hint(stringResource(R.string.search_hint_empty))
+            state.isEmpty -> Hint(stringResource(R.string.search_no_results, state.query))
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = TvSpacing.large),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 if (state.channels.isNotEmpty()) {
-                    item(key = "h-live") { SectionHeader("Sender", state.channels.size) }
+                    item(key = "h-live") {
+                        SectionHeader(stringResource(R.string.content_channels), state.channels.size)
+                    }
                     items(state.channels, key = { "c-${it.streamId}" }) { channel ->
                         ResultRow(
                             title = channel.name,
-                            subtitle = channel.number.takeIf { it > 0 }?.let { "Platz $it" },
+                            subtitle = channel.number.takeIf { it > 0 }
+                                ?.let { stringResource(R.string.search_channel_position, it) },
                             icon = Icons.Default.LiveTv,
                             logoUrl = channel.logoUrl,
                             onClick = { onPlayChannel(channel) },
@@ -135,7 +140,9 @@ fun SearchScreen(
                     }
                 }
                 if (state.movies.isNotEmpty()) {
-                    item(key = "h-vod") { SectionHeader("Filme", state.movies.size) }
+                    item(key = "h-vod") {
+                        SectionHeader(stringResource(R.string.content_movies), state.movies.size)
+                    }
                     items(state.movies, key = { "m-${it.streamId}" }) { movie ->
                         ResultRow(
                             title = movie.name,
@@ -147,7 +154,9 @@ fun SearchScreen(
                     }
                 }
                 if (state.series.isNotEmpty()) {
-                    item(key = "h-series") { SectionHeader("Serien", state.series.size) }
+                    item(key = "h-series") {
+                        SectionHeader(stringResource(R.string.content_series), state.series.size)
+                    }
                     items(state.series, key = { "s-${it.seriesId}" }) { series ->
                         ResultRow(
                             title = series.name,
@@ -168,7 +177,7 @@ private fun SectionHeader(title: String, count: Int) {
     Column {
         Spacer(Modifier.height(TvSpacing.medium))
         Text(
-            text = "${title.uppercase()}  ·  $count",
+            text = stringResource(R.string.search_section_header, title.uppercase(), count),
             style = MaterialTheme.typography.labelMedium,
             color = TvOnSurfaceMuted,
         )

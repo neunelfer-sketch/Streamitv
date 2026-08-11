@@ -24,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +35,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
+import de.neunelf.player.R
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.Episode
 import de.neunelf.player.ui.theme.TvAccent
@@ -120,7 +123,7 @@ fun SeriesDetailScreen(
             when {
                 state.isLoading && state.episodesBySeason.isEmpty() -> item {
                     Text(
-                        "Lade Episoden…",
+                        stringResource(R.string.series_loading_episodes),
                         style = MaterialTheme.typography.bodyLarge,
                         color = TvOnSurfaceMuted,
                     )
@@ -128,7 +131,7 @@ fun SeriesDetailScreen(
 
                 state.episodesBySeason.isEmpty() -> item {
                     Text(
-                        "Keine Episoden gefunden",
+                        stringResource(R.string.series_no_episodes),
                         style = MaterialTheme.typography.bodyLarge,
                         color = TvOnSurfaceMuted,
                     )
@@ -137,7 +140,7 @@ fun SeriesDetailScreen(
                 else -> state.episodesBySeason.forEach { (season, episodes) ->
                     item(key = "season-$season") {
                         Text(
-                            text = "Staffel $season",
+                            text = stringResource(R.string.series_season, season),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(top = TvSpacing.small, bottom = 4.dp),
@@ -184,7 +187,10 @@ private fun EpisodeRow(episode: Episode, onClick: () -> Unit) {
                 )
                 if (episode.durationSecs > 0) {
                     Text(
-                        text = TimeFormat.duration(episode.durationSecs * 1000L),
+                        text = TimeFormat.duration(
+                            LocalContext.current,
+                            episode.durationSecs * 1000L,
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = TvOnSurfaceMuted,
                     )

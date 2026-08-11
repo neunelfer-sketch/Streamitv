@@ -1,8 +1,11 @@
 package de.neunelf.player.ui.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.exoplayer.ExoPlayer
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.data.model.Category
 import de.neunelf.player.data.model.Channel
 import de.neunelf.player.data.model.ChannelWithProgram
@@ -43,23 +46,19 @@ import javax.inject.Inject
  * drei virtuelle, die TiviMate genauso anzeigt.
  */
 sealed interface CategoryItem {
-    val title: String
     val count: Int
 
-    data class All(override val count: Int) : CategoryItem {
-        override val title get() = "Alle Sender"
-    }
+    // Die Beschriftung liefert `CategoryItem.label()` in HomeScreen: Die
+    // drei virtuellen Einträge tragen übersetzbaren Oberflächentext, der
+    // Name einer echten Kategorie stammt dagegen aus der Playlist des
+    // Nutzers und bleibt deshalb unangetastet.
+    data class All(override val count: Int) : CategoryItem
 
-    data class Favorites(override val count: Int) : CategoryItem {
-        override val title get() = "Favoriten"
-    }
+    data class Favorites(override val count: Int) : CategoryItem
 
-    data class Recent(override val count: Int) : CategoryItem {
-        override val title get() = "Zuletzt gesehen"
-    }
+    data class Recent(override val count: Int) : CategoryItem
 
     data class Group(val category: Category) : CategoryItem {
-        override val title get() = category.name
         override val count get() = category.channelCount
     }
 
@@ -107,6 +106,7 @@ data class HomeUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: IptvRepository,
     private val epgRepository: EpgRepository,
     private val syncer: PlaylistSyncer,
@@ -366,7 +366,7 @@ class HomeViewModel @Inject constructor(
                 syncMessage.value = when (progress) {
                     is de.neunelf.player.data.repository.EpgSyncProgress.Step -> progress.message
                     is de.neunelf.player.data.repository.EpgSyncProgress.Done ->
-                        "${progress.programCount} Sendungen geladen"
+                        context.getString(R.string.epg_programs_loaded, progress.programCount)
                     is de.neunelf.player.data.repository.EpgSyncProgress.Failed -> {
                         errorMessage.value = progress.message
                         null
@@ -399,7 +399,8 @@ class HomeViewModel @Inject constructor(
         syncer.sync(playlist).collect { progress ->
             when (progress) {
                 is SyncProgress.Step -> syncMessage.value = progress.message
-                is SyncProgress.LiveReady -> syncMessage.value = "Filme/Serien werden im Hintergrund geladen…"
+                is SyncProgress.LiveReady ->
+                    syncMessage.value = context.getString(R.string.sync_vod_in_background)
                 is SyncProgress.Done -> syncMessage.value = null
                 is SyncProgress.Failed -> {
                     errorMessage.value = progress.message

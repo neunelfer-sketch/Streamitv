@@ -1,6 +1,9 @@
 package de.neunelf.player.data.repository
 
+import android.content.Context
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
+import de.neunelf.player.R
 import de.neunelf.player.core.toErrorCode
 import de.neunelf.player.core.withErrorCode
 import de.neunelf.player.data.local.ChannelDao
@@ -49,6 +52,7 @@ sealed interface EpgSyncProgress {
  */
 @Singleton
 class EpgRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val epgDao: EpgDao,
     private val channelDao: ChannelDao,
     private val playlistDao: PlaylistDao,
@@ -181,11 +185,11 @@ class EpgRepository @Inject constructor(
     fun refresh(playlist: Playlist): Flow<EpgSyncProgress> = flow {
         val url = resolveEpgUrl(playlist)
         if (url.isNullOrBlank()) {
-            emit(EpgSyncProgress.Failed("Keine EPG-Quelle konfiguriert"))
+            emit(EpgSyncProgress.Failed(context.getString(R.string.epg_no_source_configured)))
             return@flow
         }
 
-        emit(EpgSyncProgress.Step("Lade Programmzeitschrift…"))
+        emit(EpgSyncProgress.Step(context.getString(R.string.guide_loading)))
 
         // Nur Sender importieren, die es in dieser Playlist wirklich gibt.
         val relevantIds = channelDao.getEpgChannelIds(playlist.id).toSet()
@@ -199,20 +203,31 @@ class EpgRepository @Inject constructor(
         val count = try {
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    emit(EpgSyncProgress.Failed("Server antwortete mit HTTP ${response.code}".withErrorCode("HTTP-${response.code}")))
+                    emit(
+                        EpgSyncProgress.Failed(
+                            context.getString(R.string.error_http_status, response.code)
+                                .withErrorCode("HTTP-${response.code}"),
+                        ),
+                    )
                     return@flow
                 }
                 val body = response.body ?: run {
-                    emit(EpgSyncProgress.Failed("Leere Antwort".withErrorCode("EMPTY_BODY")))
+                    emit(
+                        EpgSyncProgress.Failed(
+                            context.getString(R.string.error_empty_response)
+                                .withErrorCode("EMPTY_BODY"),
+                        ),
+                    )
                     return@flow
                 }
 
-                emit(EpgSyncProgress.Step("Verarbeite Programmdaten…"))
+                emit(EpgSyncProgress.Step(context.getString(R.string.epg_parsing)))
                 importXmltv(playlist.id, body.byteStream(), relevantIds.takeIf { it.isNotEmpty() })
             }
         } catch (e: Exception) {
             Log.e(TAG, "EPG-Import fehlgeschlagen", e)
-            emit(EpgSyncProgress.Failed((e.message ?: "Unbekannter Fehler").withErrorCode(e.toErrorCode())))
+            val message = e.message ?: context.getString(R.string.error_unknown)
+            emit(EpgSyncProgress.Failed(message.withErrorCode(e.toErrorCode())))
             return@flow
         }
 
