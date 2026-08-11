@@ -28,6 +28,15 @@
     <string name="recordings_settings_desc">عرض البرامج المسجلة وإدارتها</string>
     <string name="recordings_empty">لا توجد تسجيلات بعد</string>
     <string name="recordings_title">التسجيلات</string>
+    <string name="recording_missed">انقضى وقت البث</string>
+    <string name="recording_channel_gone">القناة لم تعد متاحة</string>
+    <string name="recording_planned">مجدول</string>
+    <string name="recording_scheduled">تمت الجدولة: %1$s</string>
+    <string name="recording_schedule_no_epg">لا يوجد دليل برامج لهذه القناة</string>
+    <string name="recording_schedule_pick_channel">اختر قناة</string>
+    <string name="recording_schedule_hint">اختر قناة، ثم برنامجًا من الساعات العشر القادمة</string>
+    <string name="recording_schedule_action">جدولة</string>
+    <string name="recording_schedule_title">جدولة تسجيل</string>
     <string name="recording_locked">تم إخفاء ميزة التسجيل</string>
     <string name="recording_unlocked">تم تفعيل ميزة التسجيل</string>
     <string name="vod_empty">لا يوجد شيء هنا بعد</string>

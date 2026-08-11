@@ -28,6 +28,15 @@
     <string name="recordings_settings_desc">View and manage recorded programmes</string>
     <string name="recordings_empty">No recordings yet</string>
     <string name="recordings_title">Recordings</string>
+    <string name="recording_missed">Airtime already passed</string>
+    <string name="recording_channel_gone">Channel no longer available</string>
+    <string name="recording_planned">Scheduled</string>
+    <string name="recording_scheduled">Scheduled: %1$s</string>
+    <string name="recording_schedule_no_epg">No programme guide for this channel</string>
+    <string name="recording_schedule_pick_channel">Pick a channel</string>
+    <string name="recording_schedule_hint">Pick a channel, then a programme from the next 10 hours</string>
+    <string name="recording_schedule_action">Schedule</string>
+    <string name="recording_schedule_title">Schedule recording</string>
     <string name="recording_locked">Recording feature hidden</string>
     <string name="recording_unlocked">Recording feature unlocked</string>
     <string name="vod_empty">Nothing here yet</string>

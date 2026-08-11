@@ -28,6 +28,15 @@
     <string name="recordings_settings_desc">Kaydedilen yayınları görüntüle ve yönet</string>
     <string name="recordings_empty">Henüz kayıt yok</string>
     <string name="recordings_title">Kayıtlar</string>
+    <string name="recording_missed">Yayın saati geçti</string>
+    <string name="recording_channel_gone">Kanal artık kullanılamıyor</string>
+    <string name="recording_planned">Planlandı</string>
+    <string name="recording_scheduled">Planlandı: %1$s</string>
+    <string name="recording_schedule_no_epg">Bu kanal için yayın akışı yok</string>
+    <string name="recording_schedule_pick_channel">Kanal seçin</string>
+    <string name="recording_schedule_hint">Bir kanal seçin, ardından önümüzdeki 10 saatten bir yayın</string>
+    <string name="recording_schedule_action">Planla</string>
+    <string name="recording_schedule_title">Kayıt planla</string>
     <string name="recording_locked">Kayıt özelliği gizlendi</string>
     <string name="recording_unlocked">Kayıt özelliği açıldı</string>
     <string name="vod_empty">Burada henüz bir şey yok</string>

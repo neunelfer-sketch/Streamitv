@@ -23,6 +23,7 @@ import de.qwikster.player.ui.search.SearchScreen
 import de.qwikster.player.ui.settings.EpgSourceScreen
 import de.qwikster.player.ui.settings.SettingsScreen
 import de.qwikster.player.ui.recordings.RecordingsScreen
+import de.qwikster.player.ui.recordings.ScheduleScreen
 import de.qwikster.player.ui.vod.MovieDetailScreen
 import de.qwikster.player.ui.vod.SeriesDetailScreen
 import de.qwikster.player.ui.vod.VodScreen
@@ -41,6 +42,7 @@ object Routes {
     const val SEARCH = "search"
     const val EPG_SOURCE = "epg_source"
     const val RECORDINGS = "recordings"
+    const val RECORDING_SCHEDULE = "recording_schedule"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
     const val MOVIE_DETAIL = "movie_detail/{streamId}"
@@ -203,8 +205,13 @@ fun QwiksterNavHost(
         composable(Routes.RECORDINGS) {
             RecordingsScreen(
                 onPlay = { id -> navController.navigate(Routes.recordingPlayer(id)) },
+                onSchedule = { navController.navigate(Routes.RECORDING_SCHEDULE) },
                 onBack = { navController.popBackStack() },
             )
+        }
+
+        composable(Routes.RECORDING_SCHEDULE) {
+            ScheduleScreen(onBack = { navController.popBackStack() })
         }
 
         composable(

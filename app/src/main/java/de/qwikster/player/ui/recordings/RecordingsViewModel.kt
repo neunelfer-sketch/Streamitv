@@ -21,6 +21,8 @@ data class RecordingItem(
     val startedAt: Long,
     val sizeBytes: Long,
     val isRunning: Boolean,
+    /** Vorgemerkt, aber noch nicht angelaufen. */
+    val isPlanned: Boolean,
     val hasFailed: Boolean,
     val errorMessage: String?,
 )
@@ -54,6 +56,7 @@ class RecordingsViewModel @Inject constructor(
         startedAt = startedAt,
         sizeBytes = sizeBytes,
         isRunning = state == RecordingState.RUNNING.name,
+        isPlanned = state == RecordingState.PLANNED.name,
         hasFailed = state == RecordingState.FAILED.name,
         errorMessage = errorMessage,
     )

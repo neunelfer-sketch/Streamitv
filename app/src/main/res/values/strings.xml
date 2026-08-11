@@ -38,6 +38,15 @@
     <string name="recordings_settings_desc">Aufgenommene Sendungen ansehen und verwalten</string>
     <string name="recordings_empty">Noch keine Aufnahmen</string>
     <string name="recordings_title">Aufnahmen</string>
+    <string name="recording_missed">Sendezeit verstrichen</string>
+    <string name="recording_channel_gone">Sender nicht mehr verfügbar</string>
+    <string name="recording_planned">Vorgemerkt</string>
+    <string name="recording_scheduled">Vorgemerkt: %1$s</string>
+    <string name="recording_schedule_no_epg">Für diesen Sender liegt kein Programm vor</string>
+    <string name="recording_schedule_pick_channel">Sender wählen</string>
+    <string name="recording_schedule_hint">Sender wählen, dann die Sendung aus den nächsten 10 Stunden</string>
+    <string name="recording_schedule_action">Planen</string>
+    <string name="recording_schedule_title">Aufnahme planen</string>
     <string name="recording_locked">Aufnahmefunktion ausgeblendet</string>
     <string name="recording_unlocked">Aufnahmefunktion freigeschaltet</string>
     <string name="vod_empty">Nichts vorhanden</string>

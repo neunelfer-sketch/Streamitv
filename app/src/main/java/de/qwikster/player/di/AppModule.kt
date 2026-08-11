@@ -63,6 +63,7 @@ private val MIGRATION_4_5 = object : Migration(4, 5) {
                 `title` TEXT NOT NULL,
                 `filePath` TEXT NOT NULL,
                 `startedAt` INTEGER NOT NULL,
+                `plannedStartAt` INTEGER NOT NULL DEFAULT 0,
                 `plannedEndAt` INTEGER NOT NULL,
                 `endedAt` INTEGER NOT NULL,
                 `state` TEXT NOT NULL,
@@ -71,6 +72,20 @@ private val MIGRATION_4_5 = object : Migration(4, 5) {
             )
             """.trimIndent(),
         )
+    }
+}
+
+/**
+ * Ergänzt den geplanten Beginn für vorgemerkte Aufnahmen.
+ *
+ * `DEFAULT 0` ist doppelt nötig: SQLite verlangt beim nachträglichen
+ * Hinzufügen einer `NOT NULL`-Spalte einen Vorgabewert, und Room vergleicht
+ * ihn beim Öffnen mit dem `@ColumnInfo(defaultValue = "0")` der Entity.
+ * Stimmen beide nicht überein, bricht Room ab.
+ */
+private val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `recordings` ADD COLUMN `plannedStartAt` INTEGER NOT NULL DEFAULT 0")
     }
 }
 
@@ -161,7 +176,7 @@ object AppModule {
             // eine leere Tabelle. Ein Verwerfen nähme dem Zuschauer bei einem
             // Update Favoriten und Verlauf weg – Daten, die es nur hier gibt
             // und die kein Neuladen vom Panel wiederbringt.
-            .addMigrations(MIGRATION_4_5)
+            .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
             .build()
 
     @Provides fun providePlaylistDao(db: AppDatabase): PlaylistDao = db.playlistDao()

@@ -28,6 +28,15 @@
     <string name="recordings_settings_desc">Przeglądaj nagrane programy</string>
     <string name="recordings_empty">Brak nagrań</string>
     <string name="recordings_title">Nagrania</string>
+    <string name="recording_missed">Czas emisji minął</string>
+    <string name="recording_channel_gone">Kanał już niedostępny</string>
+    <string name="recording_planned">Zaplanowane</string>
+    <string name="recording_scheduled">Zaplanowano: %1$s</string>
+    <string name="recording_schedule_no_epg">Brak programu dla tego kanału</string>
+    <string name="recording_schedule_pick_channel">Wybierz kanał</string>
+    <string name="recording_schedule_hint">Wybierz kanał, a potem program z najbliższych 10 godzin</string>
+    <string name="recording_schedule_action">Zaplanuj</string>
+    <string name="recording_schedule_title">Zaplanuj nagranie</string>
     <string name="recording_locked">Funkcja nagrywania ukryta</string>
     <string name="recording_unlocked">Funkcja nagrywania odblokowana</string>
     <string name="vod_empty">Nic tu jeszcze nie ma</string>

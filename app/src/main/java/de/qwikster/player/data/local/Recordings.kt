@@ -1,5 +1,6 @@
 package de.qwikster.player.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.Flow
  * nicht sauber beendet wurde, und kann den Eintrag aufräumen, statt ihn für
  * immer als "läuft" anzuzeigen.
  */
-enum class RecordingState { RUNNING, DONE, FAILED }
+enum class RecordingState { PLANNED, RUNNING, DONE, FAILED }
 
 /**
  * Eine Aufnahme einer laufenden Sendung.
@@ -36,6 +37,15 @@ data class RecordingEntity(
     val title: String,
     val filePath: String,
     val startedAt: Long,
+    /**
+     * Geplanter Beginn einer vorgemerkten Aufnahme; 0 = sofort gestartet.
+     *
+     * Der Vorgabewert steht ausdrücklich auch als `DEFAULT` in der
+     * Datenbank (siehe Migration 5 -> 6): Beim nachträglichen Hinzufügen
+     * einer Spalte mit `NOT NULL` verlangt SQLite einen Vorgabewert, und
+     * Room vergleicht ihn beim Öffnen mit dem hier angegebenen.
+     */
+    @ColumnInfo(defaultValue = "0") val plannedStartAt: Long = 0L,
     /** Geplantes Ende; 0 = läuft bis der Zuschauer stoppt. */
     val plannedEndAt: Long,
     val endedAt: Long = 0L,
@@ -80,4 +90,8 @@ interface RecordingDao {
         running: String = RecordingState.RUNNING.name,
         done: String = RecordingState.DONE.name,
     )
+
+    /** Alle vorgemerkten Aufnahmen – zum Wiedereinrichten der Wecker nach einem Neustart. */
+    @Query("SELECT * FROM recordings WHERE state = :planned ORDER BY plannedStartAt")
+    suspend fun getPlanned(planned: String = RecordingState.PLANNED.name): List<RecordingEntity>
 }

@@ -37,7 +37,8 @@ import androidx.room.RoomDatabase
     //    Abfrage "was läuft gerade" bei sehr großen Playlists
     // 4: `directUrl` in `episodes` (Folgen-URLs aus M3U-Playlists)
     // 5: Tabelle `recordings` (Aufnahmen laufender Sendungen)
-    version = 5,
+    // 6: `plannedStartAt` in `recordings` (vorgemerkte Aufnahmen)
+    version = 6,
     // Kein Schema-Export: die Datenbank ist ein reiner Cache mit
     // fallbackToDestructiveMigration, es werden nie Migrationen von Hand
     // geschrieben. Der Export brachte hier nur einen Konflikt, weil die

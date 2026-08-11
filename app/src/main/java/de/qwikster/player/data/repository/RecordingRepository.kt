@@ -10,6 +10,7 @@ import de.qwikster.player.data.local.RecordingDao
 import de.qwikster.player.data.local.RecordingEntity
 import de.qwikster.player.data.local.RecordingState
 import de.qwikster.player.data.model.Channel
+import de.qwikster.player.data.recording.RecordingScheduler
 import de.qwikster.player.data.recording.RecordingService
 import kotlinx.coroutines.flow.Flow
 import java.io.File
@@ -61,6 +62,7 @@ class RecordingRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val recordingDao: RecordingDao,
     private val iptvRepository: IptvRepository,
+    private val scheduler: RecordingScheduler,
 ) {
 
     fun observeAll(): Flow<List<RecordingEntity>> = recordingDao.observeAll()
@@ -100,6 +102,11 @@ class RecordingRepository @Inject constructor(
             ),
         )
 
+        launchService(id, url)
+        return id
+    }
+
+    private fun launchService(id: Long, url: String) {
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START
             putExtra(RecordingService.EXTRA_RECORDING_ID, id)
@@ -110,7 +117,96 @@ class RecordingRepository @Inject constructor(
         } else {
             context.startService(intent)
         }
+    }
+
+    /**
+     * Merkt eine Sendung vor, die erst noch beginnt.
+     *
+     * Zwei Minuten Vorlauf und fünf Minuten Nachlauf: Sender halten sich
+     * nicht auf die Sekunde an die Programmzeitschrift, und eine Aufnahme,
+     * der die ersten dreißig Sekunden fehlen, ärgert mehr als eine, die
+     * etwas zu lang ist.
+     */
+    suspend fun schedule(
+        channel: Channel,
+        programTitle: String,
+        programStartAt: Long,
+        programEndAt: Long,
+    ): Long {
+        val startAt = programStartAt - TimeUnit.MINUTES.toMillis(2)
+        val file = File(recordingDir(), fileName(channel.name, programTitle, programStartAt))
+
+        val id = recordingDao.insert(
+            RecordingEntity(
+                playlistId = channel.playlistId,
+                streamId = channel.streamId,
+                channelName = channel.name,
+                title = programTitle,
+                filePath = file.absolutePath,
+                startedAt = programStartAt,
+                plannedStartAt = startAt,
+                plannedEndAt = programEndAt + TimeUnit.MINUTES.toMillis(5),
+                state = RecordingState.PLANNED.name,
+            ),
+        )
+        scheduler.schedule(id, startAt)
         return id
+    }
+
+    /**
+     * Startet eine vorgemerkte Aufnahme – vom Weckruf aufgerufen.
+     *
+     * Die Adresse wird erst hier ermittelt und nicht beim Vormerken: Bei
+     * Xtream steckt in ihr ein Sitzungstoken, das nach Stunden nicht mehr
+     * gültig sein muss.
+     */
+    suspend fun startPlanned(id: Long) {
+        val recording = recordingDao.getById(id) ?: return
+        if (recording.state != RecordingState.PLANNED.name) return
+
+        val channel = iptvRepository.getChannel(recording.playlistId, recording.streamId)
+        val url = channel?.let { iptvRepository.resolveStreamUrl(it, preferHls = false) }
+        if (url == null) {
+            recordingDao.update(
+                recording.copy(
+                    state = RecordingState.FAILED.name,
+                    endedAt = System.currentTimeMillis(),
+                    errorMessage = context.getString(R.string.recording_channel_gone),
+                ),
+            )
+            return
+        }
+
+        recordingDao.update(
+            recording.copy(
+                state = RecordingState.RUNNING.name,
+                startedAt = System.currentTimeMillis(),
+            ),
+        )
+        launchService(id, url)
+    }
+
+    /**
+     * Stellt nach einem Neustart des Geräts alle Wecker neu.
+     *
+     * Vormerkungen, deren Zeitpunkt währenddessen verstrichen ist, werden
+     * nicht nachträglich gestartet – die Sendung ist dann bereits vorbei.
+     */
+    suspend fun rescheduleAll() {
+        val now = System.currentTimeMillis()
+        recordingDao.getPlanned().forEach { recording ->
+            if (recording.plannedStartAt > now) {
+                scheduler.schedule(recording.id, recording.plannedStartAt)
+            } else {
+                recordingDao.update(
+                    recording.copy(
+                        state = RecordingState.FAILED.name,
+                        endedAt = now,
+                        errorMessage = context.getString(R.string.recording_missed),
+                    ),
+                )
+            }
+        }
     }
 
     fun stop(id: Long) {
@@ -139,9 +235,16 @@ class RecordingRepository @Inject constructor(
         )
     }
 
-    /** Löscht Eintrag **und** Datei – eine verwaiste Datei fände niemand wieder. */
+    /**
+     * Löscht Eintrag **und** Datei – eine verwaiste Datei fände niemand
+     * wieder. Bei einer Vormerkung wird zusätzlich der Wecker abbestellt,
+     * sonst liefe die Aufnahme trotz Löschen später an.
+     */
     suspend fun delete(id: Long) {
-        recordingDao.getById(id)?.let { runCatching { File(it.filePath).delete() } }
+        recordingDao.getById(id)?.let { recording ->
+            if (recording.state == RecordingState.PLANNED.name) scheduler.cancel(id)
+            runCatching { File(recording.filePath).delete() }
+        }
         recordingDao.delete(id)
     }
 

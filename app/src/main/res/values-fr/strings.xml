@@ -28,6 +28,15 @@
     <string name="recordings_settings_desc">Voir et gérer les émissions enregistrées</string>
     <string name="recordings_empty">Aucun enregistrement</string>
     <string name="recordings_title">Enregistrements</string>
+    <string name="recording_missed">L\'heure de diffusion est passée</string>
+    <string name="recording_channel_gone">Chaîne plus disponible</string>
+    <string name="recording_planned">Programmé</string>
+    <string name="recording_scheduled">Programmé : %1$s</string>
+    <string name="recording_schedule_no_epg">Aucun programme pour cette chaîne</string>
+    <string name="recording_schedule_pick_channel">Choisir une chaîne</string>
+    <string name="recording_schedule_hint">Choisissez une chaîne, puis un programme des 10 prochaines heures</string>
+    <string name="recording_schedule_action">Programmer</string>
+    <string name="recording_schedule_title">Programmer un enregistrement</string>
     <string name="recording_locked">Fonction d'enregistrement masquée</string>
     <string name="recording_unlocked">Fonction d'enregistrement activée</string>
     <string name="vod_empty">Rien pour le moment</string>

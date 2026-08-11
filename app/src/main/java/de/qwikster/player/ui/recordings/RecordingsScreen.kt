@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.PlayArrow
@@ -59,6 +60,7 @@ import de.qwikster.player.ui.theme.TvSurfaceElevated
 @Composable
 fun RecordingsScreen(
     onPlay: (Long) -> Unit,
+    onSchedule: () -> Unit,
     onBack: () -> Unit,
     viewModel: RecordingsViewModel = hiltViewModel(),
 ) {
@@ -76,10 +78,18 @@ fun RecordingsScreen(
                 vertical = TvSpacing.overscanVertical,
             ),
     ) {
-        Text(
-            text = stringResource(R.string.recordings_title),
-            style = MaterialTheme.typography.headlineLarge,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.recordings_title),
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.weight(1f),
+            )
+            RecordingAction(
+                icon = Icons.Default.Add,
+                label = stringResource(R.string.recording_schedule_action),
+                onClick = onSchedule,
+            )
+        }
         Spacer(Modifier.height(TvSpacing.medium))
 
         if (state.isEmpty) {
@@ -105,11 +115,11 @@ fun RecordingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (item.isRunning) {
+                            if (item.isRunning || item.isPlanned) {
                                 Icon(
                                     imageVector = Icons.Default.FiberManualRecord,
                                     contentDescription = null,
-                                    tint = TvLive,
+                                    tint = if (item.isRunning) TvLive else TvAccent,
                                     modifier = Modifier.size(14.dp),
                                 )
                                 Spacer(Modifier.width(6.dp))
@@ -154,6 +164,16 @@ fun RecordingsScreen(
                             icon = Icons.Default.Stop,
                             label = stringResource(R.string.recording_stop),
                             onClick = { viewModel.stop(item.id) },
+                        )
+                    } else if (item.isPlanned) {
+                        // Eine Vormerkung lässt sich weder abspielen noch
+                        // stoppen – es gibt noch nichts. Bleibt das Löschen,
+                        // das gleich daneben steht und den Wecker mit abbestellt.
+                        Text(
+                            text = stringResource(R.string.recording_planned),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = TvAccent,
+                            modifier = Modifier.padding(horizontal = 12.dp),
                         )
                     } else if (!item.hasFailed) {
                         RecordingAction(

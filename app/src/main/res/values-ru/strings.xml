@@ -28,6 +28,15 @@
     <string name="recordings_settings_desc">Просмотр и управление записями</string>
     <string name="recordings_empty">Записей пока нет</string>
     <string name="recordings_title">Записи</string>
+    <string name="recording_missed">Время эфира прошло</string>
+    <string name="recording_channel_gone">Канал больше недоступен</string>
+    <string name="recording_planned">Запланировано</string>
+    <string name="recording_scheduled">Запланировано: %1$s</string>
+    <string name="recording_schedule_no_epg">Для этого канала нет телепрограммы</string>
+    <string name="recording_schedule_pick_channel">Выберите канал</string>
+    <string name="recording_schedule_hint">Выберите канал, затем передачу из ближайших 10 часов</string>
+    <string name="recording_schedule_action">Запланировать</string>
+    <string name="recording_schedule_title">Запланировать запись</string>
     <string name="recording_locked">Функция записи скрыта</string>
     <string name="recording_unlocked">Функция записи включена</string>
     <string name="vod_empty">Пока ничего нет</string>

@@ -18,6 +18,17 @@
       reicht der Durchsatz im Ruhezustand für einen laufenden Stream nicht.
     -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!--
+      Für vorgemerkte Aufnahmen: Ein Wecker muss zur Sendezeit auf die
+      Minute genau losgehen. Ab Android 12 ist das erlaubnispflichtig;
+      fehlt sie, weicht die App auf einen ungenauen Wecker aus (siehe
+      RecordingScheduler). Der Systemstart-Empfang stellt die Wecker nach
+      einem Neustart des Geräts neu – sonst verfielen alle Vormerkungen
+      stillschweigend.
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
@@ -118,6 +129,15 @@
             android:name=".data.recording.RecordingService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Weckruf zur Sendezeit und Neustellen der Wecker nach dem Hochfahren. -->
+        <receiver
+            android:name=".data.recording.RecordingAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Hintergrund-Wiedergabe / Medien-Session für PiP und TV-Fernbedienungstasten -->
         <service

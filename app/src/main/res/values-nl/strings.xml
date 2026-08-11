@@ -28,6 +28,15 @@
     <string name="recordings_settings_desc">Opgenomen programma\'s bekijken en beheren</string>
     <string name="recordings_empty">Nog geen opnamen</string>
     <string name="recordings_title">Opnamen</string>
+    <string name="recording_missed">Uitzendtijd verstreken</string>
+    <string name="recording_channel_gone">Zender niet meer beschikbaar</string>
+    <string name="recording_planned">Gepland</string>
+    <string name="recording_scheduled">Gepland: %1$s</string>
+    <string name="recording_schedule_no_epg">Geen programmagids voor deze zender</string>
+    <string name="recording_schedule_pick_channel">Kies een zender</string>
+    <string name="recording_schedule_hint">Kies een zender en daarna een programma uit de komende 10 uur</string>
+    <string name="recording_schedule_action">Plannen</string>
+    <string name="recording_schedule_title">Opname plannen</string>
     <string name="recording_locked">Opnamefunctie verborgen</string>
     <string name="recording_unlocked">Opnamefunctie ontgrendeld</string>
     <string name="vod_empty">Nog niets aanwezig</string>
