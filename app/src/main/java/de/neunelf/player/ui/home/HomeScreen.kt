@@ -718,16 +718,16 @@ private fun WhatsNewDialog(onDismiss: () -> Unit) {
         ) {
             Column(modifier = Modifier.padding(TvSpacing.large)) {
                 Text(
-                    text = "🎉 9elf Player wurde aktualisiert!",
+                    text = stringResource(R.string.whats_new_title),
                     style = MaterialTheme.typography.headlineSmall,
                 )
                 Spacer(Modifier.height(TvSpacing.medium))
 
-                WhatsNewItem("📺", "\"Zuletzt gesehen\" bei Filmen & Serien – weiter geht's genau da, wo du aufgehört hast")
-                WhatsNewItem("🌍", "Jetzt in 10 Sprachen – umstellbar unter Einstellungen → Sprache")
-                WhatsNewItem("📡", "Programmzeitschrift (EPG) wird jetzt automatisch erkannt")
-                WhatsNewItem("🔊", "Die Sender-Vorschau läuft jetzt mit Ton")
-                WhatsNewItem("🐞", "Einige Abstürze und kleine Fehler behoben")
+                WhatsNewItem("📺", stringResource(R.string.whats_new_item_recent))
+                WhatsNewItem("🌍", stringResource(R.string.whats_new_item_languages))
+                WhatsNewItem("📡", stringResource(R.string.whats_new_item_epg))
+                WhatsNewItem("🔊", stringResource(R.string.whats_new_item_preview_sound))
+                WhatsNewItem("🐞", stringResource(R.string.whats_new_item_bugfixes))
 
                 Spacer(Modifier.height(TvSpacing.medium))
 
@@ -737,7 +737,7 @@ private fun WhatsNewDialog(onDismiss: () -> Unit) {
                         .align(Alignment.End)
                         .focusRequester(buttonFocus),
                 ) {
-                    Text("Los geht's 🚀")
+                    Text(stringResource(R.string.whats_new_button))
                 }
             }
         }

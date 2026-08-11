@@ -41,6 +41,14 @@
     <string name="home_select_channel">اختر قناة</string>
     <string name="home_update_available">الإصدار %1$s متاح – راجع الإعدادات</string>
 
+    <string name="whats_new_title">🎉 تم تحديث 9elf Player!</string>
+    <string name="whats_new_item_recent">"شوهد مؤخرًا" للأفلام والمسلسلات – تابع من حيث توقفت بالضبط</string>
+    <string name="whats_new_item_languages">متوفر الآن بـ 10 لغات – يمكنك التغيير من الإعدادات ← اللغة</string>
+    <string name="whats_new_item_epg">يتم الآن اكتشاف دليل البرامج (EPG) تلقائيًا</string>
+    <string name="whats_new_item_preview_sound">معاينة القناة تعمل الآن بالصوت</string>
+    <string name="whats_new_item_bugfixes">تم إصلاح بعض حالات التعطل والأخطاء الصغيرة</string>
+    <string name="whats_new_button">لنبدأ 🚀</string>
+
     <!-- معلومات البرامج -->
     <string name="program_time_title">%1$s  %2$s</string>
     <string name="program_time_remaining">%1$s · %2$s</string>

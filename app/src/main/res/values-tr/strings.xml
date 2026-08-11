@@ -41,6 +41,14 @@
     <string name="home_select_channel">Bir kanal seçin</string>
     <string name="home_update_available">%1$s sürümü hazır – Ayarlar\'a bakın</string>
 
+    <string name="whats_new_title">🎉 9elf Player güncellendi!</string>
+    <string name="whats_new_item_recent">Film ve dizilerde "Son İzlenenler" – kaldığın yerden devam et</string>
+    <string name="whats_new_item_languages">Artık 10 dilde – Ayarlar → Dil bölümünden değiştirebilirsin</string>
+    <string name="whats_new_item_epg">Yayın rehberi (EPG) artık otomatik olarak algılanıyor</string>
+    <string name="whats_new_item_preview_sound">Kanal önizlemesi artık sesli çalışıyor</string>
+    <string name="whats_new_item_bugfixes">Bazı çökmeler ve küçük hatalar giderildi</string>
+    <string name="whats_new_button">Hadi başlayalım 🚀</string>
+
     <!-- Yayın bilgisi -->
     <string name="program_time_title">%1$s  %2$s</string>
     <string name="program_time_remaining">%1$s · %2$s</string>

@@ -41,6 +41,14 @@
     <string name="home_select_channel">Kies een zender</string>
     <string name="home_update_available">Versie %1$s beschikbaar – zie Instellingen</string>
 
+    <string name="whats_new_title">🎉 9elf Player is bijgewerkt!</string>
+    <string name="whats_new_item_recent">"Onlangs bekeken" voor films &amp; series – ga precies verder waar je gebleven was</string>
+    <string name="whats_new_item_languages">Nu beschikbaar in 10 talen – wijzigen kan via Instellingen → Taal</string>
+    <string name="whats_new_item_epg">De programmagids (EPG) wordt nu automatisch herkend</string>
+    <string name="whats_new_item_preview_sound">De zendervoorbeeld speelt nu met geluid af</string>
+    <string name="whats_new_item_bugfixes">Diverse crashes en kleine foutjes verholpen</string>
+    <string name="whats_new_button">Aan de slag 🚀</string>
+
     <!-- Programma -->
     <string name="program_time_title">%1$s  %2$s</string>
     <string name="program_time_remaining">%1$s · %2$s</string>

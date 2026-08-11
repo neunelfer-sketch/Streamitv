@@ -41,6 +41,14 @@
     <string name="home_select_channel">Wybierz kanał</string>
     <string name="home_update_available">Dostępna wersja %1$s – zobacz Ustawienia</string>
 
+    <string name="whats_new_title">🎉 9elf Player został zaktualizowany!</string>
+    <string name="whats_new_item_recent">„Ostatnio oglądane” dla filmów i seriali – wróć dokładnie tam, gdzie skończyłeś</string>
+    <string name="whats_new_item_languages">Teraz dostępny w 10 językach – zmienisz w Ustawienia → Język</string>
+    <string name="whats_new_item_epg">Program telewizyjny (EPG) jest teraz wykrywany automatycznie</string>
+    <string name="whats_new_item_preview_sound">Podgląd kanału odtwarza teraz dźwięk</string>
+    <string name="whats_new_item_bugfixes">Naprawiono kilka awarii i drobnych błędów</string>
+    <string name="whats_new_button">Zaczynajmy 🚀</string>
+
     <!-- Program -->
     <string name="program_time_title">%1$s  %2$s</string>
     <string name="program_time_remaining">%1$s · %2$s</string>

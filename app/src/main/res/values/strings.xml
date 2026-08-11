@@ -51,6 +51,16 @@
     <string name="home_select_channel">Sender auswählen</string>
     <string name="home_update_available">Version %1$s verfügbar – siehe Einstellungen</string>
 
+    <!-- ===================== "Was ist neu" ===================== -->
+    <!-- Einmaliger Hinweis direkt nach einer Aktualisierung. -->
+    <string name="whats_new_title">🎉 9elf Player wurde aktualisiert!</string>
+    <string name="whats_new_item_recent">"Zuletzt gesehen" bei Filmen &amp; Serien – weiter geht\'s genau da, wo du aufgehört hast</string>
+    <string name="whats_new_item_languages">Jetzt in 10 Sprachen – umstellbar unter Einstellungen → Sprache</string>
+    <string name="whats_new_item_epg">Programmzeitschrift (EPG) wird jetzt automatisch erkannt</string>
+    <string name="whats_new_item_preview_sound">Die Sender-Vorschau läuft jetzt mit Ton</string>
+    <string name="whats_new_item_bugfixes">Einige Abstürze und kleine Fehler behoben</string>
+    <string name="whats_new_button">Los geht\'s 🚀</string>
+
     <!-- ===================== Programm (EPG) ===================== -->
     <!-- Uhrzeit und Sendungstitel nebeneinander. -->
     <string name="program_time_title">%1$s  %2$s</string>
