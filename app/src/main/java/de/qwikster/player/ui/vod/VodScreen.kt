@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -267,6 +268,7 @@ private fun SortMenu(
 }
 
 /** Kategorien links, Poster-Raster rechts. */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun VodBody(
     state: VodUiState,
@@ -277,12 +279,27 @@ private fun VodBody(
     onPlayEpisode: (String) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
-    val firstCategory = remember { FocusRequester() }
+    val selectedCategory = remember { FocusRequester() }
 
-    // Beim Betreten des Bereichs steht der Fokus oben in der Kategorieliste –
-    // nicht dort, wo ihn Compose zufällig zuerst findet. So beginnt jeder
-    // Aufruf an derselben Stelle, wie man es von Netflix und Disney+ kennt.
-    LaunchedEffect(kind) { runCatching { firstCategory.requestFocus() } }
+    // Beim Betreten des Bereichs steht der Fokus auf der **gewählten**
+    // Kategorie – nicht dort, wo ihn Compose zufällig zuerst findet, aber
+    // auch nicht stur auf der ersten.
+    //
+    // Der Unterschied ist wesentlich, weil die Auswahl hier dem Fokus folgt:
+    // Ein Sprung auf die erste Kategorie würde diese sofort *auswählen*. Wer
+    // in "Action" einen Film öffnet und zurückkommt, landete damit wieder in
+    // der Übersicht statt dort, wo er war.
+    //
+    // Nur einmal je Aufruf des Bildschirms: Bei jeder Auswahländerung erneut
+    // den Fokus zu setzen, würde dem Nutzer die Fernbedienung aus der Hand
+    // nehmen, sobald er die Liste durchblättert.
+    var hasPlacedInitialFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(state.categories.isNotEmpty()) {
+        if (!hasPlacedInitialFocus && state.categories.isNotEmpty()) {
+            hasPlacedInitialFocus = true
+            runCatching { selectedCategory.requestFocus() }
+        }
+    }
 
     // Neue Kategorie -> Raster wieder an den Anfang. Ohne das bliebe die
     // Bildlaufposition der vorherigen Kategorie stehen und man landete
@@ -306,18 +323,33 @@ private fun VodBody(
                 modifier = Modifier
                     .width(categoryWidth)
                     .fillMaxHeight()
-                    .background(TvSurface),
+                    .background(TvSurface)
+                    // Merkt sich, welche Kategorie zuletzt den Fokus hatte,
+                    // und stellt ihn beim Zurückkommen aus dem Raster genau
+                    // dort wieder her.
+                    //
+                    // Ohne das sucht Compose beim Verlassen des Rasters nach
+                    // links die *räumlich nächste* Kategorie – bei weit
+                    // heruntergescrolltem Raster also irgendeine weiter unten.
+                    // Weil die Auswahl dem Fokus folgt, sprang damit bei
+                    // jedem Verlassen des Rasters die Kategorie um, und man
+                    // blätterte ungewollt durch die Reiter.
+                    .focusRestorer(),
                 contentPadding = PaddingValues(TvSpacing.small),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                itemsIndexed(state.categories, key = { _, it -> it.id }) { index, category ->
+                items(state.categories, key = { it.id }) { category ->
                     Surface(
                         onClick = { onSelectCategory(category.id) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp)
                             .then(
-                                if (index == 0) Modifier.focusRequester(firstCategory) else Modifier,
+                                if (category.id == state.selectedCategoryId) {
+                                    Modifier.focusRequester(selectedCategory)
+                                } else {
+                                    Modifier
+                                },
                             )
                             .touchClickable({ onSelectCategory(category.id) })
                             .onFocusChanged { if (it.isFocused) onSelectCategory(category.id) },
@@ -374,7 +406,12 @@ private fun VodBody(
                 state = gridState,
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    // Dieselbe Überlegung wie bei den Kategorien, nur
+                    // andersherum: Wer kurz nach links zur Kategorieliste
+                    // geht und zurückkommt, landet wieder bei seinem Poster
+                    // statt am Anfang des Rasters.
+                    .focusRestorer(),
                 contentPadding = PaddingValues(TvSpacing.large),
                 horizontalArrangement = Arrangement.spacedBy(TvSpacing.medium),
                 verticalArrangement = Arrangement.spacedBy(TvSpacing.medium),
