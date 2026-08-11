@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">Kaydedilen yayınları görüntüle ve yönet</string>
     <string name="recordings_empty">Henüz kayıt yok</string>
     <string name="recordings_title">Kayıtlar</string>
+    <string name="recording_locked">Kayıt özelliği gizlendi</string>
+    <string name="recording_unlocked">Kayıt özelliği açıldı</string>
     <string name="vod_empty">Burada henüz bir şey yok</string>
     <string name="movie_resume_at">%1$s izlendi</string>
     <string name="movie_plot">Konu</string>

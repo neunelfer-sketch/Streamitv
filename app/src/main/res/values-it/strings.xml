@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">Vedi e gestisci i programmi registrati</string>
     <string name="recordings_empty">Ancora nessuna registrazione</string>
     <string name="recordings_title">Registrazioni</string>
+    <string name="recording_locked">Funzione di registrazione nascosta</string>
+    <string name="recording_unlocked">Funzione di registrazione attivata</string>
     <string name="vod_empty">Ancora niente</string>
     <string name="movie_resume_at">Visto fino a %1$s</string>
     <string name="movie_plot">Trama</string>

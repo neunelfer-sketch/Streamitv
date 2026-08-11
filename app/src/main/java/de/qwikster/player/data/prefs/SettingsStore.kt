@@ -52,6 +52,15 @@ data class AppSettings(
     val movieSort: VodSort = VodSort.RECENT,
     /** Reihenfolge im Serien-Raster. */
     val seriesSort: VodSort = VodSort.NAME_ASC,
+    /**
+     * Ist die Aufnahmefunktion sichtbar?
+     *
+     * Standardmäßig nicht: Sie erscheint weder im Player noch in den
+     * Einstellungen, bis sie über den Entsperr-Griff freigeschaltet wird
+     * (siehe SettingsViewModel.onAboutRowClick). Wer die App in die Hand
+     * bekommt, ohne davon zu wissen, findet sie nicht.
+     */
+    val recordingUnlocked: Boolean = false,
 )
 
 /**
@@ -78,6 +87,7 @@ class SettingsStore(
             guideWindowMinutes = prefs[KEY_GUIDE_WINDOW] ?: 120,
             resumeLastChannel = prefs[KEY_RESUME_LAST] ?: true,
             showPreviewPlayer = prefs[KEY_SHOW_PREVIEW] ?: true,
+            recordingUnlocked = prefs[KEY_RECORDING_UNLOCKED] ?: false,
             movieSort = prefs[KEY_MOVIE_SORT].toVodSort(VodSort.RECENT),
             seriesSort = prefs[KEY_SERIES_SORT].toVodSort(VodSort.NAME_ASC),
         )
@@ -96,6 +106,7 @@ class SettingsStore(
     suspend fun setGuideWindowMinutes(value: Int) = edit { it[KEY_GUIDE_WINDOW] = value }
     suspend fun setResumeLastChannel(value: Boolean) = edit { it[KEY_RESUME_LAST] = value }
     suspend fun setShowPreviewPlayer(value: Boolean) = edit { it[KEY_SHOW_PREVIEW] = value }
+    suspend fun setRecordingUnlocked(value: Boolean) = edit { it[KEY_RECORDING_UNLOCKED] = value }
 
     /** Merkt die Reihenfolge für den jeweiligen Bereich getrennt. */
     suspend fun setVodSort(kind: StreamKind, value: VodSort) = edit {
@@ -195,6 +206,7 @@ class SettingsStore(
         private val KEY_GUIDE_WINDOW = intPreferencesKey("guide_window_minutes")
         private val KEY_RESUME_LAST = booleanPreferencesKey("resume_last_channel")
         private val KEY_SHOW_PREVIEW = booleanPreferencesKey("show_preview_player")
+        private val KEY_RECORDING_UNLOCKED = booleanPreferencesKey("recording_unlocked")
         private val KEY_MOVIE_SORT = stringPreferencesKey("movie_sort")
         private val KEY_SERIES_SORT = stringPreferencesKey("series_sort")
 

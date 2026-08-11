@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">Przeglądaj nagrane programy</string>
     <string name="recordings_empty">Brak nagrań</string>
     <string name="recordings_title">Nagrania</string>
+    <string name="recording_locked">Funkcja nagrywania ukryta</string>
+    <string name="recording_unlocked">Funkcja nagrywania odblokowana</string>
     <string name="vod_empty">Nic tu jeszcze nie ma</string>
     <string name="movie_resume_at">Obejrzano do %1$s</string>
     <string name="movie_plot">Opis</string>

@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">Opgenomen programma\'s bekijken en beheren</string>
     <string name="recordings_empty">Nog geen opnamen</string>
     <string name="recordings_title">Opnamen</string>
+    <string name="recording_locked">Opnamefunctie verborgen</string>
+    <string name="recording_unlocked">Opnamefunctie ontgrendeld</string>
     <string name="vod_empty">Nog niets aanwezig</string>
     <string name="movie_resume_at">Bekeken tot %1$s</string>
     <string name="movie_plot">Verhaal</string>

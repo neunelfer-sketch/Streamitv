@@ -170,6 +170,35 @@ class SettingsViewModel @Inject constructor(
     }
 
     // -----------------------------------------------------------------------
+    // Verborgene Aufnahmefunktion
+    // -----------------------------------------------------------------------
+
+    /** Zählt die Tastendrücke auf der Versionszeile. */
+    private var aboutTaps = 0
+
+    /**
+     * Schaltet die Aufnahmefunktion nach [TAPS_TO_UNLOCK] Druck auf die
+     * Versionszeile frei – und beim nächsten Mal wieder ab.
+     *
+     * Dasselbe Vorgehen wie bei den Entwickleroptionen von Android, und aus
+     * demselben Grund: Die Zeile lädt zu nichts ein, wer den Griff nicht
+     * kennt, drückt sie höchstens einmal. Ein sichtbarer Schalter "Aufnahme
+     * anzeigen" wäre kein Verstecken, sondern nur eine zweite Tür daneben.
+     */
+    fun onAboutRowClick() {
+        aboutTaps++
+        if (aboutTaps < TAPS_TO_UNLOCK) return
+        aboutTaps = 0
+        viewModelScope.launch {
+            val unlocked = !settingsStore.settings.first().recordingUnlocked
+            settingsStore.setRecordingUnlocked(unlocked)
+            message.value = context.getString(
+                if (unlocked) R.string.recording_unlocked else R.string.recording_locked,
+            )
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Playlist
     // -----------------------------------------------------------------------
 
@@ -296,6 +325,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsStore.setShowPreviewPlayer(!settingsStore.settings.first().showPreviewPlayer)
         }
+    }
+
+    private companion object {
+        /** Wie oft die Versionszeile gedrückt werden muss. Wie bei Android: sieben. */
+        const val TAPS_TO_UNLOCK = 7
     }
 
     /** "Nie" oder "Heute 14:32" / "Mo 05.08. 09:11". */

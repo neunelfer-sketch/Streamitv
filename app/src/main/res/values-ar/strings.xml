@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">عرض البرامج المسجلة وإدارتها</string>
     <string name="recordings_empty">لا توجد تسجيلات بعد</string>
     <string name="recordings_title">التسجيلات</string>
+    <string name="recording_locked">تم إخفاء ميزة التسجيل</string>
+    <string name="recording_unlocked">تم تفعيل ميزة التسجيل</string>
     <string name="vod_empty">لا يوجد شيء هنا بعد</string>
     <string name="movie_resume_at">شوهد حتى %1$s</string>
     <string name="movie_plot">القصة</string>

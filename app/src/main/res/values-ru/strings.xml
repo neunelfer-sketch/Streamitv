@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">Просмотр и управление записями</string>
     <string name="recordings_empty">Записей пока нет</string>
     <string name="recordings_title">Записи</string>
+    <string name="recording_locked">Функция записи скрыта</string>
+    <string name="recording_unlocked">Функция записи включена</string>
     <string name="vod_empty">Пока ничего нет</string>
     <string name="movie_resume_at">Просмотрено до %1$s</string>
     <string name="movie_plot">Описание</string>

@@ -232,12 +232,15 @@ fun SettingsScreen(
                     modifier = Modifier.focusRequester(languageRowFocus),
                 )
             }
-            item {
-                SettingsRow(
-                    title = stringResource(R.string.recordings_title),
-                    value = stringResource(R.string.recordings_settings_desc),
-                    onClick = onOpenRecordings,
-                )
+            // Nur nach dem Entsperren – siehe SettingsViewModel.onAboutRowClick.
+            if (state.settings.recordingUnlocked) {
+                item {
+                    SettingsRow(
+                        title = stringResource(R.string.recordings_title),
+                        value = stringResource(R.string.recordings_settings_desc),
+                        onClick = onOpenRecordings,
+                    )
+                }
             }
             item {
                 SettingsRow(
@@ -261,7 +264,7 @@ fun SettingsScreen(
                         state.currentVersion,
                         state.programCount,
                     ),
-                    onClick = onBack,
+                    onClick = viewModel::onAboutRowClick,
                 )
             }
             // Ganz unten und nicht fokussierbar: der Hinweis soll da sein,

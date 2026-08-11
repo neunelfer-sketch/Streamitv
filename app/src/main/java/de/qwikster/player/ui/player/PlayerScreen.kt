@@ -213,6 +213,7 @@ fun PlayerScreen(
             modifier = Modifier.align(Alignment.TopStart),
         ) {
             QuickOptionsBar(
+                isRecordingEnabled = state.settings.recordingUnlocked,
                 isRecording = state.isRecording,
                 onStartRecording = viewModel::startRecording,
                 onStopRecording = viewModel::stopRecording,
@@ -437,6 +438,7 @@ private fun InfoBar(state: PlayerUiState) {
  */
 @Composable
 private fun QuickOptionsBar(
+    isRecordingEnabled: Boolean,
     isRecording: Boolean,
     onStartRecording: (RecordingVariant) -> Unit,
     onStopRecording: () -> Unit,
@@ -499,7 +501,8 @@ private fun QuickOptionsBar(
                 tint = if (isFavorite) TvFavorite else Color.White,
                 onClick = onToggleFavorite,
             )
-            QuickAction(
+            if (isRecordingEnabled) {
+                QuickAction(
                 icon = Icons.Default.FiberManualRecord,
                 label = if (isRecording) {
                     stringResource(R.string.recording_stop)
@@ -515,7 +518,8 @@ private fun QuickOptionsBar(
                         expanded = if (expanded == "rec") null else "rec"
                     }
                 },
-            )
+                )
+            }
             QuickAction(
                 icon = Icons.Default.PictureInPictureAlt,
                 label = stringResource(R.string.player_pip),
@@ -527,7 +531,7 @@ private fun QuickOptionsBar(
         // Wie lange aufgenommen wird, entscheidet der Zuschauer hier. "Bis
         // Sendungsende" ist der Regelfall; die festen Längen springen ein,
         // wenn der Sender kein EPG hat und damit gar kein Ende bekannt ist.
-        if (expanded == "rec") {
+        if (isRecordingEnabled && expanded == "rec") {
             Spacer(Modifier.height(TvSpacing.small))
             Row(horizontalArrangement = Arrangement.spacedBy(TvSpacing.small)) {
                 RecordingVariant.entries.forEach { variant ->

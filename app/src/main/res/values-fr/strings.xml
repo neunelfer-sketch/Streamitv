@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">Voir et gérer les émissions enregistrées</string>
     <string name="recordings_empty">Aucun enregistrement</string>
     <string name="recordings_title">Enregistrements</string>
+    <string name="recording_locked">Fonction d'enregistrement masquée</string>
+    <string name="recording_unlocked">Fonction d'enregistrement activée</string>
     <string name="vod_empty">Rien pour le moment</string>
     <string name="movie_resume_at">Vu jusqu\'à %1$s</string>
     <string name="movie_plot">Synopsis</string>

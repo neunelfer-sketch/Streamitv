@@ -29,6 +29,8 @@
     <string name="recordings_settings_desc">View and manage recorded programmes</string>
     <string name="recordings_empty">No recordings yet</string>
     <string name="recordings_title">Recordings</string>
+    <string name="recording_locked">Recording feature hidden</string>
+    <string name="recording_unlocked">Recording feature unlocked</string>
     <string name="vod_empty">Nothing here yet</string>
     <string name="movie_resume_at">Watched up to %1$s</string>
     <string name="movie_plot">Synopsis</string>
