@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import de.qwikster.player.R
 import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.Episode
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvBackground
 import de.qwikster.player.ui.theme.TvOnSurfaceMuted
@@ -164,7 +165,9 @@ private fun EpisodeRow(episode: Episode, onClick: () -> Unit) {
             containerColor = TvSurfaceElevated,
             focusedContainerColor = TvAccent,
         ),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .touchClickable(onClick),
     ) {
         Row(
             modifier = Modifier

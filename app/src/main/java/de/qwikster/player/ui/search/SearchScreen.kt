@@ -45,6 +45,7 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import de.qwikster.player.R
 import de.qwikster.player.data.model.Channel
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.ChannelLogo
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvBackground
@@ -197,7 +198,8 @@ private fun ResultRow(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp),
+            .height(60.dp)
+            .touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent,

@@ -64,6 +64,7 @@ import de.qwikster.player.data.model.AspectRatioMode
 import de.qwikster.player.data.model.Channel
 import de.qwikster.player.player.TrackOption
 import de.qwikster.player.player.toResizeMode
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.ChannelListItem
 import de.qwikster.player.ui.components.ChannelLogo
 import de.qwikster.player.ui.components.ProgramProgressBar
@@ -531,7 +532,7 @@ private fun QuickAction(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = TvSurface.copy(alpha = 0.9f),
@@ -564,6 +565,7 @@ private fun QuickAction(
 private fun TrackChip(option: TrackOption, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
+        modifier = Modifier.touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(16.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = if (option.isSelected) TvAccent.copy(alpha = 0.35f) else TvSurface,

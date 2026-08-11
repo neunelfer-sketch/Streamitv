@@ -3,6 +3,7 @@ package de.qwikster.player.ui.common
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -24,6 +25,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 
 /**
@@ -101,6 +103,31 @@ fun Modifier.dpadEvents(
 
         else -> null
     } ?: false
+}
+
+/**
+ * Macht ein Element zusätzlich per Fingertipp bedienbar.
+ *
+ * Die Bausteine aus `androidx.tv.material3` (`Surface`, `Button`) werten
+ * ausschließlich die OK-Taste des Steuerkreuzes aus – Zeigereingaben
+ * behandeln sie überhaupt nicht, sie benutzen intern bewusst kein
+ * `clickable`. Auf einem Fernseher ist das genau richtig; auf einem Handy
+ * führt es dazu, dass sich im ganzen Programm nichts antippen lässt.
+ *
+ * Bewusst `pointerInput` statt `Modifier.clickable`: Letzteres wertet
+ * zusätzlich Enter und die OK-Taste aus. Auf dem Fernseher liefe dann jeder
+ * Tastendruck doppelt – einmal über den Baustein selbst, einmal über den
+ * Modifier. Ein Sender würde so etwa zweimal geöffnet.
+ */
+fun Modifier.touchClickable(
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+): Modifier = if (!enabled) this else pointerInput(onClick, onLongClick) {
+    detectTapGestures(
+        onTap = { onClick() },
+        onLongPress = onLongClick?.let { handler -> { _ -> handler() } },
+    )
 }
 
 /**

@@ -55,6 +55,7 @@ import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.Channel
 import de.qwikster.player.data.model.EpgProgram
 import de.qwikster.player.ui.common.COMPACT_WIDTH_BREAKPOINT
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.ChannelLogo
 import de.qwikster.player.ui.components.ProgramProgressBar
 import de.qwikster.player.ui.theme.TvAccent
@@ -436,6 +437,7 @@ private fun GuideHeader(
 private fun HeaderButton(onClick: () -> Unit, content: @Composable () -> Unit) {
     Surface(
         onClick = onClick,
+        modifier = Modifier.touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = TvSurfaceVariant,
@@ -659,6 +661,7 @@ private fun ProgramCell(
             .width(width)
             .fillMaxHeight()
             .padding(end = 2.dp)
+            .touchClickable(onClick)
             .onFocusChanged {
                 isFocused = it.isFocused
                 if (it.isFocused) onFocused()

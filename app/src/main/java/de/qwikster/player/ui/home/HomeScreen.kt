@@ -72,6 +72,7 @@ import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.Channel
 import de.qwikster.player.data.model.ChannelWithProgram
 import de.qwikster.player.ui.common.COMPACT_WIDTH_BREAKPOINT
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.ChannelListItem
 import de.qwikster.player.ui.components.ChannelLogo
 import de.qwikster.player.ui.components.ProgramProgressBar
@@ -361,6 +362,7 @@ private fun TopBarAction(
         onClick = onClick,
         modifier = Modifier
             .padding(end = TvSpacing.small)
+            .touchClickable(onClick)
             .onFocusChanged { isFocused = it.isFocused },
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
@@ -439,6 +441,7 @@ private fun CategoryRow(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
+            .touchClickable(onClick)
             .onFocusChanged { if (it.isFocused) onFocused() },
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
@@ -763,6 +766,7 @@ private fun WhatsNewDialog(onDismiss: () -> Unit) {
                     onClick = onDismiss,
                     modifier = Modifier
                         .align(Alignment.End)
+                        .touchClickable(onDismiss)
                         .focusRequester(buttonFocus),
                 ) {
                     Text(stringResource(R.string.whats_new_button))
@@ -849,12 +853,17 @@ private fun UpdatePromptDialog(
                     horizontalArrangement = Arrangement.spacedBy(TvSpacing.small),
                     modifier = Modifier.align(Alignment.End),
                 ) {
-                    Button(onClick = onLater) {
+                    Button(
+                        onClick = onLater,
+                        modifier = Modifier.touchClickable(onLater),
+                    ) {
                         Text(stringResource(R.string.update_prompt_later))
                     }
                     Button(
                         onClick = onInstallNow,
-                        modifier = Modifier.focusRequester(installFocus),
+                        modifier = Modifier
+                            .touchClickable(onInstallNow)
+                            .focusRequester(installFocus),
                     ) {
                         Text(stringResource(R.string.update_prompt_install_now))
                     }

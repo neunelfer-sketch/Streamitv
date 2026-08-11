@@ -54,6 +54,7 @@ import de.qwikster.player.R
 import de.qwikster.player.data.model.StreamKind
 import de.qwikster.player.data.model.VodSort
 import de.qwikster.player.ui.common.COMPACT_WIDTH_BREAKPOINT
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvBackground
 import de.qwikster.player.ui.theme.TvOnSurfaceMuted
@@ -172,7 +173,9 @@ private fun VodHeader(
 
         Surface(
             onClick = onOpenSortMenu,
-            modifier = Modifier.focusRequester(buttonFocusRequester),
+            modifier = Modifier
+                .touchClickable(onOpenSortMenu)
+                .focusRequester(buttonFocusRequester),
             shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
             colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
                 containerColor = Color.Transparent,
@@ -225,6 +228,7 @@ private fun SortMenu(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
+                        .touchClickable({ onSelect(option) })
                         .then(if (index == 0) Modifier.focusRequester(firstEntry) else Modifier),
                     shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
                     colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
@@ -289,6 +293,7 @@ private fun VodBody(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp)
+                            .touchClickable({ onSelectCategory(category.id) })
                             .onFocusChanged { if (it.isFocused) onSelectCategory(category.id) },
                         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
                         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
@@ -362,6 +367,7 @@ private fun PosterCard(
 ) {
     Surface(
         onClick = onClick,
+        modifier = Modifier.touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = TvSurfaceElevated,

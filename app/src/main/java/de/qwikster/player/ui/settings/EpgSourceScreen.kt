@@ -29,6 +29,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import de.qwikster.player.R
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvBackground
 import de.qwikster.player.ui.theme.TvOnSurface
@@ -118,7 +119,12 @@ fun EpgSourceScreen(
                 viewModel.setEpgUrl(url)
                 onBack()
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .touchClickable {
+                    viewModel.setEpgUrl(url)
+                    onBack()
+                },
         ) {
             Text(stringResource(R.string.epg_source_save))
         }

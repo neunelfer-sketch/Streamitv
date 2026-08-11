@@ -45,6 +45,7 @@ import androidx.tv.material3.Text
 import de.qwikster.player.R
 import de.qwikster.player.data.prefs.AppLanguage
 import de.qwikster.player.data.prefs.SettingsStore
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.DeveloperCredit
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvBackground
@@ -351,6 +352,7 @@ private fun LanguageMenu(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
+                        .touchClickable({ onSelect(option) })
                         .then(if (isFirst) Modifier.focusRequester(firstEntry) else Modifier),
                     shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
                     colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
@@ -408,7 +410,8 @@ private fun SettingsRow(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(64.dp)
+            .touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = TvSurfaceVariant,

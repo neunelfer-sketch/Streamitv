@@ -24,12 +24,20 @@ Dieselbe APK läuft auch auf einem Android-Handy (ab API 22) – dieselbe
   zusätzlich `GridCells.Adaptive` statt einer festen Spaltenzahl, damit
   Poster nicht auf Briefmarkengröße schrumpfen.
 
-Die D-Pad-Bedienung war von Anfang an so gebaut, dass jede Aktion sowohl
-über Fokus (Fernbedienung) als auch über Klick (Touch) auslöst – deshalb
-funktioniert die App per Fingertipp, ohne dass die Interaktionslogik
-angefasst werden musste. Eine eigens für Touch entworfene Oberfläche
-(z. B. eine Navigationsleiste unten, dichtere Listen) ist das nicht –
-dafür wäre eine echte zweite Bildschirmvariante nötig.
+Für die Bedienung per Finger braucht es einen eigenen Handgriff: Die
+Bausteine aus `androidx.tv.material3` (`Surface`, `Button`) werten
+ausschließlich die OK-Taste des Steuerkreuzes aus und behandeln
+Zeigereingaben überhaupt nicht – sie benutzen intern bewusst kein
+`clickable`. Auf einem Handy ließ sich deshalb zunächst gar nichts
+antippen. Jede klickbare Stelle trägt darum zusätzlich
+`Modifier.touchClickable(…)` (siehe `ui/common/DpadModifiers.kt`), das
+über `pointerInput` nur Tippen und langes Drücken auswertet. Bewusst
+nicht `Modifier.clickable`: Das verarbeitet auch Enter und OK, und auf
+dem Fernseher liefe dann jeder Tastendruck doppelt.
+
+Eine eigens für Touch entworfene Oberfläche (z. B. eine Navigationsleiste
+unten, dichtere Listen) ist das nicht – dafür wäre eine echte zweite
+Bildschirmvariante nötig.
 
 ## Warum nativ statt Flutter
 
@@ -284,4 +292,4 @@ Voraussetzungen: JDK 17, Android SDK 35, `minSdk 22` (deckt Fire OS 5 ab).
 
 ---
 
-_Developed by Qwikster_
+_Developed by 9elf_

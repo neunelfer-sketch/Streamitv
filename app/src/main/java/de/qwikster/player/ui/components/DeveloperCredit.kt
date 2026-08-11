@@ -10,8 +10,13 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import de.qwikster.player.ui.theme.TvOnSurfaceMuted
 
-/** Entwicklerhinweis – bewusst an einer Stelle, damit er nur hier gepflegt wird. */
-const val DEVELOPER_CREDIT = "Developed by Qwikster"
+/**
+ * Entwicklerhinweis – bewusst an einer Stelle, damit er nur hier gepflegt wird.
+ *
+ * Bleibt "9elf": Qwikster ist der Name der App, 9elf der des Entwicklers.
+ * Die Umbenennung der App betrifft diese Zeile also ausdrücklich nicht.
+ */
+const val DEVELOPER_CREDIT = "Developed by 9elf"
 
 /**
  * Dezente Signaturzeile am unteren Rand eines Bildschirms.

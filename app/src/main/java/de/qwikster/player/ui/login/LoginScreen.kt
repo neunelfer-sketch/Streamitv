@@ -45,6 +45,7 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import de.qwikster.player.R
 import de.qwikster.player.data.model.PlaylistType
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.DeveloperCredit
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvBackground
@@ -188,7 +189,9 @@ fun LoginScreen(
                 Button(
                     onClick = viewModel::submit,
                     enabled = state.canSubmit,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .touchClickable(viewModel::submit, enabled = state.canSubmit),
                 ) {
                     Text(
                         if (state.isBusy) {
@@ -209,6 +212,7 @@ fun LoginScreen(
 private fun TypeChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
+        modifier = Modifier.touchClickable(onClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(20.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) TvAccent.copy(alpha = 0.35f) else TvSurfaceVariant,
@@ -330,6 +334,7 @@ private fun TvTextField(
                 focusedContainerColor = TvAccent,
             ),
             modifier = modifier
+                .touchClickable({ isEditing = true })
                 .fillMaxWidth()
                 .padding(vertical = 6.dp),
         ) {

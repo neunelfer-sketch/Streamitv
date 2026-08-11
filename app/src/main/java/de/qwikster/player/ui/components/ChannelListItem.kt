@@ -40,6 +40,7 @@ import coil.compose.SubcomposeAsyncImage
 import de.qwikster.player.R
 import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.ChannelWithProgram
+import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvFavorite
 import de.qwikster.player.ui.theme.TvOnSurfaceMuted
@@ -78,6 +79,7 @@ fun ChannelListItem(
         modifier = modifier
             .fillMaxWidth()
             .height(72.dp)
+            .touchClickable(onClick, onLongClick)
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
                 if (focusState.isFocused) onFocused()
