@@ -1,5 +1,6 @@
 package de.neunelf.player.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -57,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import androidx.tv.material3.Button
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
@@ -74,6 +77,7 @@ import de.neunelf.player.ui.theme.TvLive
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
 import de.neunelf.player.ui.theme.TvSpacing
 import de.neunelf.player.ui.theme.TvSurface
+import de.neunelf.player.ui.theme.TvSurfaceElevated
 import de.neunelf.player.ui.theme.TvSurfaceVariant
 
 /**
@@ -152,11 +156,14 @@ fun HomeScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(TvBackground),
-    ) {
+    // Zurück schließt nur den Hinweis, statt die App zu verlassen.
+    BackHandler(enabled = state.showWhatsNew) { viewModel.dismissWhatsNew() }
+
+    Box(modifier = Modifier.fillMaxSize().background(TvBackground)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
         HomeTopBar(
             playlistName = state.playlist?.name.orEmpty(),
             // Der Update-Hinweis steht hinten an: Was gerade lädt oder
@@ -220,6 +227,11 @@ fun HomeScreen(
                         .padding(TvSpacing.large),
                 )
             }
+        }
+    }
+
+        if (state.showWhatsNew) {
+            WhatsNewDialog(onDismiss = viewModel::dismissWhatsNew)
         }
     }
 }
@@ -624,6 +636,74 @@ private fun LiveBadge(modifier: Modifier = Modifier) {
             text = "LIVE",
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// "Was ist neu"-Hinweis
+// ---------------------------------------------------------------------------
+
+/**
+ * Kurzer, einmaliger Hinweis nach einer Aktualisierung.
+ *
+ * Bewusst kein Startbildschirm-Dialog bei jedem Öffnen (siehe
+ * [HomeViewModel]s Kommentar zur Update-Prüfung) – er erscheint genau
+ * einmal pro neuer Fassung und lässt sich mit einem Tastendruck wegwischen.
+ */
+@Composable
+private fun WhatsNewDialog(onDismiss: () -> Unit) {
+    val buttonFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { buttonFocus.requestFocus() } }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier.widthIn(max = 560.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = androidx.tv.material3.SurfaceDefaults.colors(containerColor = TvSurfaceElevated),
+        ) {
+            Column(modifier = Modifier.padding(TvSpacing.large)) {
+                Text(
+                    text = "🎉 9elf Player wurde aktualisiert!",
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Spacer(Modifier.height(TvSpacing.medium))
+
+                WhatsNewItem("📺", "\"Zuletzt gesehen\" bei Filmen & Serien – weiter geht's genau da, wo du aufgehört hast")
+                WhatsNewItem("🌍", "Jetzt in 10 Sprachen – umstellbar unter Einstellungen → Sprache")
+                WhatsNewItem("📡", "Programmzeitschrift (EPG) wird jetzt automatisch erkannt")
+                WhatsNewItem("🔊", "Die Sender-Vorschau läuft jetzt mit Ton")
+                WhatsNewItem("🐞", "Einige Abstürze und kleine Fehler behoben")
+
+                Spacer(Modifier.height(TvSpacing.medium))
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .focusRequester(buttonFocus),
+                ) {
+                    Text("Los geht's 🚀")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WhatsNewItem(emoji: String, text: String) {
+    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(text = emoji, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.width(32.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge,
+            color = TvOnSurfaceMuted,
+            modifier = Modifier.weight(1f),
         )
     }
 }

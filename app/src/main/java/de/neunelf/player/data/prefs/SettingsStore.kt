@@ -160,6 +160,15 @@ class SettingsStore(
         )
     }
 
+    // -----------------------------------------------------------------------
+    // "Neu in dieser Version"
+    // -----------------------------------------------------------------------
+
+    /** Version, zu der zuletzt eine Neuigkeiten-Meldung gezeigt wurde – `null` bei einer frischen Installation. */
+    suspend fun lastSeenVersion(): String? = context.dataStore.data.first()[KEY_LAST_SEEN_VERSION]
+
+    suspend fun setLastSeenVersion(version: String) = edit { it[KEY_LAST_SEEN_VERSION] = version }
+
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
     }
@@ -186,6 +195,8 @@ class SettingsStore(
         private val KEY_PL_PASS = stringPreferencesKey("playlist_password")
         private val KEY_PL_M3U = stringPreferencesKey("playlist_m3u_url")
         private val KEY_PL_EPG = stringPreferencesKey("playlist_epg_url")
+
+        private val KEY_LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
 
         /**
          * Auswählbare Puffergrößen.

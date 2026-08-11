@@ -97,6 +97,8 @@ data class HomeUiState(
     val searchQuery: String = "",
     /** Versionsnummer einer verfügbaren Aktualisierung, sonst `null`. */
     val updateVersion: String? = null,
+    /** Einmalig nach einer Aktualisierung: kurzer Überblick, was neu ist. */
+    val showWhatsNew: Boolean = false,
 ) {
     val hasPlaylist: Boolean get() = playlist != null
     val isEmpty: Boolean get() = !isLoading && channels.isEmpty()
@@ -127,6 +129,7 @@ class HomeViewModel @Inject constructor(
     private val errorMessage = MutableStateFlow<String?>(null)
     private val upcoming = MutableStateFlow<List<EpgProgram>>(emptyList())
     private val updateVersion = MutableStateFlow<String?>(null)
+    private val showWhatsNew = MutableStateFlow(false)
 
     /** Sammelt die Nebenzustände, damit `combine` unter fünf Quellen bleibt. */
     private data class AuxState(
@@ -186,7 +189,7 @@ class HomeViewModel @Inject constructor(
 
     // --- Zusammengesetzter UI-Zustand --------------------------------------
 
-    val uiState: StateFlow<HomeUiState> = combine(
+    private val baseUiState: StateFlow<HomeUiState> = combine(
         repository.observeActivePlaylist(),
         categories,
         channels,
@@ -212,6 +215,10 @@ class HomeViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
+    val uiState: StateFlow<HomeUiState> = combine(baseUiState, showWhatsNew) { base, show ->
+        base.copy(showWhatsNew = show)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+
     init {
         // Nach dem ersten Laden der Playlist prüfen, ob ein Refresh fällig ist.
         repository.observeActivePlaylist()
@@ -228,6 +235,25 @@ class HomeViewModel @Inject constructor(
                 .getOrNull()
                 ?.versionName
         }
+
+        // Einmalig nach einer Aktualisierung: kurzer "Was ist neu"-Hinweis.
+        // Bei einer frischen Installation (kein gemerkter Stand) bleibt er
+        // aus – neue Nutzer kennen die App noch gar nicht, ein "neu ist..."
+        // wäre da wirkungslos. Der Stand wird sofort mitgeschrieben, damit
+        // ein zweiter Start derselben Version ihn nicht erneut zeigt, selbst
+        // wenn der Nutzer die Meldung nie aktiv wegdrückt.
+        viewModelScope.launch {
+            val current = updateRepository.currentVersion
+            val lastSeen = settingsStore.lastSeenVersion()
+            settingsStore.setLastSeenVersion(current)
+            if (lastSeen != null && lastSeen != current) {
+                showWhatsNew.value = true
+            }
+        }
+    }
+
+    fun dismissWhatsNew() {
+        showWhatsNew.value = false
     }
 
     // -----------------------------------------------------------------------
