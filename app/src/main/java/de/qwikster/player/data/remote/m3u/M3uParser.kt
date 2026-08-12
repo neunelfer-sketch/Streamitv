@@ -338,6 +338,15 @@ object M3uParser {
         val logoUrl: String?,
         val group: String?,
         val channelNumber: Int,
+        /**
+         * Laufzeit aus `#EXTINF:<sekunden>`; -1 oder 0 heißt "kein Ende".
+         *
+         * Das ist die verlässlichste Auskunft, die eine M3U-Datei über die
+         * Art eines Eintrags gibt, und sie steht seit jeher an erster
+         * Stelle jeder Zeile: Ein Film hat eine Laufzeit, ein laufender
+         * Kanal hat keine.
+         */
+        val runtimeSecs: Int = -1,
         val userAgent: String? = null,
         val referrer: String? = null,
     ) {
@@ -351,7 +360,7 @@ object M3uParser {
             channelNumber = channelNumber,
             userAgent = userAgent,
             referrer = referrer,
-            kind = guessKind(url, title, group, tvgId, channelNumber),
+            kind = guessKind(url, title, group, tvgId, channelNumber, runtimeSecs),
         )
     }
 
@@ -364,6 +373,11 @@ object M3uParser {
      */
     private fun parseExtInf(line: String): PendingEntry {
         val payload = line.substringAfter(':', "")
+        // Die Laufzeit steht ganz vorn, vor dem ersten Leerzeichen oder
+        // Komma: "#EXTINF:-1 tvg-id=…" bzw. "#EXTINF:7245,Titel".
+        val runtimeSecs = payload
+            .takeWhile { !it.isWhitespace() && it != ',' }
+            .toIntOrNull() ?: -1
         val splitIndex = indexOfNameSeparator(payload)
         val attributePart = if (splitIndex >= 0) payload.substring(0, splitIndex) else payload
         val displayName = if (splitIndex >= 0) payload.substring(splitIndex + 1).trim() else ""
@@ -378,6 +392,7 @@ object M3uParser {
             tvgName = tvgName,
             logoUrl = (attributes["tvg-logo"] ?: attributes["logo"])?.takeIf { it.startsWith("http") },
             group = (attributes["group-title"] ?: attributes["group"])?.takeIf { it.isNotBlank() },
+            runtimeSecs = runtimeSecs,
             channelNumber = (attributes["tvg-chno"] ?: attributes["channel-number"])?.toIntOrNull() ?: 0,
         )
     }
@@ -409,7 +424,14 @@ object M3uParser {
      * Rät den Inhaltstyp. Xtream-Exporte kodieren ihn im Pfad
      * (`/live/`, `/movie/`, `/series/`); sonst hilft die Gruppenbezeichnung.
      */
-    private fun guessKind(url: String, title: String, group: String?, tvgId: String?, channelNumber: Int): StreamKind {
+    private fun guessKind(
+        url: String,
+        title: String,
+        group: String?,
+        tvgId: String?,
+        channelNumber: Int,
+        runtimeSecs: Int,
+    ): StreamKind {
         val lowerUrl = url.lowercase()
 
         // 1. Der Pfad ist die verlässlichste Angabe – Panels kodieren die Art
@@ -463,13 +485,24 @@ object M3uParser {
         //    "Filme" heißt. Ohne diese Ausnahme landen genau die
         //    Dauerkanäle im Raster, die Schritt 3 nur dann erwischt, wenn
         //    der Anbieter sie auch "24/7" nennt.
+        //    Die Laufzeit ist dabei der Ausschlag: Eine Gruppe namens
+        //    "Filme" sagt nur, was der Anbieter dort einsortiert hat. Ob ein
+        //    Eintrag ein Film *ist*, verrät seine Laufzeit – ein Film hat
+        //    eine, ein Dauerkanal nicht. Steht dort `-1` und weist auch die
+        //    Adresse nicht auf eine Datei hin, ist es ein laufender Kanal,
+        //    ganz gleich wie die Gruppe heißt.
         val isTransportStream = extension in LIVE_EXTENSIONS
+        val hasRuntime = runtimeSecs > 0
+        val looksPlayable = hasRuntime || hasVodExtension
         return when {
             isTransportStream -> StreamKind.LIVE
-            SERIES_WORDS.any { it in lowerGroup } -> StreamKind.SERIES
-            MOVIE_WORDS.any { it in lowerGroup } -> StreamKind.VOD
-            // Endet auf eine Container-Endung -> mit hoher Wahrscheinlichkeit VOD.
-            hasVodExtension -> StreamKind.VOD
+            SERIES_WORDS.any { it in lowerGroup } ->
+                if (looksPlayable) StreamKind.SERIES else StreamKind.LIVE
+            MOVIE_WORDS.any { it in lowerGroup } ->
+                if (looksPlayable) StreamKind.VOD else StreamKind.LIVE
+            // Endet auf eine Container-Endung oder hat eine Laufzeit ->
+            // mit hoher Wahrscheinlichkeit VOD.
+            looksPlayable -> StreamKind.VOD
             else -> StreamKind.LIVE
         }
     }

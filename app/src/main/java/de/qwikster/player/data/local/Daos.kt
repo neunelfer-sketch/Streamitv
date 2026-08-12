@@ -408,6 +408,18 @@ interface VodDao {
     @Query("SELECT streamId, posterUrl, plot FROM movies WHERE playlistId = :playlistId AND plot IS NOT NULL")
     suspend fun getEnrichedMoviePosters(playlistId: Long): List<MoviePosterEnrichment>
 
+    /**
+     * Bereits bekannte Laufzeiten je Film.
+     *
+     * Sie stammen aus der Detailabfrage (`get_vod_info`), nicht aus der
+     * Übersicht – deshalb kennt der Import sie nur für Titel, die schon
+     * einmal angereichert wurden. Genutzt wird das als Gegenbeweis beim
+     * Aussortieren von Dauerkanälen: Was eine Laufzeit hat, ist ein Film.
+     */
+    @MapInfo(keyColumn = "streamId", valueColumn = "durationSecs")
+    @Query("SELECT streamId, durationSecs FROM movies WHERE playlistId = :playlistId AND durationSecs > 0")
+    suspend fun getMovieDurations(playlistId: Long): Map<String, Int>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)
 

@@ -184,9 +184,21 @@ class PlaylistSyncer @Inject constructor(
         // LIVE geführter Eintrag bekäme also `/live/…` und liefe ins Leere.
         // Die Adresse wird deshalb hier schon fertig gebaut und als
         // `directUrl` mitgegeben – die hat beim Abspielen Vorrang.
+        // Die Laufzeit ist das bessere Signal – ein Film hat eine, ein
+        // Dauerkanal nicht. Sie taugt hier aber nur als *Gegenbeweis*:
+        // `get_vod_streams` liefert sie überhaupt nicht mit, sie entsteht
+        // erst durch die Detailabfrage im Hintergrund (siehe
+        // [enrichMoviePosters]). Beim Import steht sie also für fast alles
+        // auf 0 – als alleiniges Merkmal würde sie den kompletten Katalog
+        // nach Live TV schieben. Wo sie aber bekannt ist, entscheidet sie:
+        // Ein Eintrag mit Laufzeit bleibt ein Film, auch wenn die Kategorie
+        // "24/7" heißt.
+        val knownDurations = vodDao.getMovieDurations(playlist.id)
         val continuousCategories = vodCategories.filter { isContinuousName(it.name) }
         val continuousIds = continuousCategories.map { it.id }.toSet()
-        val (continuousMovies, movies) = allMovies.partition { it.categoryId in continuousIds }
+        val (continuousMovies, movies) = allMovies.partition { movie ->
+            movie.categoryId in continuousIds && (knownDurations[movie.streamId] ?: 0) <= 0
+        }
 
         if (continuousMovies.isNotEmpty()) {
             val continuousChannels = continuousMovies.map { movie ->
