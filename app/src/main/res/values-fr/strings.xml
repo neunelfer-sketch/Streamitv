@@ -50,8 +50,8 @@
     <string name="recording_schedule_hint">Choisissez une chaîne, puis un programme des 10 prochaines heures</string>
     <string name="recording_schedule_action">Programmer</string>
     <string name="recording_schedule_title">Programmer un enregistrement</string>
-    <string name="recording_locked">Fonction d'enregistrement masquée</string>
-    <string name="recording_unlocked">Fonction d'enregistrement activée</string>
+    <string name="recording_locked">Fonction d\'enregistrement masquée</string>
+    <string name="recording_unlocked">Fonction d\'enregistrement activée</string>
     <string name="vod_empty">Rien pour le moment</string>
     <string name="movie_resume_at">Vu jusqu\'à %1$s</string>
     <string name="movie_plot">Synopsis</string>
