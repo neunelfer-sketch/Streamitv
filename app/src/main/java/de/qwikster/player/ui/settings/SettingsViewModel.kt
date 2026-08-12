@@ -322,6 +322,19 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
+     * Schaltet die Anpassung der Bildwiederholrate um.
+     *
+     * Abschaltbar, weil das Umstellen einen kurzen Schwarzbild-Moment kostet
+     * (die HDMI-Verbindung stimmt sich neu ab). Wer einen Bildschirm hat, der
+     * ohnehin nur 60 Hz kann, gewinnt nichts und kann sich das sparen.
+     */
+    fun toggleMatchFrameRate() {
+        viewModelScope.launch {
+            settingsStore.setMatchFrameRate(!settingsStore.settings.first().matchFrameRate)
+        }
+    }
+
+    /**
      * Schaltet die Live-Vorschau im Hauptbildschirm um.
      *
      * Abschaltbar, weil sie eine zweite Verbindung zum Panel braucht – bei

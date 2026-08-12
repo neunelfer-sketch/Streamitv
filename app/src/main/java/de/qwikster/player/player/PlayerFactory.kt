@@ -1,5 +1,6 @@
 package de.qwikster.player.player
 
+import android.app.ActivityManager
 import android.content.Context
 import androidx.media3.common.C
 import androidx.media3.common.MimeTypes
@@ -65,7 +66,19 @@ class PlayerFactory @Inject constructor(
             .setLoadControl(buildLoadControl(bufferMs))
             .setRenderersFactory(
                 DefaultRenderersFactory(context)
-                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                    // `ON` statt `PREFER`: Der Hardware-Decoder hat Vorrang,
+                    // ein mitgelieferter Software-Decoder springt nur ein, wenn
+                    // es für das Format keinen gibt. Genau andersherum wäre es
+                    // für FHD und erst recht 4K fatal – ein Software-Decoder
+                    // schafft auf einem Stick keine 3840×2160, das Bild
+                    // ruckelte oder bliebe ganz weg.
+                    //
+                    // Heute liegt der App ohnehin keine Decoder-Erweiterung
+                    // bei, der Wert ist also aktuell wirkungslos. Er steht hier
+                    // trotzdem richtig, damit das Hinzufügen einer Erweiterung
+                    // (etwa für AC-4) später nicht unbemerkt die
+                    // Hardware-Beschleunigung abschaltet.
+                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                     // Bildaussetzer lieber überspringen als das Bild einfrieren lassen.
                     .setEnableDecoderFallback(true),
             )
@@ -105,7 +118,11 @@ class PlayerFactory @Inject constructor(
         val minBuffer = bufferMs.coerceIn(2_000, 60_000)
         val maxBuffer = (minBuffer * 2).coerceAtMost(120_000)
         val forPlayback = 1_500.coerceAtMost(minBuffer)
-        val forPlaybackAfterRebuffer = 3_000.coerceAtMost(minBuffer)
+        // Nach einem Aussetzer wieder anlaufen: zwei Sekunden statt drei. Ein
+        // stehendes Bild wird ab etwa einer Sekunde als Ruckler wahrgenommen,
+        // und wer gerade schon einen Aussetzer hatte, wartet nicht gern noch
+        // eine volle Sekunde extra auf das erste Bild.
+        val forPlaybackAfterRebuffer = 2_000.coerceAtMost(minBuffer)
         return DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 /* minBufferMs = */ minBuffer,
@@ -113,12 +130,43 @@ class PlayerFactory @Inject constructor(
                 /* bufferForPlaybackMs = */ forPlayback,
                 /* bufferForPlaybackAfterRebufferMs = */ forPlaybackAfterRebuffer,
             )
+            // Bei Live-TS ist die Datenrate vorab unbekannt; über die Zeit zu
+            // puffern ist dort das einzig verlässliche Maß.
             .setPrioritizeTimeOverSizeThresholds(true)
-            // 32 MB Ziel: reicht für HD-Streams, ohne auf 1-GB-Geräten
-            // den Speicher-Killer zu wecken.
-            .setTargetBufferBytes(32 * 1024 * 1024)
-            .setBackBuffer(30_000, true)
+            .setTargetBufferBytes(targetBufferBytes())
+            // **Kein** 30-Sekunden-Rückpuffer mehr.
+            //
+            // Der hält bereits *abgespielte* Daten im Speicher. Bei einem
+            // 4K-Strom mit 25 Mbit/s sind 30 Sekunden rund 90 MB, die zum
+            // Vorwärtspuffer obendrauf kommen – auf einem Stick mehr, als der
+            // Heap überhaupt hergibt. Die Folge sind ständige
+            // Speicherbereinigungen, und genau die sieht man als Ruckeln.
+            //
+            // Zehn Sekunden decken den Rücksprung-Knopf des Film-Players ab,
+            // mehr braucht es nicht; Live-TV kennt ohnehin kein Zurück. Ohne
+            // `retainFromKeyframe` wird zudem strikt bis zur Grenze verworfen
+            // statt großzügig bis zum davorliegenden Schlüsselbild.
+            .setBackBuffer(10_000, false)
             .build()
+    }
+
+    /**
+     * Wie viele Bytes gepuffert werden dürfen – abhängig vom Gerät.
+     *
+     * Der feste Wert von 32 MB, der hier stand, war für beide Enden falsch:
+     * Auf einem 4K-Stick verschenkte er Luft, auf einem alten 1-GB-Gerät war
+     * er zu nah am Limit. ExoPlayer puffert auf dem Java-Heap, und dessen
+     * Größe sagt das System selbst – ein Drittel davon ist eine Grenze, die
+     * mit dem Gerät wächst, statt zu raten.
+     *
+     * Die Obergrenze ist trotzdem nötig: Ein sehr großzügiger Heap heißt
+     * nicht, dass ein Videopuffer ihn auch beanspruchen sollte.
+     */
+    private fun targetBufferBytes(): Int {
+        val heapMb = (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)
+            ?.memoryClass
+            ?: FALLBACK_HEAP_MB
+        return (heapMb / 3).coerceIn(24, 96) * 1024 * 1024
     }
 
     private fun buildMediaSourceFactory(): DefaultMediaSourceFactory {
@@ -156,12 +204,32 @@ class PlayerFactory @Inject constructor(
     }
 
     companion object {
-        /** Container-Endungen, für die wir ExoPlayer den Typ explizit vorgeben. */
-        fun mimeTypeFor(url: String): String? = when {
-            url.contains(".m3u8", ignoreCase = true) -> MimeTypes.APPLICATION_M3U8
-            url.contains(".mpd", ignoreCase = true) -> MimeTypes.APPLICATION_MPD
-            url.endsWith(".ts", ignoreCase = true) -> MimeTypes.VIDEO_MP2T
-            else -> null
+        /** Wenn das System keine Heap-Größe nennt: der Wert eines typischen 1-GB-Sticks. */
+        private const val FALLBACK_HEAP_MB = 96
+
+        /**
+         * Container-Endungen, für die wir ExoPlayer den Typ explizit vorgeben.
+         *
+         * Das ist kein Detail, sondern der Unterschied zwischen sofortigem
+         * Bild und einer spürbaren Gedenksekunde: Ohne Angabe schnüffelt
+         * ExoPlayer die Adresse durch – es probiert der Reihe nach jeden
+         * bekannten Container durch, liest dafür jedes Mal Daten ein, und
+         * MPEG-TS steht in dieser Reihe weit hinten. Genau MPEG-TS ist aber
+         * das Format so gut wie jedes Live-Senders.
+         *
+         * Der Fragezeichen-Teil wird vorher abgeschnitten. Etliche Panels
+         * hängen ein Zugangsmerkmal an (`…/12345.ts?token=…`); mit dem
+         * dranhängenden Anhang endete die Adresse nicht mehr auf `.ts`, und
+         * ausgerechnet diese Zugänge verloren den Vorteil wieder.
+         */
+        fun mimeTypeFor(url: String): String? {
+            val path = url.substringBefore('?').substringBefore('#')
+            return when {
+                path.contains(".m3u8", ignoreCase = true) -> MimeTypes.APPLICATION_M3U8
+                path.contains(".mpd", ignoreCase = true) -> MimeTypes.APPLICATION_MPD
+                path.endsWith(".ts", ignoreCase = true) -> MimeTypes.VIDEO_MP2T
+                else -> null
+            }
         }
     }
 }

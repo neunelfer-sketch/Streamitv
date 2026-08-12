@@ -48,6 +48,7 @@ import de.qwikster.player.R
 import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.ui.common.KeepScreenOn
 import de.qwikster.player.ui.common.LockScreenOrientation
+import de.qwikster.player.ui.common.MatchDisplayFrameRate
 import de.qwikster.player.ui.common.dpadEvents
 import de.qwikster.player.ui.components.ProgramProgressBar
 import de.qwikster.player.ui.theme.TvOnSurfaceMuted
@@ -101,6 +102,13 @@ fun VodPlayerScreen(
             delay(500)
         }
     }
+
+    // Filme laufen oft mit 23,976 Bildern – auf 60 Hz ist das das klassische
+    // Ruckeln bei Kameraschwenks. Siehe MatchDisplayFrameRate.
+    MatchDisplayFrameRate(
+        frameRate = state.playback.videoFrameRate,
+        enabled = state.matchFrameRate,
+    )
 
     LaunchedEffect(Unit) { runCatching { rootFocus.requestFocus() } }
 

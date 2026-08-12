@@ -191,6 +191,17 @@ fun SettingsScreen(
             }
             item {
                 SettingsRow(
+                    title = stringResource(R.string.settings_match_frame_rate),
+                    value = if (state.settings.matchFrameRate) {
+                        stringResource(R.string.settings_match_frame_rate_on)
+                    } else {
+                        stringResource(R.string.settings_match_frame_rate_off)
+                    },
+                    onClick = viewModel::toggleMatchFrameRate,
+                )
+            }
+            item {
+                SettingsRow(
                     title = stringResource(R.string.settings_aspect_ratio),
                     value = stringResource(state.settings.aspectRatio.labelRes),
                     onClick = { viewModel.setAspectRatio(state.settings.aspectRatio.next()) },

@@ -152,6 +152,9 @@
     <string name="settings_stream_format">Streamformaat</string>
     <string name="settings_stream_format_hls">HLS (.m3u8) – vlotter wisselen van kwaliteit</string>
     <string name="settings_stream_format_ts">MPEG-TS (.ts) – start sneller</string>
+    <string name="settings_match_frame_rate">Beeldfrequentie aanpassen</string>
+    <string name="settings_match_frame_rate_on">Aan – vloeiender beeld, kort zwart beeld bij omschakelen</string>
+    <string name="settings_match_frame_rate_off">Uit</string>
     <string name="settings_aspect_ratio">Beeldverhouding</string>
     <string name="settings_preferred_audio">Voorkeursaudiospoor</string>
     <string name="settings_audio_auto">Automatisch</string>

@@ -152,6 +152,9 @@
     <string name="settings_stream_format">Format du flux</string>
     <string name="settings_stream_format_hls">HLS (.m3u8) – meilleur changement de qualité</string>
     <string name="settings_stream_format_ts">MPEG-TS (.ts) – démarre plus vite</string>
+    <string name="settings_match_frame_rate">Adapter la fréquence d’image</string>
+    <string name="settings_match_frame_rate_on">Activé – image plus fluide, bref écran noir au changement</string>
+    <string name="settings_match_frame_rate_off">Désactivé</string>
     <string name="settings_aspect_ratio">Format d\'image</string>
     <string name="settings_preferred_audio">Piste audio préférée</string>
     <string name="settings_audio_auto">Automatique</string>

@@ -41,6 +41,12 @@ data class PlaybackState(
     val durationMs: Long = 0L,
     val isLive: Boolean = true,
     val videoResolution: String? = null,
+    /**
+     * Bilder je Sekunde des laufenden Videos – Grundlage für das Anpassen
+     * der Bildwiederholrate, siehe
+     * [de.qwikster.player.ui.common.MatchDisplayFrameRate].
+     */
+    val videoFrameRate: Float? = null,
     val audioTracks: List<TrackOption> = emptyList(),
     val subtitleTracks: List<TrackOption> = emptyList(),
     val error: String? = null,
@@ -95,6 +101,16 @@ class PlayerManager @Inject constructor(
             applyPreferredTracks(tracks)
             updateState()
         }
+
+        /**
+         * Erst hier steht das Videoformat wirklich fest.
+         *
+         * `onTracksChanged` meldet, *welche* Spuren es gibt; Auflösung und
+         * Bildrate der tatsächlich laufenden Spur kennt der Player aber erst,
+         * wenn der Decoder sie ausgibt. Ohne diesen Rückruf bliebe die
+         * Bildratenanpassung beim Senderwechsel auf dem alten Wert stehen.
+         */
+        override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) = updateState()
 
         override fun onPlayerError(error: PlaybackException) {
             Log.w(TAG, "Wiedergabefehler: ${error.errorCodeName}", error)
@@ -471,6 +487,9 @@ class PlayerManager @Inject constructor(
             videoResolution = player.videoSize
                 .takeIf { it.width > 0 }
                 ?.let { "${it.width}×${it.height}" },
+            // `Format.NO_VALUE` ist -1; nur echte Angaben durchlassen, sonst
+            // würde die Bildratenanpassung auf Unsinn reagieren.
+            videoFrameRate = player.videoFormat?.frameRate?.takeIf { it > 0f },
             audioTracks = tracks.toOptions(C.TRACK_TYPE_AUDIO),
             subtitleTracks = buildList {
                 add(

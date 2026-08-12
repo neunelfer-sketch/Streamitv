@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import de.qwikster.player.R
 import de.qwikster.player.core.withErrorCode
 import de.qwikster.player.data.model.StreamKind
+import de.qwikster.player.data.prefs.AppSettings
 import de.qwikster.player.data.prefs.SettingsStore
 import de.qwikster.player.data.repository.IptvRepository
 import de.qwikster.player.di.ApplicationScope
@@ -31,6 +32,8 @@ data class VodPlayerUiState(
     val title: String = "",
     val playback: PlaybackState = PlaybackState(),
     val loadError: String? = null,
+    /** Bildwiederholrate an den Film anpassen – siehe [AppSettings.matchFrameRate]. */
+    val matchFrameRate: Boolean = true,
 ) {
     val error: String? get() = loadError ?: playback.error
 }
@@ -70,8 +73,14 @@ class VodPlayerViewModel @Inject constructor(
         title,
         playerManager.state,
         loadError,
-    ) { currentTitle, playback, error ->
-        VodPlayerUiState(title = currentTitle, playback = playback, loadError = error)
+        settingsStore.settings,
+    ) { currentTitle, playback, error, settings ->
+        VodPlayerUiState(
+            title = currentTitle,
+            playback = playback,
+            loadError = error,
+            matchFrameRate = settings.matchFrameRate,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VodPlayerUiState())
 
     /** Der ExoPlayer für die `PlayerView` – wird von der UI direkt gebraucht. */

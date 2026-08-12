@@ -48,6 +48,16 @@ data class AppSettings(
     val resumeLastChannel: Boolean = true,
     /** Vorschaubild in der Senderliste anzeigen (kostet Bandbreite). */
     val showPreviewPlayer: Boolean = true,
+    /**
+     * Bildwiederholrate des Fernsehers an den laufenden Film anpassen.
+     *
+     * Standardmäßig an: Ohne die Anpassung ruckelt europäisches Material mit
+     * 25 oder 50 Bildern auf einem 60-Hz-Bildschirm sichtbar, und das ist der
+     * mit Abstand häufigste Grund für ein unruhiges Bild. Abschaltbar, weil
+     * die Umstellung einen kurzen Schwarzbild-Moment kostet – siehe
+     * [de.qwikster.player.ui.common.MatchDisplayFrameRate].
+     */
+    val matchFrameRate: Boolean = true,
     /** Reihenfolge im Filme-Raster. */
     val movieSort: VodSort = VodSort.RECENT,
     /** Reihenfolge im Serien-Raster. */
@@ -84,6 +94,7 @@ class SettingsStore(
             guideWindowMinutes = prefs[KEY_GUIDE_WINDOW] ?: 120,
             resumeLastChannel = prefs[KEY_RESUME_LAST] ?: true,
             showPreviewPlayer = prefs[KEY_SHOW_PREVIEW] ?: true,
+            matchFrameRate = prefs[KEY_MATCH_FRAME_RATE] ?: true,
             proxyEnabled = prefs[KEY_PROXY_ON] ?: false,
             proxyHost = prefs[KEY_PROXY_HOST].orEmpty(),
             proxyPort = prefs[KEY_PROXY_PORT] ?: 1080,
@@ -107,6 +118,7 @@ class SettingsStore(
     suspend fun setGuideWindowMinutes(value: Int) = edit { it[KEY_GUIDE_WINDOW] = value }
     suspend fun setResumeLastChannel(value: Boolean) = edit { it[KEY_RESUME_LAST] = value }
     suspend fun setShowPreviewPlayer(value: Boolean) = edit { it[KEY_SHOW_PREVIEW] = value }
+    suspend fun setMatchFrameRate(value: Boolean) = edit { it[KEY_MATCH_FRAME_RATE] = value }
 
     suspend fun setProxy(enabled: Boolean, host: String, port: Int, user: String, password: String) = edit {
         it[KEY_PROXY_ON] = enabled
@@ -214,6 +226,7 @@ class SettingsStore(
         private val KEY_GUIDE_WINDOW = intPreferencesKey("guide_window_minutes")
         private val KEY_RESUME_LAST = booleanPreferencesKey("resume_last_channel")
         private val KEY_SHOW_PREVIEW = booleanPreferencesKey("show_preview_player")
+        private val KEY_MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         private val KEY_PROXY_ON = booleanPreferencesKey("proxy_enabled")
         private val KEY_PROXY_HOST = stringPreferencesKey("proxy_host")
         private val KEY_PROXY_PORT = intPreferencesKey("proxy_port")

@@ -70,6 +70,7 @@ import de.qwikster.player.ui.components.ChannelLogo
 import de.qwikster.player.ui.components.ProgramProgressBar
 import de.qwikster.player.ui.common.KeepScreenOn
 import de.qwikster.player.ui.common.LockScreenOrientation
+import de.qwikster.player.ui.common.MatchDisplayFrameRate
 import de.qwikster.player.ui.common.dpadEvents
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvFavorite
@@ -109,6 +110,13 @@ fun PlayerScreen(
     // in Menüs soll sich das Gerät frei drehen lassen. Auf einem Fernseher
     // ohne Sensor ist das ein Aufruf ohne Wirkung.
     LockScreenOrientation()
+
+    // Bildwiederholrate des Fernsehers auf den Sender abstimmen – der
+    // wirksamste Hebel gegen ruckelnde Schwenks, siehe MatchDisplayFrameRate.
+    MatchDisplayFrameRate(
+        frameRate = state.playback.videoFrameRate,
+        enabled = state.settings.matchFrameRate,
+    )
 
     // Solange das Vollbild offen ist, bleibt der Bildschirmschoner weg.
     // Live-TV kennt keine Pause: Wer hier steht, schaut zu – auch wenn er
