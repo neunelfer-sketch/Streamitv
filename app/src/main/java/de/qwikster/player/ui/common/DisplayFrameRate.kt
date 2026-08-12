@@ -1,8 +1,6 @@
 package de.qwikster.player.ui.common
 
 import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.os.Build
 import android.util.Log
 import android.view.Display
@@ -40,11 +38,15 @@ fun MatchDisplayFrameRate(frameRate: Float?, enabled: Boolean) {
     val context = LocalContext.current
 
     LaunchedEffect(frameRate, enabled) {
-        val activity = context.findActivity()
-        if (enabled && frameRate != null && frameRate > 0f && activity != null &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-        ) {
-            applyBestMode(activity, frameRate)
+        // Die Versionsprüfung steht bewusst ganz außen und für sich: So
+        // erkennt auch die Werkzeugkette (lintVitalRelease bricht den
+        // Release-Build bei einem ungeprüften Aufruf ab), dass der Zugriff
+        // auf die Anzeigemodi abgesichert ist.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val activity = context.findActivity()
+            if (enabled && frameRate != null && frameRate > 0f && activity != null) {
+                applyBestMode(activity, frameRate)
+            }
         }
     }
 
@@ -53,9 +55,8 @@ fun MatchDisplayFrameRate(frameRate: Float?, enabled: Boolean) {
     // umgestellter Bildschirm wäre eine Nebenwirkung, die niemand erwartet.
     DisposableEffect(Unit) {
         onDispose {
-            val activity = context.findActivity()
-            if (activity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                clearPreferredMode(activity)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                context.findActivity()?.let { clearPreferredMode(it) }
             }
         }
     }
@@ -130,10 +131,3 @@ private fun Activity.currentDisplay(): Display? =
         @Suppress("DEPRECATION")
         windowManager.defaultDisplay
     }
-
-/** Findet die Activity hinter einem Compose-Kontext (der oft eingehüllt ist). */
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
