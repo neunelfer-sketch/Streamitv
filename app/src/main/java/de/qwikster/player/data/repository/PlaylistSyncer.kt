@@ -13,6 +13,7 @@ import de.qwikster.player.data.local.ChannelDao
 import de.qwikster.player.data.local.PlaylistDao
 import de.qwikster.player.data.local.VodDao
 import de.qwikster.player.data.local.toEntity
+import de.qwikster.player.data.model.Channel
 import de.qwikster.player.data.model.Movie
 import de.qwikster.player.data.model.Playlist
 import de.qwikster.player.data.model.PlaylistType
@@ -157,17 +158,78 @@ class PlaylistSyncer @Inject constructor(
 
         // --- Filme ---------------------------------------------------------
         emit(SyncProgress.Step(context.getString(R.string.sync_loading_movies), 60))
-        val movies = runCatching {
-            val categories = XtreamMapper.toCategories(
+        val vodCategories = runCatching {
+            XtreamMapper.toCategories(
                 xtreamApi.getCategories(credentials, StreamKind.VOD), StreamKind.VOD, playlist.id,
             )
-            categoryDao.replaceAll(playlist.id, StreamKind.VOD.name, categories.map { it.toEntity() })
+        }.getOrDefault(emptyList())
+
+        val allMovies = runCatching {
             XtreamMapper.toMovies(xtreamApi.getVodStreams(credentials), playlist.id)
         }.onFailure {
             // Nicht jedes Panel hat VOD freigeschaltet – kein Grund, den
             // kompletten Import scheitern zu lassen.
             Log.w(TAG, "VOD-Import übersprungen: ${it.message}")
         }.getOrDefault(emptyList())
+
+        // --- Dauerkanäle aus dem Filmbereich holen --------------------------
+        // Panels legen "24/7"-Kanäle als VOD an, weil sie technisch über den
+        // Film-Endpunkt ausgeliefert werden. Inhaltlich sind es Kanäle: Sie
+        // laufen endlos und haben keinen Anfang, den man starten könnte. Im
+        // Poster-Raster stehen sie deshalb falsch – dort erwartet man etwas,
+        // das von vorn beginnt.
+        //
+        // Anders als bei M3U genügt hier kein Umetikettieren: Die
+        // Wiedergabe-Adresse baut sich bei Xtream aus der Art auf, ein als
+        // LIVE geführter Eintrag bekäme also `/live/…` und liefe ins Leere.
+        // Die Adresse wird deshalb hier schon fertig gebaut und als
+        // `directUrl` mitgegeben – die hat beim Abspielen Vorrang.
+        val continuousCategories = vodCategories.filter { isContinuousName(it.name) }
+        val continuousIds = continuousCategories.map { it.id }.toSet()
+        val (continuousMovies, movies) = allMovies.partition { it.categoryId in continuousIds }
+
+        if (continuousMovies.isNotEmpty()) {
+            val continuousChannels = continuousMovies.map { movie ->
+                Channel(
+                    // Eigener Namensraum: Ein Film und ein Sender können
+                    // dieselbe Kennung tragen, und Favoriten hängen an ihr.
+                    streamId = "vod-${movie.streamId}",
+                    playlistId = playlist.id,
+                    name = movie.name,
+                    logoUrl = movie.posterUrl,
+                    categoryId = movie.categoryId,
+                    directUrl = xtreamApi.buildStreamUrl(
+                        credentials = credentials,
+                        kind = StreamKind.VOD,
+                        streamId = movie.streamId,
+                        extension = movie.containerExtension,
+                    ),
+                    containerExtension = movie.containerExtension,
+                )
+            }
+            // Zweiter Durchgang für Live TV, nur wenn es wirklich etwas zu
+            // verschieben gibt: `replaceAll` schreibt die ganze Tabelle neu,
+            // und die meisten Playlists haben keine Dauerkanäle.
+            categoryDao.replaceAll(
+                playlist.id,
+                StreamKind.LIVE.name,
+                (liveCategories + continuousCategories.map { it.copy(kind = StreamKind.LIVE) })
+                    .map { it.toEntity() },
+            )
+            channelDao.replaceAll(playlist.id, (channels + continuousChannels).map { it.toEntity() })
+            Log.i(TAG, "${continuousChannels.size} Dauerkanäle aus Filmen nach Live TV verschoben")
+        }
+
+        // Die Kategorien der Dauerkanäle sind jetzt Live-Kategorien und haben
+        // im Filmbereich nichts mehr verloren. Bewusst außerhalb einer
+        // "nur wenn nicht leer"-Bedingung: Bleiben sie stehen, wenn nichts
+        // mehr hineingehört, hat man leere Reiter, die sich nicht wegräumen
+        // lassen.
+        categoryDao.replaceAll(
+            playlist.id,
+            StreamKind.VOD.name,
+            (vodCategories - continuousCategories.toSet()).map { it.toEntity() },
+        )
 
         // Bereits gefundene, hochwertige Poster (siehe [enrichMoviePosters])
         // überstehen den Resync: [replaceMovies] schreibt die Tabelle sonst
@@ -187,15 +249,33 @@ class PlaylistSyncer @Inject constructor(
 
         // --- Serien --------------------------------------------------------
         emit(SyncProgress.Step(context.getString(R.string.sync_loading_series), 80))
-        val series = runCatching {
-            val categories = XtreamMapper.toCategories(
+        val seriesCategories = runCatching {
+            XtreamMapper.toCategories(
                 xtreamApi.getCategories(credentials, StreamKind.SERIES), StreamKind.SERIES, playlist.id,
             )
-            categoryDao.replaceAll(playlist.id, StreamKind.SERIES.name, categories.map { it.toEntity() })
+        }.getOrDefault(emptyList())
+
+        val allSeries = runCatching {
             XtreamMapper.toSeries(xtreamApi.getSeries(credentials), playlist.id)
         }.onFailure {
             Log.w(TAG, "Serien-Import übersprungen: ${it.message}")
         }.getOrDefault(emptyList())
+
+        // Dieselbe Aufräumarbeit wie bei den Filmen. Verschoben wird hier
+        // allerdings nichts: Eine Serie ist nur eine Hülle, die eigentlichen
+        // Adressen stecken in ihren Folgen, und die lädt das Panel erst auf
+        // Nachfrage. Ein "24/7"-Eintrag hier ist deshalb ohnehin keine
+        // Serie im üblichen Sinn – er verschwindet aus dem Raster, statt
+        // dort einen Reiter zu belegen, hinter dem nichts Abspielbares steht.
+        val continuousSeriesCategories = seriesCategories.filter { isContinuousName(it.name) }
+        val continuousSeriesIds = continuousSeriesCategories.map { it.id }.toSet()
+        val series = allSeries.filterNot { it.categoryId in continuousSeriesIds }
+
+        categoryDao.replaceAll(
+            playlist.id,
+            StreamKind.SERIES.name,
+            (seriesCategories - continuousSeriesCategories.toSet()).map { it.toEntity() },
+        )
 
         // Dieselbe Absicherung wie bei den Filmen: Nicht jedes Panel füllt
         // `last_modified`. Steht dort 0, wäre die Reihenfolge in "Neu
@@ -461,3 +541,16 @@ private class SyncException(message: String, override val errorCode: String) : E
  */
 private fun resolveAddedAt(fromPanel: Long, remembered: Long?, now: Long, index: Int): Long =
     fromPanel.takeIf { it > 0L } ?: remembered?.takeIf { it > 0L } ?: (now + index)
+
+/**
+ * Erkennt Kategorien, die Dauerkanäle enthalten ("24/7", "24-7", "24 7").
+ *
+ * Bewusst irgendwo im Namen und nicht am Anfang: Anbieter stellen ihren
+ * Kategorien gern Landeskürzel, Trennstriche oder Symbole voran ("|DE|
+ * 24/7 Filme", "★ 24/7 Serien"). Genau deshalb standen sie in der Liste
+ * auch nicht bei den Ziffern hinten, sondern mitten unter den übrigen.
+ */
+private val CONTINUOUS_CATEGORY = Regex("""24\s*[/\-.]?\s*7""")
+
+private fun isContinuousName(name: String): Boolean =
+    CONTINUOUS_CATEGORY.containsMatchIn(name.lowercase())
