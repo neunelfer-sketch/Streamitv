@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.ClosedCaption
-import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -63,7 +62,6 @@ import de.qwikster.player.R
 import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.AspectRatioMode
 import de.qwikster.player.data.model.Channel
-import de.qwikster.player.data.repository.RecordingVariant
 import de.qwikster.player.player.TrackOption
 import de.qwikster.player.player.toResizeMode
 import de.qwikster.player.ui.common.touchClickable
@@ -75,7 +73,6 @@ import de.qwikster.player.ui.common.LockScreenOrientation
 import de.qwikster.player.ui.common.dpadEvents
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvFavorite
-import de.qwikster.player.ui.theme.TvLive
 import de.qwikster.player.ui.theme.TvOnSurfaceMuted
 import de.qwikster.player.ui.theme.TvSpacing
 import de.qwikster.player.ui.theme.TvSurface
@@ -213,10 +210,6 @@ fun PlayerScreen(
             modifier = Modifier.align(Alignment.TopStart),
         ) {
             QuickOptionsBar(
-                isRecordingEnabled = state.settings.recordingUnlocked,
-                isRecording = state.isRecording,
-                onStartRecording = viewModel::startRecording,
-                onStopRecording = viewModel::stopRecording,
                 audioTracks = state.playback.audioTracks,
                 subtitleTracks = state.playback.subtitleTracks,
                 aspectRatio = state.settings.aspectRatio,
@@ -438,10 +431,6 @@ private fun InfoBar(state: PlayerUiState) {
  */
 @Composable
 private fun QuickOptionsBar(
-    isRecordingEnabled: Boolean,
-    isRecording: Boolean,
-    onStartRecording: (RecordingVariant) -> Unit,
-    onStopRecording: () -> Unit,
     audioTracks: List<TrackOption>,
     subtitleTracks: List<TrackOption>,
     aspectRatio: AspectRatioMode,
@@ -501,51 +490,11 @@ private fun QuickOptionsBar(
                 tint = if (isFavorite) TvFavorite else Color.White,
                 onClick = onToggleFavorite,
             )
-            if (isRecordingEnabled) {
-                QuickAction(
-                icon = Icons.Default.FiberManualRecord,
-                label = if (isRecording) {
-                    stringResource(R.string.recording_stop)
-                } else {
-                    stringResource(R.string.recording_start)
-                },
-                tint = if (isRecording) TvLive else Color.White,
-                onClick = {
-                    if (isRecording) {
-                        onStopRecording()
-                        expanded = null
-                    } else {
-                        expanded = if (expanded == "rec") null else "rec"
-                    }
-                },
-                )
-            }
             QuickAction(
                 icon = Icons.Default.PictureInPictureAlt,
                 label = stringResource(R.string.player_pip),
                 onClick = onEnterPip,
             )
-        }
-
-        // --- Aufgeklappte Aufnahme-Varianten --------------------------------
-        // Wie lange aufgenommen wird, entscheidet der Zuschauer hier. "Bis
-        // Sendungsende" ist der Regelfall; die festen Längen springen ein,
-        // wenn der Sender kein EPG hat und damit gar kein Ende bekannt ist.
-        if (isRecordingEnabled && expanded == "rec") {
-            Spacer(Modifier.height(TvSpacing.small))
-            Row(horizontalArrangement = Arrangement.spacedBy(TvSpacing.small)) {
-                RecordingVariant.entries.forEach { variant ->
-                    QuickAction(
-                        icon = Icons.Default.FiberManualRecord,
-                        label = stringResource(variant.labelRes),
-                        tint = TvLive,
-                        onClick = {
-                            onStartRecording(variant)
-                            expanded = null
-                        },
-                    )
-                }
-            }
         }
 
         // --- Aufgeklappte Spurauswahl ---------------------------------------

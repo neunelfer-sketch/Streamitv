@@ -26,8 +26,8 @@ import javax.inject.Singleton
  * ohne Neustart der App.
  *
  * Der Umweg über den Selektor ist auch der Grund, warum eine einzige Stelle
- * genügt: Playlist, Programmzeitschrift, Update-Prüfung, Live-Streams,
- * Filme **und** Aufnahmen teilen sich denselben OkHttp-Client.
+ * genügt: Playlist, Programmzeitschrift, Update-Prüfung, Live-Streams **und**
+ * Filme teilen sich denselben OkHttp-Client.
  */
 @Singleton
 class ProxySettings @Inject constructor(

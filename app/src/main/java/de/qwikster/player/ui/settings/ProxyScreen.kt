@@ -44,7 +44,7 @@ import de.qwikster.player.ui.theme.TvSurfaceVariant
  *
  * Ein Proxy statt eines eingebauten VPN: Die App holt alles über einen
  * einzigen HTTP-Client – Playlist, Programmzeitschrift, Update-Prüfung,
- * Live-Streams, Filme und Aufnahmen. Eine Angabe genügt deshalb für alles.
+ * Live-Streams und Filme. Eine Angabe genügt deshalb für alles.
  * Ein VPN müsste dagegen das ganze Gerät umleiten und bräuchte einen
  * eigenen Server; dafür gibt es fertige Apps.
  */

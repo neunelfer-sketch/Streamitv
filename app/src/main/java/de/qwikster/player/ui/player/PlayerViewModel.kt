@@ -12,8 +12,6 @@ import de.qwikster.player.data.prefs.SettingsStore
 import de.qwikster.player.data.repository.ChannelFilter
 import de.qwikster.player.data.repository.EpgRepository
 import de.qwikster.player.data.repository.IptvRepository
-import de.qwikster.player.data.repository.RecordingRepository
-import de.qwikster.player.data.repository.RecordingVariant
 import de.qwikster.player.player.PlaybackState
 import de.qwikster.player.player.PlayerManager
 import de.qwikster.player.player.TrackOption
@@ -54,8 +52,6 @@ data class PlayerUiState(
     val overlay: OverlayMode = OverlayMode.NONE,
     val settings: AppSettings = AppSettings(),
     val isFavorite: Boolean = false,
-    /** Läuft gerade eine von hier gestartete Aufnahme? */
-    val isRecording: Boolean = false,
 ) {
     /** Index des laufenden Senders – Basis für Zappen und Listen-Autoscroll. */
     val currentIndex: Int
@@ -76,11 +72,7 @@ class PlayerViewModel @Inject constructor(
     private val epgRepository: EpgRepository,
     private val settingsStore: SettingsStore,
     private val playerManager: PlayerManager,
-    private val recordingRepository: RecordingRepository,
 ) : ViewModel() {
-
-    /** Kennung der hier gestarteten Aufnahme, sonst `null`. */
-    private val activeRecordingId = MutableStateFlow<Long?>(null)
 
     private val currentChannelId = MutableStateFlow<String?>(null)
     private val overlay = MutableStateFlow(OverlayMode.NONE)
@@ -118,7 +110,7 @@ class PlayerViewModel @Inject constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null to null)
 
-    private val baseUiState: StateFlow<PlayerUiState> = combine(
+    val uiState: StateFlow<PlayerUiState> = combine(
         channels,
         currentChannelId,
         overlay,
@@ -145,40 +137,6 @@ class PlayerViewModel @Inject constructor(
             isFavorite = entry?.channel?.isFavorite ?: false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerUiState())
-
-    val uiState: StateFlow<PlayerUiState> =
-        combine(baseUiState, activeRecordingId) { base, recordingId ->
-            base.copy(isRecording = recordingId != null)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerUiState())
-
-    // -----------------------------------------------------------------------
-    // Aufnahme
-    // -----------------------------------------------------------------------
-
-    /**
-     * Nimmt den laufenden Sender auf.
-     *
-     * Titel und Ende kommen aus der Programmzeitschrift, sofern vorhanden –
-     * daraus ergibt sich bei [RecordingVariant.UNTIL_PROGRAM_END] die
-     * Aufnahmedauer. Fehlt das EPG, greifen die festen Längen.
-     */
-    fun startRecording(variant: RecordingVariant) {
-        val channel = baseUiState.value.currentChannel ?: return
-        val program = baseUiState.value.currentProgram
-        viewModelScope.launch {
-            activeRecordingId.value = recordingRepository.start(
-                channel = channel,
-                programTitle = program?.title,
-                programEndAt = program?.endAt,
-                variant = variant,
-            )
-        }
-    }
-
-    fun stopRecording() {
-        activeRecordingId.value?.let { recordingRepository.stop(it) }
-        activeRecordingId.value = null
-    }
 
     /** Der ExoPlayer für die `PlayerView` – wird von der UI direkt gebraucht. */
     fun player(): ExoPlayer = playerManager.getOrCreate()

@@ -23,8 +23,6 @@ import de.qwikster.player.ui.search.SearchScreen
 import de.qwikster.player.ui.settings.EpgSourceScreen
 import de.qwikster.player.ui.settings.SettingsScreen
 import de.qwikster.player.ui.settings.ProxyScreen
-import de.qwikster.player.ui.recordings.RecordingsScreen
-import de.qwikster.player.ui.recordings.ScheduleScreen
 import de.qwikster.player.ui.vod.MovieDetailScreen
 import de.qwikster.player.ui.vod.SeriesDetailScreen
 import de.qwikster.player.ui.vod.VodScreen
@@ -43,21 +41,17 @@ object Routes {
     const val SEARCH = "search"
     const val EPG_SOURCE = "epg_source"
     const val PROXY = "proxy"
-    const val RECORDINGS = "recordings"
-    const val RECORDING_SCHEDULE = "recording_schedule"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
     const val MOVIE_DETAIL = "movie_detail/{streamId}"
     const val MOVIE_PLAYER = "movie_player/{streamId}"
     const val SERIES_DETAIL = "series_detail/{seriesId}"
     const val EPISODE_PLAYER = "episode_player/{episodeId}"
-    const val RECORDING_PLAYER = "recording_player/{recordingId}"
 
     fun movieDetail(streamId: String) = "movie_detail/$streamId"
     fun moviePlayer(streamId: String) = "movie_player/$streamId"
     fun seriesDetail(seriesId: String) = "series_detail/$seriesId"
     fun episodePlayer(episodeId: String) = "episode_player/$episodeId"
-    fun recordingPlayer(recordingId: Long) = "recording_player/$recordingId"
 }
 
 /**
@@ -195,7 +189,6 @@ fun QwiksterNavHost(
                 onBack = { navController.popBackStack() },
                 onOpenContact = { navController.navigate(Routes.CONTACT) },
                 onOpenEpgSource = { navController.navigate(Routes.EPG_SOURCE) },
-                onOpenRecordings = { navController.navigate(Routes.RECORDINGS) },
                 onOpenProxy = { navController.navigate(Routes.PROXY) },
                 onPlaylistRemoved = {
                     navController.navigate(Routes.LOGIN) {
@@ -203,25 +196,6 @@ fun QwiksterNavHost(
                     }
                 },
             )
-        }
-
-        composable(Routes.RECORDINGS) {
-            RecordingsScreen(
-                onPlay = { id -> navController.navigate(Routes.recordingPlayer(id)) },
-                onSchedule = { navController.navigate(Routes.RECORDING_SCHEDULE) },
-                onBack = { navController.popBackStack() },
-            )
-        }
-
-        composable(Routes.RECORDING_SCHEDULE) {
-            ScheduleScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable(
-            route = Routes.RECORDING_PLAYER,
-            arguments = listOf(navArgument("recordingId") { type = NavType.StringType }),
-        ) {
-            VodPlayerScreen(onExit = { navController.popBackStack() })
         }
 
         composable(Routes.PROXY) {
