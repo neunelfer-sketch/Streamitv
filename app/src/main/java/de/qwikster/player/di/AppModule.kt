@@ -45,12 +45,21 @@ annotation class ApplicationScope
 private const val HTTP_FORBIDDEN = 403
 
 /**
- * Legt die Tabelle für Aufnahmen an.
+ * Legt die Tabelle für Aufnahmen an – im Stand von **Fassung 5**.
  *
- * Der Wortlaut muss genau dem entsprechen, was Room aus [RecordingEntity]
- * erzeugen würde – Room vergleicht das Schema beim Öffnen und bricht sonst
- * ab. Kotlin-Standardwerte tauchen dabei bewusst **nicht** als `DEFAULT`
- * auf: Sie gelten im Code, nicht in der Datenbank.
+ * Der Wortlaut beschreibt das Schema, wie es zu *dieser* Fassung gehörte,
+ * und ausdrücklich nicht den heutigen Stand der [RecordingEntity]. Genau
+ * das ist hier schon einmal schiefgegangen: Die Spalte `plannedStartAt`
+ * wurde nachträglich mit aufgenommen, um die Tabelle "aktuell" zu halten –
+ * woraufhin die folgende Migration sie ein zweites Mal hinzufügen wollte
+ * und SQLite mit "duplicate column name" abbrach. Die Datenbank ließ sich
+ * dann gar nicht mehr öffnen, die App startete nicht mehr.
+ *
+ * Eine Migration ist ein Schritt in der Geschichte des Schemas. Sie wird
+ * nie nachgebessert; alles Neue kommt als weiterer Schritt dahinter.
+ *
+ * Kotlin-Standardwerte tauchen bewusst **nicht** als `DEFAULT` auf: Sie
+ * gelten im Code, nicht in der Datenbank.
  */
 private val MIGRATION_4_5 = object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
@@ -64,7 +73,6 @@ private val MIGRATION_4_5 = object : Migration(4, 5) {
                 `title` TEXT NOT NULL,
                 `filePath` TEXT NOT NULL,
                 `startedAt` INTEGER NOT NULL,
-                `plannedStartAt` INTEGER NOT NULL DEFAULT 0,
                 `plannedEndAt` INTEGER NOT NULL,
                 `endedAt` INTEGER NOT NULL,
                 `state` TEXT NOT NULL,
@@ -86,7 +94,20 @@ private val MIGRATION_4_5 = object : Migration(4, 5) {
  */
 private val MIGRATION_5_6 = object : Migration(5, 6) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE `recordings` ADD COLUMN `plannedStartAt` INTEGER NOT NULL DEFAULT 0")
+        // Vorher nachsehen, ob es die Spalte schon gibt. Normalerweise
+        // gibt es sie nicht – aber eine fehlerhafte Fassung hat sie
+        // zeitweise bereits in Schritt 4->5 angelegt, und ein zweites
+        // Hinzufügen beendet die App beim Start mit "duplicate column
+        // name". Diese Prüfung kostet nichts und macht die Migration
+        // gegen jeden Zwischenstand unempfindlich.
+        val hasColumn = db.query("PRAGMA table_info(`recordings`)").use { cursor ->
+            val nameColumn = cursor.getColumnIndex("name")
+            generateSequence { if (cursor.moveToNext()) cursor.getString(nameColumn) else null }
+                .any { it == "plannedStartAt" }
+        }
+        if (!hasColumn) {
+            db.execSQL("ALTER TABLE `recordings` ADD COLUMN `plannedStartAt` INTEGER NOT NULL DEFAULT 0")
+        }
     }
 }
 
