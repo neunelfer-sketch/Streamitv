@@ -67,6 +67,7 @@ fun SettingsScreen(
     onOpenContact: () -> Unit,
     onOpenEpgSource: () -> Unit,
     onOpenRecordings: () -> Unit,
+    onOpenProxy: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -241,6 +242,15 @@ fun SettingsScreen(
                         onClick = onOpenRecordings,
                     )
                 }
+            }
+            item {
+                SettingsRow(
+                    title = stringResource(R.string.proxy_title),
+                    value = state.settings.proxyHost.ifBlank {
+                        stringResource(R.string.proxy_off)
+                    },
+                    onClick = onOpenProxy,
+                )
             }
             item {
                 SettingsRow(

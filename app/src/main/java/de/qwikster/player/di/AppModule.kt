@@ -14,6 +14,7 @@ import de.qwikster.player.data.local.RecordingDao
 import de.qwikster.player.data.local.RecordingEntity
 import de.qwikster.player.data.local.UserDataDao
 import de.qwikster.player.data.local.VodDao
+import de.qwikster.player.data.prefs.ProxySettings
 import de.qwikster.player.data.prefs.SettingsStore
 import de.qwikster.player.data.repository.PlaylistSyncer
 import dagger.Module
@@ -114,7 +115,12 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+    fun provideOkHttpClient(proxySettings: ProxySettings): OkHttpClient = OkHttpClient.Builder()
+        // Deckt in einem Zug alles ab, was die App lädt: Playlist,
+        // Programmzeitschrift, Update-Prüfung, Live-Streams, Filme und
+        // Aufnahmen teilen sich diesen Client (der Player greift über
+        // OkHttpDataSource darauf zu, siehe PlayerFactory).
+        .proxySelector(proxySettings.selector())
         // IPTV-Panels antworten unter Last gerne langsam; großzügige Timeouts
         // sind hier weniger schlimm als ein abgebrochener Import.
         .connectTimeout(20, TimeUnit.SECONDS)

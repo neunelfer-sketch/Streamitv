@@ -61,6 +61,12 @@ data class AppSettings(
      * bekommt, ohne davon zu wissen, findet sie nicht.
      */
     val recordingUnlocked: Boolean = false,
+    /** SOCKS5-Proxy: aus, solange keine Adresse hinterlegt ist. */
+    val proxyEnabled: Boolean = false,
+    val proxyHost: String = "",
+    val proxyPort: Int = 1080,
+    val proxyUser: String = "",
+    val proxyPassword: String = "",
 )
 
 /**
@@ -88,6 +94,11 @@ class SettingsStore(
             resumeLastChannel = prefs[KEY_RESUME_LAST] ?: true,
             showPreviewPlayer = prefs[KEY_SHOW_PREVIEW] ?: true,
             recordingUnlocked = prefs[KEY_RECORDING_UNLOCKED] ?: false,
+            proxyEnabled = prefs[KEY_PROXY_ON] ?: false,
+            proxyHost = prefs[KEY_PROXY_HOST].orEmpty(),
+            proxyPort = prefs[KEY_PROXY_PORT] ?: 1080,
+            proxyUser = prefs[KEY_PROXY_USER].orEmpty(),
+            proxyPassword = prefs[KEY_PROXY_PASS].orEmpty(),
             movieSort = prefs[KEY_MOVIE_SORT].toVodSort(VodSort.RECENT),
             seriesSort = prefs[KEY_SERIES_SORT].toVodSort(VodSort.NAME_ASC),
         )
@@ -107,6 +118,14 @@ class SettingsStore(
     suspend fun setResumeLastChannel(value: Boolean) = edit { it[KEY_RESUME_LAST] = value }
     suspend fun setShowPreviewPlayer(value: Boolean) = edit { it[KEY_SHOW_PREVIEW] = value }
     suspend fun setRecordingUnlocked(value: Boolean) = edit { it[KEY_RECORDING_UNLOCKED] = value }
+
+    suspend fun setProxy(enabled: Boolean, host: String, port: Int, user: String, password: String) = edit {
+        it[KEY_PROXY_ON] = enabled
+        it[KEY_PROXY_HOST] = host.trim()
+        it[KEY_PROXY_PORT] = port
+        it[KEY_PROXY_USER] = user.trim()
+        it[KEY_PROXY_PASS] = password
+    }
 
     /** Merkt die Reihenfolge für den jeweiligen Bereich getrennt. */
     suspend fun setVodSort(kind: StreamKind, value: VodSort) = edit {
@@ -207,6 +226,11 @@ class SettingsStore(
         private val KEY_RESUME_LAST = booleanPreferencesKey("resume_last_channel")
         private val KEY_SHOW_PREVIEW = booleanPreferencesKey("show_preview_player")
         private val KEY_RECORDING_UNLOCKED = booleanPreferencesKey("recording_unlocked")
+        private val KEY_PROXY_ON = booleanPreferencesKey("proxy_enabled")
+        private val KEY_PROXY_HOST = stringPreferencesKey("proxy_host")
+        private val KEY_PROXY_PORT = intPreferencesKey("proxy_port")
+        private val KEY_PROXY_USER = stringPreferencesKey("proxy_user")
+        private val KEY_PROXY_PASS = stringPreferencesKey("proxy_password")
         private val KEY_MOVIE_SORT = stringPreferencesKey("movie_sort")
         private val KEY_SERIES_SORT = stringPreferencesKey("series_sort")
 

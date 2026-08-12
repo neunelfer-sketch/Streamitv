@@ -169,6 +169,24 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Speichert die Proxy-Angaben.
+     *
+     * Eine leere Adresse schaltet ihn ab – das ist zugleich der einzige
+     * Zustand, in dem er aus sein kann. Ein zusätzlicher Schalter neben
+     * einem leeren Feld wäre nur eine zweite Stelle, an der dasselbe
+     * schiefgehen kann.
+     */
+    fun saveProxy(host: String, port: Int, user: String, password: String) {
+        viewModelScope.launch {
+            val enabled = host.isNotBlank()
+            settingsStore.setProxy(enabled, host, port.coerceIn(1, 65535), user, password)
+            message.value = context.getString(
+                if (enabled) R.string.proxy_saved else R.string.proxy_disabled,
+            )
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Verborgene Aufnahmefunktion
     // -----------------------------------------------------------------------

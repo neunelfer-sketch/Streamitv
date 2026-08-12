@@ -22,6 +22,7 @@ import de.qwikster.player.ui.player.PlayerScreen
 import de.qwikster.player.ui.search.SearchScreen
 import de.qwikster.player.ui.settings.EpgSourceScreen
 import de.qwikster.player.ui.settings.SettingsScreen
+import de.qwikster.player.ui.settings.ProxyScreen
 import de.qwikster.player.ui.recordings.RecordingsScreen
 import de.qwikster.player.ui.recordings.ScheduleScreen
 import de.qwikster.player.ui.vod.MovieDetailScreen
@@ -41,6 +42,7 @@ object Routes {
     const val CONTACT = "contact"
     const val SEARCH = "search"
     const val EPG_SOURCE = "epg_source"
+    const val PROXY = "proxy"
     const val RECORDINGS = "recordings"
     const val RECORDING_SCHEDULE = "recording_schedule"
 
@@ -194,6 +196,7 @@ fun QwiksterNavHost(
                 onOpenContact = { navController.navigate(Routes.CONTACT) },
                 onOpenEpgSource = { navController.navigate(Routes.EPG_SOURCE) },
                 onOpenRecordings = { navController.navigate(Routes.RECORDINGS) },
+                onOpenProxy = { navController.navigate(Routes.PROXY) },
                 onPlaylistRemoved = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
@@ -219,6 +222,10 @@ fun QwiksterNavHost(
             arguments = listOf(navArgument("recordingId") { type = NavType.StringType }),
         ) {
             VodPlayerScreen(onExit = { navController.popBackStack() })
+        }
+
+        composable(Routes.PROXY) {
+            ProxyScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.EPG_SOURCE) {
