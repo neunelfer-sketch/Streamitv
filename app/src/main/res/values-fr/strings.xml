@@ -162,6 +162,12 @@
     <string name="settings_live_preview_on">Activé – la chaîne sélectionnée est lue dans l\'aperçu à droite</string>
     <string name="settings_live_preview_off">Désactivé – économise une connexion au serveur</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">Dernier plantage</string>
+    <string name="crash_settings_desc">Afficher le rapport – utile pour signaler l’erreur</string>
+    <string name="crash_hint">Croix directionnelle : défiler · OK : supprimer le rapport · Retour : fermer</string>
+    <string name="crash_none">Aucun rapport de plantage.</string>
+
     <string name="settings_section_app">Application</string>
     <string name="settings_language">Langue</string>
     <string name="settings_language_system">Langue du système</string>

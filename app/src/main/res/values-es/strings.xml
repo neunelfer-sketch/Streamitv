@@ -162,6 +162,12 @@
     <string name="settings_live_preview_on">Activada: el canal seleccionado se reproduce en la vista previa de la derecha</string>
     <string name="settings_live_preview_off">Desactivada: ahorra una conexión al servidor</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">Último fallo</string>
+    <string name="crash_settings_desc">Ver el informe: ayuda a notificar el error</string>
+    <string name="crash_hint">Cruceta: desplazar · OK: borrar informe · Atrás: cerrar</string>
+    <string name="crash_none">No hay ningún informe de fallo.</string>
+
     <string name="settings_section_app">Aplicación</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_system">Idioma del sistema</string>

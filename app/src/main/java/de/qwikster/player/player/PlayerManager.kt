@@ -117,12 +117,48 @@ class PlayerManager @Inject constructor(
         // Reihenfolge ist wichtig: Erst die Session beenden, dann den Player
         // freigeben. Andersherum hielte die Session kurzzeitig einen bereits
         // freigegebenen Player – jeder Zugriff darauf beendet die App.
+        //
+        // `stopService` allein genügt dafür **nicht**: Es stellt das Ende nur
+        // in die Warteschlange, `onDestroy` des Dienstes läuft erst in einer
+        // der nächsten Botschaften des Hauptfadens – also lange nachdem diese
+        // Methode den Player längst freigegeben hat. Genau das ist der Fall,
+        // vor dem Media3 ausdrücklich warnt. Deshalb wird die Session hier
+        // direkt geschlossen; der Dienst findet sie danach als bereits
+        // geschlossen vor und überspringt sie.
+        releaseSession()
         stopPlaybackService()
         exoPlayer?.removeListener(listener)
         exoPlayer?.release()
         exoPlayer = null
         currentUrl = null
         _state.value = PlaybackState()
+    }
+
+    // -----------------------------------------------------------------------
+    // Medien-Session
+    // -----------------------------------------------------------------------
+
+    /**
+     * Die Session des laufenden [PlaybackService].
+     *
+     * Sie liegt hier und nicht nur im Dienst, weil beide denselben Player
+     * benutzen und ihre Lebensdauern sich nicht von selbst ordnen: Der Dienst
+     * wird vom System beendet, der Player von der Activity freigegeben. Wer
+     * zuerst drankommt, entscheidet nicht der Code, sondern die
+     * Botschaftsschlange – ohne gemeinsamen Halt bliebe genau dazwischen eine
+     * Session auf einem toten Player stehen.
+     */
+    @Volatile
+    private var session: androidx.media3.session.MediaSession? = null
+
+    fun attachSession(mediaSession: androidx.media3.session.MediaSession) {
+        session = mediaSession
+    }
+
+    /** Schließt die Session, falls es noch eine gibt. Mehrfach aufrufbar. */
+    fun releaseSession() {
+        session?.let { runCatching { it.release() } }
+        session = null
     }
 
     // -----------------------------------------------------------------------

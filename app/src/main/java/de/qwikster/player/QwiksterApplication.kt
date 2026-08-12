@@ -7,6 +7,7 @@ import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
+import de.qwikster.player.core.CrashReporter
 import de.qwikster.player.data.prefs.LanguageStore
 
 /**
@@ -30,6 +31,16 @@ class QwiksterApplication : Application(), ImageLoaderFactory {
      */
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LanguageStore.wrap(base))
+    }
+
+    /**
+     * So früh wie möglich: Alles, was danach kommt – Hilt, Room, der
+     * Bildlader –, kann bereits abstürzen, und genau diese Abstürze sind die
+     * schwer zu findenden.
+     */
+    override fun onCreate() {
+        super.onCreate()
+        CrashReporter.install(this)
     }
 
     override fun newImageLoader(): ImageLoader =

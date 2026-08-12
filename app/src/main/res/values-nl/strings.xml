@@ -162,6 +162,12 @@
     <string name="settings_live_preview_on">Aan – de gekozen zender speelt in het voorbeeld rechts</string>
     <string name="settings_live_preview_off">Uit – bespaart één verbinding met de server</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">Laatste crash</string>
+    <string name="crash_settings_desc">Rapport bekijken – helpt bij het melden van de fout</string>
+    <string name="crash_hint">Pijltjes: scrollen · OK: rapport verwijderen · Terug: sluiten</string>
+    <string name="crash_none">Geen crashrapport aanwezig.</string>
+
     <string name="settings_section_app">App</string>
     <string name="settings_language">Taal</string>
     <string name="settings_language_system">Systeemtaal</string>

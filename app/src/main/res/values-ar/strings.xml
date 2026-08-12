@@ -162,6 +162,12 @@
     <string name="settings_live_preview_on">مفعّلة – تُعرض القناة المحددة في المعاينة الجانبية</string>
     <string name="settings_live_preview_off">متوقفة – توفّر اتصالًا واحدًا بالخادم</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">آخر تعطل</string>
+    <string name="crash_settings_desc">عرض التقرير – يساعد عند الإبلاغ عن الخطأ</string>
+    <string name="crash_hint">أزرار الاتجاه: التمرير · موافق: حذف التقرير · رجوع: إغلاق</string>
+    <string name="crash_none">لا يوجد تقرير تعطل.</string>
+
     <string name="settings_section_app">التطبيق</string>
     <string name="settings_language">اللغة</string>
     <string name="settings_language_system">لغة النظام</string>

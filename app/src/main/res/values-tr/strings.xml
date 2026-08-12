@@ -162,6 +162,12 @@
     <string name="settings_live_preview_on">Açık – seçili kanal sağdaki önizlemede oynar</string>
     <string name="settings_live_preview_off">Kapalı – sunucuya bir bağlantı tasarrufu sağlar</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">Son çökme</string>
+    <string name="crash_settings_desc">Raporu görüntüle – hatayı bildirirken yardımcı olur</string>
+    <string name="crash_hint">Yön tuşları: kaydır · OK: raporu sil · Geri: kapat</string>
+    <string name="crash_none">Çökme raporu yok.</string>
+
     <string name="settings_section_app">Uygulama</string>
     <string name="settings_language">Dil</string>
     <string name="settings_language_system">Sistem dili</string>

@@ -24,12 +24,19 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         mediaSession = MediaSession.Builder(this, playerManager.getOrCreate()).build()
+            // Beim [PlayerManager] hinterlegen: Gibt der die ExoPlayer-Instanz
+            // frei, muss die Session **vorher** zu sein. Auf `onDestroy` dieses
+            // Dienstes ist dabei kein Verlass – es läuft erst eine
+            // Botschaftsschlange später.
+            .also { playerManager.attachSession(it) }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
-        mediaSession?.release()
+        // Über den PlayerManager, damit ein bereits geschlossener Zustand
+        // erkannt wird und die Session nicht doppelt freigegeben wird.
+        playerManager.releaseSession()
         mediaSession = null
         super.onDestroy()
     }

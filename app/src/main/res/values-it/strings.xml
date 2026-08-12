@@ -162,6 +162,12 @@
     <string name="settings_live_preview_on">Attiva: il canale selezionato viene riprodotto nell\'anteprima a destra</string>
     <string name="settings_live_preview_off">Disattiva: risparmia una connessione al server</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">Ultimo arresto anomalo</string>
+    <string name="crash_settings_desc">Visualizza il rapporto: aiuta a segnalare l’errore</string>
+    <string name="crash_hint">Freccette: scorri · OK: elimina rapporto · Indietro: chiudi</string>
+    <string name="crash_none">Nessun rapporto di arresto anomalo.</string>
+
     <string name="settings_section_app">App</string>
     <string name="settings_language">Lingua</string>
     <string name="settings_language_system">Lingua di sistema</string>

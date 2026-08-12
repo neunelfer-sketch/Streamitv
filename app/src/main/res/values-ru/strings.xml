@@ -162,6 +162,12 @@
     <string name="settings_live_preview_on">Вкл. – выбранный канал играет в окне справа</string>
     <string name="settings_live_preview_off">Выкл. – экономит одно подключение к серверу</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">Последний сбой</string>
+    <string name="crash_settings_desc">Посмотреть отчёт — помогает при сообщении об ошибке</string>
+    <string name="crash_hint">Крестовина: прокрутка · OK: удалить отчёт · Назад: закрыть</string>
+    <string name="crash_none">Отчёта о сбое нет.</string>
+
     <string name="settings_section_app">Приложение</string>
     <string name="settings_language">Язык</string>
     <string name="settings_language_system">Язык системы</string>

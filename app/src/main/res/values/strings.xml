@@ -179,6 +179,12 @@
     <string name="settings_live_preview_on">An – der gewählte Sender läuft rechts in der Vorschau</string>
     <string name="settings_live_preview_off">Aus – spart eine Verbindung zum Server</string>
 
+    <!-- Absturzbericht (Einstellungen) -->
+    <string name="crash_title">Letzter Absturz</string>
+    <string name="crash_settings_desc">Bericht ansehen – hilft beim Melden des Fehlers</string>
+    <string name="crash_hint">Steuerkreuz: blättern · OK: Bericht löschen · Zurück: schließen</string>
+    <string name="crash_none">Kein Absturzbericht vorhanden.</string>
+
     <string name="settings_section_app">App</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_language_system">Systemsprache</string>

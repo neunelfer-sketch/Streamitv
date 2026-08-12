@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import de.qwikster.player.R
+import de.qwikster.player.core.CrashReporter
 import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.AspectRatioMode
 import de.qwikster.player.data.prefs.AppLanguage
@@ -55,6 +56,8 @@ data class SettingsUiState(
     /** Vom Nutzer hinterlegte XMLTV-Adresse; leer = automatisch ermitteln. */
     val epgUrl: String = "",
     val language: AppLanguage = AppLanguage.SYSTEM,
+    /** Liegt ein aufgezeichneter Absturz vor? Siehe [de.qwikster.player.core.CrashReporter]. */
+    val hasCrashReport: Boolean = false,
 )
 
 @HiltViewModel
@@ -74,6 +77,8 @@ class SettingsViewModel @Inject constructor(
     // Nur der aktuelle Stand für die Anzeige – gehalten wird die Wahl in
     // [LanguageStore].
     private val language = MutableStateFlow(currentAppLanguage(context))
+
+    private val hasCrashReport = MutableStateFlow(CrashReporter.read(context) != null)
 
     private val baseState: StateFlow<SettingsUiState> = combine(
         settingsStore.settings,
@@ -95,9 +100,21 @@ class SettingsViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
-    val uiState: StateFlow<SettingsUiState> = combine(baseState, language) { base, currentLanguage ->
-        base.copy(language = currentLanguage)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> =
+        combine(baseState, language, hasCrashReport) { base, currentLanguage, hasCrash ->
+            base.copy(language = currentLanguage, hasCrashReport = hasCrash)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    /**
+     * Prüft erneut, ob ein Absturzbericht vorliegt.
+     *
+     * Nötig, weil die Berichtsansicht ihn löschen kann: Dieses ViewModel
+     * überlebt den Ausflug dorthin, ohne den Aufruf bliebe die Zeile für
+     * einen nicht mehr vorhandenen Bericht stehen.
+     */
+    fun refreshCrashReport() {
+        hasCrashReport.value = CrashReporter.read(context) != null
+    }
 
     init {
         viewModelScope.launch {

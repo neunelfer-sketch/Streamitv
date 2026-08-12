@@ -67,11 +67,16 @@ fun SettingsScreen(
     onOpenContact: () -> Unit,
     onOpenEpgSource: () -> Unit,
     onOpenProxy: () -> Unit,
+    onOpenCrashReport: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    // Beim Betreten neu prüfen: Die Berichtsansicht kann den Bericht gelöscht
+    // haben, und dieses ViewModel überlebt den Ausflug dorthin.
+    LaunchedEffect(Unit) { viewModel.refreshCrashReport() }
 
     var isLanguageMenuOpen by remember { mutableStateOf(false) }
     val languageRowFocus = remember { FocusRequester() }
@@ -254,6 +259,17 @@ fun SettingsScreen(
                     value = state.update.describe(),
                     onClick = viewModel::onUpdateRowClick,
                 )
+            }
+            // Nur nach einem echten Absturz: Ohne Vorfall wäre die Zeile eine
+            // Einladung, in etwas hineinzuschauen, das es gar nicht gibt.
+            if (state.hasCrashReport) {
+                item {
+                    SettingsRow(
+                        title = stringResource(R.string.crash_title),
+                        value = stringResource(R.string.crash_settings_desc),
+                        onClick = onOpenCrashReport,
+                    )
+                }
             }
             item {
                 SettingsRow(
