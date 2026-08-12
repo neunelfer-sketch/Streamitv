@@ -52,6 +52,15 @@ const val RECENT_CATEGORY_ID = "__recent__"
  */
 const val OVERVIEW_CATEGORY_ID = "__overview__"
 
+/**
+ * Der gesamte Bestand in einem Raster, ohne Kategorie-Einschränkung.
+ *
+ * Bis hierher gab es das zwar (eine leere Auswahl zeigte alles), aber
+ * keinen Eintrag dafür – erreichbar war es nur, indem man keine Kategorie
+ * anwählte, und darauf kommt niemand. Jetzt steht es sichtbar ganz oben.
+ */
+const val ALL_CATEGORY_ID = "__all__"
+
 /** Eine waagerechte Reihe der Startansicht. */
 data class VodRow(
     val id: String,
@@ -173,6 +182,7 @@ class VodViewModel @Inject constructor(
             )
 
             buildList {
+                add(synthetic(ALL_CATEGORY_ID, R.string.category_all_titles))
                 add(synthetic(OVERVIEW_CATEGORY_ID, R.string.category_overview))
                 if (hasRecent) add(synthetic(RECENT_CATEGORY_ID, R.string.category_recent))
                 addAll(real)
@@ -307,7 +317,8 @@ class VodViewModel @Inject constructor(
                         }
                     }
                 } else if (streamKind == StreamKind.SERIES) {
-                    repository.observeSeries(categoryId).map { list ->
+                    // "Alle Titel" heißt für die Datenbank: keine Einschränkung.
+                    repository.observeSeries(categoryId.takeUnless { it == ALL_CATEGORY_ID }).map { list ->
                         list.sortedFor(order, recentKey = { it.lastModified }, name = { it.name })
                             .map { series ->
                                 VodItem(
@@ -319,7 +330,7 @@ class VodViewModel @Inject constructor(
                             }
                     }
                 } else {
-                    repository.observeMovies(categoryId).map { list ->
+                    repository.observeMovies(categoryId.takeUnless { it == ALL_CATEGORY_ID }).map { list ->
                         list.sortedFor(order, recentKey = { it.addedAt }, name = { it.name })
                             .map { movie ->
                                 VodItem(

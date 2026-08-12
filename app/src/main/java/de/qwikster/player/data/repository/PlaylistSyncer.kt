@@ -173,10 +173,13 @@ class PlaylistSyncer @Inject constructor(
         // überstehen den Resync: [replaceMovies] schreibt die Tabelle sonst
         // komplett neu und würfe jedes zuvor angereicherte Cover wieder weg.
         val previousPosters = vodDao.getEnrichedMoviePosters(playlist.id).associateBy { it.streamId }
-        val moviesWithPosters = movies.map { movie ->
-            previousPosters[movie.streamId]?.let { enrichment ->
+        val previousAddedAt = vodDao.getMovieAddedTimes(playlist.id)
+        val now = System.currentTimeMillis()
+        val moviesWithPosters = movies.mapIndexed { index, movie ->
+            val withPoster = previousPosters[movie.streamId]?.let { enrichment ->
                 movie.copy(posterUrl = enrichment.posterUrl ?: movie.posterUrl, plot = enrichment.plot)
             } ?: movie
+            withPoster.copy(addedAt = resolveAddedAt(movie.addedAt, previousAddedAt[movie.streamId], now, index))
         }
 
         vodDao.replaceMovies(playlist.id, moviesWithPosters.map { it.toEntity() })
@@ -194,7 +197,22 @@ class PlaylistSyncer @Inject constructor(
             Log.w(TAG, "Serien-Import übersprungen: ${it.message}")
         }.getOrDefault(emptyList())
 
-        vodDao.replaceSeries(playlist.id, series.map { it.toEntity() })
+        // Dieselbe Absicherung wie bei den Filmen: Nicht jedes Panel füllt
+        // `last_modified`. Steht dort 0, wäre die Reihenfolge in "Neu
+        // hinzugefügt" sonst reine Willkür.
+        val previousModifiedXtream = vodDao.getSeriesModifiedTimes(playlist.id)
+        val seriesNow = System.currentTimeMillis()
+        val seriesWithDates = series.mapIndexed { index, entry ->
+            entry.copy(
+                lastModified = resolveAddedAt(
+                    entry.lastModified,
+                    previousModifiedXtream[entry.seriesId],
+                    seriesNow,
+                    index,
+                ),
+            )
+        }
+        vodDao.replaceSeries(playlist.id, seriesWithDates.map { it.toEntity() })
 
         emit(SyncProgress.Step(context.getString(R.string.sync_done), 100))
         emit(SyncProgress.Done(channels.size, movies.size, series.size))
@@ -325,8 +343,8 @@ class PlaylistSyncer @Inject constructor(
             // und "Neu hinzugefügt" im Sortiermenü wäre wirkungslos.
             val previousAddedAt = vodDao.getMovieAddedTimes(playlist.id)
             val now = System.currentTimeMillis()
-            val moviesWithAddedAt = movies.map { movie ->
-                movie.copy(addedAt = previousAddedAt[movie.streamId] ?: now)
+            val moviesWithAddedAt = movies.mapIndexed { index, movie ->
+                movie.copy(addedAt = resolveAddedAt(0L, previousAddedAt[movie.streamId], now, index))
             }
             vodDao.replaceMovies(playlist.id, moviesWithAddedAt.map { it.toEntity() })
         }
@@ -348,8 +366,10 @@ class PlaylistSyncer @Inject constructor(
             // Zeitpunkt wäre "Neu hinzugefügt" bei Serien ebenso wirkungslos.
             val previousModified = vodDao.getSeriesModifiedTimes(playlist.id)
             val now = System.currentTimeMillis()
-            val seriesWithModified = series.map { entry ->
-                entry.copy(lastModified = previousModified[entry.seriesId] ?: now)
+            val seriesWithModified = series.mapIndexed { index, entry ->
+                entry.copy(
+                    lastModified = resolveAddedAt(0L, previousModified[entry.seriesId], now, index),
+                )
             }
             vodDao.replaceSeries(playlist.id, seriesWithModified.map { it.toEntity() })
             vodDao.replaceEpisodes(
@@ -416,3 +436,28 @@ class PlaylistSyncer @Inject constructor(
  * Ferndiagnose eines fehlgeschlagenen Playlist-Imports.
  */
 private class SyncException(message: String, override val errorCode: String) : Exception(message), CodedException
+
+/**
+ * Ermittelt den "hinzugefügt am"-Zeitpunkt, nach dem "Neu hinzugefügt"
+ * sortiert.
+ *
+ * Drei Quellen, in dieser Reihenfolge:
+ *
+ * 1. **Die Angabe des Panels.** Bei Xtream steht in `added` bzw.
+ *    `last_modified` der tatsächliche Zeitpunkt – die beste Auskunft, die
+ *    es gibt. Nicht jedes Panel füllt sie allerdings; dann steht dort 0.
+ * 2. **Der bereits gemerkte Zeitpunkt.** Der Bestand wird bei jedem Sync
+ *    komplett neu geschrieben; ohne dieses Nachtragen bekäme die ganze
+ *    Liste jedes Mal denselben frischen Zeitstempel, und die Reihenfolge
+ *    wäre nach dem ersten Refresh wertlos.
+ * 3. **Die Position in der Liste.** Der Rückfall für alles Neue, und der
+ *    Grund, warum hier überhaupt ein Index durchgereicht wird: Bekämen alle
+ *    Neuzugänge denselben Zeitstempel – beim ersten Import also der gesamte
+ *    Katalog –, wäre "Neu hinzugefügt" eine willkürliche Reihenfolge. Panels
+ *    und M3U-Dateien hängen Neues hinten an, ein höherer Index heißt also
+ *    "später dazugekommen". Eine Millisekunde je Eintrag genügt, um daraus
+ *    eine eindeutige Sortierung zu machen; bei 30.000 Titeln sind das
+ *    30 Sekunden Versatz.
+ */
+private fun resolveAddedAt(fromPanel: Long, remembered: Long?, now: Long, index: Int): Long =
+    fromPanel.takeIf { it > 0L } ?: remembered?.takeIf { it > 0L } ?: (now + index)

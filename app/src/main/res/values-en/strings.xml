@@ -16,6 +16,7 @@
     <string name="category_all">All channels</string>
     <string name="category_favorites">Favourites</string>
     <string name="category_recent">Recently watched</string>
+    <string name="category_all_titles">All titles</string>
     <string name="recording_notification_channel">Background activity</string>
     <string name="recording_variant_open">Until I stop it</string>
     <string name="recording_variant_120">2 hours</string>

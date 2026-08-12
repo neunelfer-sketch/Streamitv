@@ -16,6 +16,7 @@
     <string name="category_all">Tutti i canali</string>
     <string name="category_favorites">Preferiti</string>
     <string name="category_recent">Visti di recente</string>
+    <string name="category_all_titles">Tutti i titoli</string>
     <string name="recording_notification_channel">Attività in background</string>
     <string name="recording_variant_open">Finché non la fermo</string>
     <string name="recording_variant_120">2 ore</string>

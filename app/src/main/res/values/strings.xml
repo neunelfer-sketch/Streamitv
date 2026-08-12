@@ -26,6 +26,7 @@
     <string name="category_all">Alle Sender</string>
     <string name="category_favorites">Favoriten</string>
     <string name="category_recent">Zuletzt gesehen</string>
+    <string name="category_all_titles">Alle Titel</string>
     <string name="recording_notification_channel">Hintergrundaktivität</string>
     <string name="recording_variant_open">Bis ich stoppe</string>
     <string name="recording_variant_120">2 Stunden</string>

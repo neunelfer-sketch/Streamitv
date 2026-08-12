@@ -16,6 +16,7 @@
     <string name="category_all">Alle zenders</string>
     <string name="category_favorites">Favorieten</string>
     <string name="category_recent">Recent bekeken</string>
+    <string name="category_all_titles">Alle titels</string>
     <string name="recording_notification_channel">Achtergrondactiviteit</string>
     <string name="recording_variant_open">Tot ik stop</string>
     <string name="recording_variant_120">2 uur</string>

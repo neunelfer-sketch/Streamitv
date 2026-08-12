@@ -16,6 +16,7 @@
     <string name="category_all">Toutes les chaînes</string>
     <string name="category_favorites">Favoris</string>
     <string name="category_recent">Vus récemment</string>
+    <string name="category_all_titles">Tous les titres</string>
     <string name="recording_notification_channel">Activité en arrière-plan</string>
     <string name="recording_variant_open">Jusqu\'à ce que j\'arrête</string>
     <string name="recording_variant_120">2 heures</string>
