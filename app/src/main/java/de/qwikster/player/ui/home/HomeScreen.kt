@@ -73,6 +73,7 @@ import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.Channel
 import de.qwikster.player.data.model.ChannelWithProgram
 import de.qwikster.player.ui.common.COMPACT_WIDTH_BREAKPOINT
+import de.qwikster.player.ui.common.KeepScreenOn
 import de.qwikster.player.ui.common.modalInputTrap
 import de.qwikster.player.ui.common.rememberMinuteTicker
 import de.qwikster.player.ui.common.touchClickable
@@ -125,7 +126,18 @@ fun HomeScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val channelListFocus = remember { FocusRequester() }
     val previewPlayer = remember { viewModel.previewPlayer() }
+    val previewActive by viewModel.previewActive.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Solange die Vorschau läuft, wird ferngesehen – auch wenn niemand eine
+    // Taste drückt. Ohne das legt der Fire TV Stick nach wenigen Minuten
+    // seinen Bildschirmschoner über das Bild und schickt die App danach in
+    // den Hintergrund; andere Android-TV-Geräte schalten den Bildschirm ab.
+    //
+    // An die Vorschau gekoppelt und nicht an den Bildschirm als solchen:
+    // Wer im Menü steht oder die Vorschau abgeschaltet hat, soll sein Gerät
+    // ganz normal einschlafen sehen.
+    KeepScreenOn(enabled = previewActive)
 
     // Nur "Zeigt gerade nichts an" lässt Zurück normal wirken – sowohl der
     // "Was ist neu"-Hinweis als auch der Update-Vorschlag sollen sich

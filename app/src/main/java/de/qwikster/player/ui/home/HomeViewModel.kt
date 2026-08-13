@@ -513,6 +513,17 @@ class HomeViewModel @Inject constructor(
     fun previewPlayer(): ExoPlayer = previewPlayer.getOrCreate()
 
     /**
+     * Läuft gerade eine Vorschau? Daran hängt der Hauptbildschirm den
+     * Bildschirmschoner-Aufschub.
+     *
+     * Bewusst als eigener Fluss und nicht als Feld im [HomeUiState]: Der
+     * Wert wechselt bei jedem Sender mehrfach (laden, spielen, anhalten),
+     * und im Zustandsobjekt zöge jeder dieser Wechsel die ganze
+     * Senderliste durch die Neuzeichnung.
+     */
+    val previewActive: StateFlow<Boolean> = previewPlayer.isActive
+
+    /**
      * Startet die Vorschau des fokussierten Senders – aber erst nach einer
      * kurzen Pause.
      *

@@ -2,7 +2,11 @@ package de.qwikster.player.player
 
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,6 +36,42 @@ class PreviewPlayer @Inject constructor(
     private var player: ExoPlayer? = null
     private var currentUrl: String? = null
 
+    private val _isActive = MutableStateFlow(false)
+
+    /**
+     * Läuft gerade eine Vorschau – einschließlich des Ladens?
+     *
+     * Der Hauptbildschirm hält daran den Bildschirmschoner zurück: Wer eine
+     * laufende Vorschau anschaut, benutzt die Fernbedienung gerade
+     * erwartungsgemäß *nicht*, und der Fire TV Stick legt nach ein paar
+     * Minuten seinen Bildschirmschoner darüber und schickt die App
+     * anschließend in den Hintergrund.
+     *
+     * Das Laden zählt bewusst mit: Ein Sender, der zehn Sekunden puffert,
+     * ist genauso wenig ein Grund für den Bildschirmschoner wie einer, der
+     * schon spielt.
+     */
+    val isActive: StateFlow<Boolean> = _isActive.asStateFlow()
+
+    private val stateListener = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) = refreshActive()
+        override fun onPlaybackStateChanged(playbackState: Int) = refreshActive()
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = refreshActive()
+
+        // Ein Sender, der nicht antwortet, darf den Bildschirm nicht endlos
+        // wach halten: Der Player landet dann in STATE_IDLE, und genau das
+        // beendet den Zustand unten.
+        override fun onPlayerError(error: androidx.media3.common.PlaybackException) = refreshActive()
+    }
+
+    private fun refreshActive() {
+        val exo = player
+        _isActive.value = exo != null &&
+            exo.playWhenReady &&
+            exo.playbackState != Player.STATE_IDLE &&
+            exo.playbackState != Player.STATE_ENDED
+    }
+
     /** Erzeugt den Player beim ersten Zugriff. */
     fun getOrCreate(): ExoPlayer =
         player ?: playerFactory.create(bufferMs = PREVIEW_BUFFER_MS).also { created ->
@@ -45,7 +85,9 @@ class PreviewPlayer @Inject constructor(
             // während der Hauptbildschirm vorne ist – CPU und WLAN sind dann
             // ohnehin wach. Den Lock hält allein der Vollbild-Player.
             created.setWakeMode(C.WAKE_MODE_NONE)
+            created.addListener(stateListener)
             player = created
+            refreshActive()
         }
 
     /**
@@ -72,13 +114,16 @@ class PreviewPlayer @Inject constructor(
     fun stop() {
         player?.stop()
         currentUrl = null
+        refreshActive()
     }
 
     /** Gibt den Player frei – beim Verlassen des Hauptbildschirms. */
     fun release() {
+        player?.removeListener(stateListener)
         player?.release()
         player = null
         currentUrl = null
+        refreshActive()
     }
 
     private companion object {
