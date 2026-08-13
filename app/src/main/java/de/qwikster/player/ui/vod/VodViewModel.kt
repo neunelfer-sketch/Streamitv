@@ -12,10 +12,12 @@ import de.qwikster.player.data.prefs.SettingsStore
 import de.qwikster.player.data.repository.IptvRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -118,11 +120,18 @@ class VodViewModel @Inject constructor(
     // ganz oben – nur eben neben Neuzugängen und Kategorien statt allein.
     private val selectedCategoryId = MutableStateFlow<String?>(OVERVIEW_CATEGORY_ID)
 
-    /** Vom Zuschauer ausgeblendete Kategorien des gerade gezeigten Bereichs. */
-    private val hiddenCategories: StateFlow<Set<String>> =
+    /**
+     * Vom Zuschauer ausgeblendete Kategorien des gerade gezeigten Bereichs.
+     *
+     * Bewusst **kein** `stateIn` mit vorgehaltenem Anfangswert: Ein solcher
+     * Wert hieße "noch nichts ausgeblendet" und ginge sofort heraus, bevor
+     * die Einstellung aus dem DataStore gelesen ist – die Reiterliste zeigte
+     * dann für einen Augenblick alles. `combine` wartet auf beide Quellen.
+     */
+    private val hiddenCategories: Flow<Set<String>> =
         combine(kind, settingsStore.settings) { streamKind, settings ->
             settings.hiddenCategories(streamKind)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+        }.distinctUntilChanged()
 
     private val realCategories: StateFlow<List<Category>> = kind
         .flatMapLatest { repository.observeCategories(it) }

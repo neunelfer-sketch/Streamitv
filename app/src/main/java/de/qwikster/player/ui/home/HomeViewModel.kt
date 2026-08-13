@@ -29,11 +29,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -182,10 +184,19 @@ class HomeViewModel @Inject constructor(
 
     // --- Kategorien --------------------------------------------------------
 
-    /** Vom Zuschauer ausgeblendete Live-Kategorien – siehe CategoryVisibilityScreen. */
-    private val hiddenCategories: StateFlow<Set<String>> = settingsStore.settings
+    /**
+     * Vom Zuschauer ausgeblendete Live-Kategorien – siehe
+     * CategoryVisibilityScreen.
+     *
+     * Bewusst **kein** `stateIn` mit vorgehaltenem Anfangswert: Ein solcher
+     * Wert hieße "noch nichts ausgeblendet" und ginge sofort heraus, bevor
+     * die Einstellung aus dem DataStore gelesen ist. Die Kategorienleiste
+     * zeigte dann für einen Augenblick alles. `combine` wartet dagegen auf
+     * beide Quellen.
+     */
+    private val hiddenCategories: Flow<Set<String>> = settingsStore.settings
         .map { it.hiddenLiveCategories }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+        .distinctUntilChanged()
 
     private val categories: StateFlow<List<CategoryItem>> =
         combine(
@@ -214,15 +225,9 @@ class HomeViewModel @Inject constructor(
         combine(selectedCategory, searchQuery) { category, query ->
             if (query.isBlank()) category.toFilter() else ChannelFilter.Search(query)
         }
+            // Ausgeblendete Kategorien filtert das Repository heraus – für
+            // alle Bildschirme gemeinsam, siehe IptvRepository.withoutHidden.
             .flatMapLatest { filter -> repository.observeChannels(filter) }
-            // Sender ausgeblendeter Kategorien verschwinden auch aus "Alle
-            // Sender" und aus der Suche. Alles andere wäre eine halbe Sache:
-            // Wer eine Kategorie wegblendet, will ihre Sender nicht weiter im
-            // Gesamtbestand vor sich haben.
-            .combine(hiddenCategories) { channelList, hidden ->
-                if (hidden.isEmpty()) channelList
-                else channelList.filterNot { it.categoryId in hidden }
-            }
             // Bei jedem Ticker-Schlag die laufende Sendung neu bestimmen.
             .combine(nowTicker) { channelList, now -> channelList to now }
             .flatMapLatest { (channelList, now) ->

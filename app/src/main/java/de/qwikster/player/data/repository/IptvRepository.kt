@@ -23,6 +23,8 @@ import de.qwikster.player.data.remote.xtream.XtreamApi
 import de.qwikster.player.data.remote.xtream.XtreamCredentials
 import de.qwikster.player.data.remote.xtream.XtreamMapper
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -164,7 +166,41 @@ class IptvRepository @Inject constructor(
                 is ChannelFilter.Search -> channelDao.search(playlist.id, filter.query)
             }
             rows.map { list -> list.map { it.toModel() } }
+                .withoutHidden(StreamKind.LIVE) { it.categoryId }
         }
+
+    // -----------------------------------------------------------------------
+    // Ausgeblendete Kategorien
+    // -----------------------------------------------------------------------
+
+    /**
+     * Wirft die Inhalte ausgeblendeter Kategorien aus einem Datenstrom.
+     *
+     * **Warum hier und nicht in den ViewModels:** Vorher filterte jeder
+     * Bildschirm für sich, und wer es vergaß, hatte ein Leck. Genau das war
+     * der Fall – die Suche, das EPG-Raster und vor allem der Zapper im
+     * Player lasen ungefiltert. Beim Weiterschalten mit ◀ ▶ landete man
+     * deshalb mitten in ausgeblendeten Sendern: nicht nur sichtbar, sondern
+     * hörbar. An dieser einen Stelle kann das niemand mehr übersehen.
+     *
+     * **Und warum `combine` statt eines gemerkten Werts:** Die Einstellung
+     * kommt aus dem DataStore, wird also erst kurz nach dem Start gelesen.
+     * Ein vorgehaltener Standardwert ("noch nichts ausgeblendet") hätte
+     * bedeutet, dass die erste Senderliste ungefiltert herausgeht – und
+     * genau in diesem Augenblick baut der Hauptbildschirm seine Liste auf,
+     * setzt den Fokus auf den ersten Sender und spielt ihn in der Vorschau
+     * an. Das war der fremde Sender, der beim Neustart kurz zu hören war.
+     * `combine` wartet auf beide Quellen: Es gibt keine erste Liste ohne
+     * die Einstellung dazu.
+     */
+    private inline fun <T> Flow<List<T>>.withoutHidden(
+        kind: StreamKind,
+        crossinline categoryId: (T) -> String?,
+    ): Flow<List<T>> = combine(
+        settingsStore.settings.map { it.hiddenCategories(kind) }.distinctUntilChanged(),
+    ) { list, hidden ->
+        if (hidden.isEmpty()) list else list.filterNot { categoryId(it) in hidden }
+    }
 
     suspend fun getChannel(playlistId: Long, streamId: String): Channel? =
         channelDao.getById(playlistId, streamId)?.toModel()
@@ -249,6 +285,7 @@ class IptvRepository @Inject constructor(
             if (playlist == null || query.isBlank()) return@flatMapLatest flowOf(emptyList())
             vodDao.searchMovies(playlist.id, query, SEARCH_LIMIT)
                 .map { list -> list.map { it.toModel() } }
+                .withoutHidden(StreamKind.VOD) { it.categoryId }
         }
 
     /** Titelsuche über Serien – für die übergreifende Suche. */
@@ -257,6 +294,7 @@ class IptvRepository @Inject constructor(
             if (playlist == null || query.isBlank()) return@flatMapLatest flowOf(emptyList())
             vodDao.searchSeries(playlist.id, query, SEARCH_LIMIT)
                 .map { list -> list.map { it.toModel() } }
+                .withoutHidden(StreamKind.SERIES) { it.categoryId }
         }
 
     suspend fun getMovie(streamId: String): Movie? {
