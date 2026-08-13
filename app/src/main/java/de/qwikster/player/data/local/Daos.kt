@@ -673,6 +673,30 @@ interface UserDataDao {
     @Query("SELECT * FROM recents WHERE playlistId = :playlistId AND streamId = :streamId AND kind = :kind")
     suspend fun getRecent(playlistId: Long, streamId: String, kind: String): RecentEntity?
 
+    /** Nimmt einen einzelnen Titel aus "Weiterschauen". */
+    @Query("DELETE FROM recents WHERE playlistId = :playlistId AND streamId = :streamId AND kind = :kind")
+    suspend fun deleteRecent(playlistId: Long, streamId: String, kind: String)
+
+    /**
+     * Nimmt eine ganze Serie aus "Weiterschauen".
+     *
+     * Der Verlauf merkt sich einzelne **Folgen**; die Übersicht zeigt davon
+     * nur die jeweils zuletzt gesehene je Serie. Würde man beim Entfernen
+     * nur diese eine Folge löschen, träte sofort die vorletzte an ihre
+     * Stelle – die Serie bliebe stehen, und der Zuschauer müsste so oft
+     * drücken, wie er Folgen gesehen hat.
+     */
+    @Query(
+        """
+        DELETE FROM recents
+        WHERE playlistId = :playlistId AND kind = 'SERIES' AND streamId IN (
+            SELECT episodeId FROM episodes
+            WHERE playlistId = :playlistId AND seriesId = :seriesId
+        )
+        """,
+    )
+    suspend fun deleteRecentSeries(playlistId: Long, seriesId: String)
+
     /** Hält den Verlauf klein: alles außerhalb der neuesten [keep] Einträge fliegt raus. */
     @Query(
         """

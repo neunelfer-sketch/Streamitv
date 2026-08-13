@@ -159,6 +159,7 @@
     <string name="settings_remove_playlist_desc">Löscht alle lokalen Daten dieser Playlist</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_remove_hint">OK lang drücken zum Entfernen</string>
     <string name="vod_show_all">Alle anzeigen</string>
     <string name="categories_title">Kategorien</string>
     <string name="categories_settings_desc">Auswählen, welche Kategorien sichtbar sind</string>

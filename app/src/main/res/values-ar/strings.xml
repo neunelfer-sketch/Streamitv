@@ -142,6 +142,7 @@
     <string name="settings_remove_playlist_desc">يحذف كل البيانات المحفوظة لهذه القائمة</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_remove_hint">اضغط مع الاستمرار على OK للإزالة</string>
     <string name="vod_show_all">عرض الكل</string>
     <string name="categories_title">الفئات</string>
     <string name="categories_settings_desc">اختر الفئات التي تظهر</string>

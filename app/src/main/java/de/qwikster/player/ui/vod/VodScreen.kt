@@ -128,6 +128,7 @@ fun VodScreen(
                 state = state,
                 kind = kind,
                 onSelectCategory = viewModel::selectCategory,
+                onRemoveFromContinueWatching = viewModel::removeFromContinueWatching,
                 onPlayMovie = onPlayMovie,
                 onOpenSeries = onOpenSeries,
                 onPlayEpisode = onPlayEpisode,
@@ -276,6 +277,7 @@ private fun VodBody(
     state: VodUiState,
     kind: StreamKind,
     onSelectCategory: (String?) -> Unit,
+    onRemoveFromContinueWatching: (VodItem) -> Unit,
     onPlayMovie: (String) -> Unit,
     onOpenSeries: (String) -> Unit,
     onPlayEpisode: (String) -> Unit,
@@ -392,6 +394,7 @@ private fun VodBody(
                     onOpenSeries = onOpenSeries,
                     onPlayEpisode = onPlayEpisode,
                     onOpenCategory = onSelectCategory,
+                    onRemoveFromContinueWatching = onRemoveFromContinueWatching,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
@@ -432,6 +435,11 @@ private fun VodBody(
                                 else -> onOpenSeries(item.id)
                             }
                         },
+                        onLongClick = if (state.selectedCategoryId == RECENT_CATEGORY_ID) {
+                            { onRemoveFromContinueWatching(item) }
+                        } else {
+                            null
+                        },
                     )
                 }
             }
@@ -461,6 +469,7 @@ private fun VodRows(
     onOpenSeries: (String) -> Unit,
     onPlayEpisode: (String) -> Unit,
     onOpenCategory: (String) -> Unit,
+    onRemoveFromContinueWatching: (VodItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (rows.isEmpty()) {
@@ -489,12 +498,27 @@ private fun VodRows(
     ) {
         itemsIndexed(rows, key = { _, row -> row.id }) { rowIndex, row ->
             Column {
-                Text(
-                    text = row.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = row.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    // Eine Geste, die niemand kennt, gibt es nicht. Der
+                    // Hinweis steht nur an der Reihe, an der er gilt, und
+                    // nur so groß, dass er nicht mit dem Titel konkurriert.
+                    if (row.id == RECENT_CATEGORY_ID) {
+                        Spacer(Modifier.width(TvSpacing.small))
+                        Text(
+                            text = stringResource(R.string.vod_remove_hint),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TvOnSurfaceMuted,
+                            maxLines = 1,
+                            modifier = Modifier.padding(bottom = 2.dp),
+                        )
+                    }
+                }
                 Spacer(Modifier.height(TvSpacing.small))
 
                 LazyRow(
@@ -515,6 +539,11 @@ private fun VodRows(
                                     kind == StreamKind.VOD -> onPlayMovie(item.id)
                                     else -> onOpenSeries(item.id)
                                 }
+                            },
+                            onLongClick = if (row.id == RECENT_CATEGORY_ID) {
+                                { onRemoveFromContinueWatching(item) }
+                            } else {
+                                null
                             },
                             modifier = Modifier
                                 .width(POSTER_WIDTH)
@@ -616,10 +645,17 @@ private fun PosterCard(
     progress: Float?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Nur in "Weiterschauen" gesetzt: langes OK nimmt den Titel aus der
+     * Liste. Ein kurzes OK spielt ab – die Hauptsache darf nicht mit dem
+     * Aufräumen um dieselbe Taste streiten.
+     */
+    onLongClick: (() -> Unit)? = null,
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.touchClickable(onClick),
+        onLongClick = onLongClick,
+        modifier = modifier.touchClickable(onClick, onLongClick),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = TvSurfaceElevated,

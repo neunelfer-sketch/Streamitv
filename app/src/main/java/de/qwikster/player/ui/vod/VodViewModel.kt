@@ -451,6 +451,23 @@ class VodViewModel @Inject constructor(
         selectedCategoryId.value = categoryId
     }
 
+    /**
+     * Nimmt einen Titel von Hand aus "Weiterschauen".
+     *
+     * Bei Serien fällt der gesamte Verlauf dieser Serie weg, nicht nur die
+     * zuletzt gesehene Folge – sonst rückte sofort die vorletzte nach und
+     * die Serie stünde weiterhin da (siehe `deleteRecentSeries`).
+     */
+    fun removeFromContinueWatching(item: VodItem) {
+        viewModelScope.launch {
+            if (kind.value == StreamKind.SERIES) {
+                repository.removeSeriesFromContinueWatching(item.id)
+            } else {
+                repository.removeFromContinueWatching(item.id, StreamKind.VOD)
+            }
+        }
+    }
+
     fun setSort(value: VodSort) {
         viewModelScope.launch { settingsStore.setVodSort(kind.value, value) }
     }

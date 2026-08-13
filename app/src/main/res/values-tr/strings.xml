@@ -142,6 +142,7 @@
     <string name="settings_remove_playlist_desc">Bu listeye ait tüm yerel verileri siler</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_remove_hint">Kaldırmak için OK tuşuna basılı tutun</string>
     <string name="vod_show_all">Tümünü göster</string>
     <string name="categories_title">Kategoriler</string>
     <string name="categories_settings_desc">Hangi kategorilerin görüneceğini seçin</string>

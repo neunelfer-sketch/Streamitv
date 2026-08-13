@@ -337,6 +337,21 @@ class IptvRepository @Inject constructor(
         positionMs: Long = 0L,
         durationMs: Long = 0L,
     ) {
+        // Durchgeschaut? Dann raus aus "Weiterschauen".
+        //
+        // Ein Titel, der zu Ende gesehen wurde, gehört nicht in eine Liste,
+        // die "hier bist du stehengeblieben" bedeutet – er stünde dort sonst
+        // für immer und verdrängte, was der Zuschauer wirklich noch offen
+        // hat. Und der gemerkte Fortsetzpunkt hilft auch nicht weiter: Wer
+        // den Film erneut startet, will ihn von vorn, nicht ab Minute 118.
+        //
+        // Die letzten Prozente zählen bewusst schon als "zu Ende": Kaum
+        // jemand sitzt den Abspann aus.
+        if (isFinished(positionMs, durationMs)) {
+            userDataDao.deleteRecent(playlistId, streamId, kind.name)
+            return
+        }
+
         userDataDao.upsertRecent(
             RecentEntity(
                 playlistId = playlistId,
@@ -348,6 +363,27 @@ class IptvRepository @Inject constructor(
             ),
         )
         userDataDao.trimRecents(playlistId, kind.name, RECENT_HISTORY_SIZE)
+    }
+
+    /**
+     * Ab wann ein Titel als zu Ende gesehen gilt.
+     *
+     * Ohne bekannte Laufzeit (Live TV, oder das Panel liefert keine) gibt es
+     * nichts zu entscheiden – dann bleibt der Eintrag.
+     */
+    private fun isFinished(positionMs: Long, durationMs: Long): Boolean =
+        durationMs > 0L && positionMs >= durationMs * FINISHED_FRACTION
+
+    /** Nimmt einen Film von Hand aus "Weiterschauen". */
+    suspend fun removeFromContinueWatching(streamId: String, kind: StreamKind) {
+        val playlist = playlistDao.getActive() ?: return
+        userDataDao.deleteRecent(playlist.id, streamId, kind.name)
+    }
+
+    /** Nimmt eine ganze Serie von Hand aus "Weiterschauen" – mit allen Folgen. */
+    suspend fun removeSeriesFromContinueWatching(seriesId: String) {
+        val playlist = playlistDao.getActive() ?: return
+        userDataDao.deleteRecentSeries(playlist.id, seriesId)
     }
 
     suspend fun getResumePosition(playlistId: Long, streamId: String, kind: StreamKind): Long =
@@ -417,6 +453,16 @@ class IptvRepository @Inject constructor(
 
         /** So viele Einträge behält der Verlauf insgesamt. */
         private const val RECENT_HISTORY_SIZE = 50
+
+        /**
+         * Ab diesem Anteil der Laufzeit gilt ein Titel als zu Ende gesehen.
+         *
+         * 95 % statt 100 %: Abspann, Vorschau auf die nächste Folge und ein
+         * paar Sekunden Schwarzbild am Ende sind bei fast jedem Titel dabei.
+         * Wer bis dorthin gekommen ist, hat ihn gesehen – auf die letzten
+         * Prozente zu warten hieße, dass praktisch nie etwas verschwindet.
+         */
+        private const val FINISHED_FRACTION = 0.95
 
         /**
          * Höchstzahl Treffer je Bereich in der Suche. Ein kurzer Begriff
