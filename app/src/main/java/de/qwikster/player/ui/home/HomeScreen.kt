@@ -42,8 +42,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -394,6 +396,22 @@ private fun TopBarAction(
 // Spalte 1: Kategorien
 // ---------------------------------------------------------------------------
 
+/**
+ * Die Kategorienliste links.
+ *
+ * Sie hat dieselbe Tücke wie die Senderliste, nur eine Spalte weiter: Die
+ * Auswahl folgt dem Fokus. Kommt der Fokus von rechts herein, ohne dass
+ * jemand bestimmt, wo er landen soll, sucht Compose die *räumlich nächste*
+ * Kategorie – bei weit heruntergeblätterter Senderliste also irgendeine
+ * andere. Der Druck nach links wechselte damit die Kategorie, statt nur
+ * dorthin zu gehen.
+ *
+ * Zwei Vorkehrungen dagegen: Die Liste merkt sich, welcher Eintrag zuletzt
+ * den Fokus hatte, und für den Fall, dass es nichts zu merken gibt – beim
+ * ersten Aufbau und nach jedem Zurückkommen aus einem anderen Bildschirm –
+ * geht der Fokus ausdrücklich auf die gewählte Kategorie.
+ */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun CategoryColumn(
     categories: List<CategoryItem>,
@@ -401,8 +419,30 @@ private fun CategoryColumn(
     onSelect: (CategoryItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val listState = rememberLazyListState()
+    val selectedFocus = remember { FocusRequester() }
+
+    // Die gewählte Kategorie in den sichtbaren Bereich holen, solange sie es
+    // nicht ist. Einen Eintrag, den die Liste nie gesetzt hat, kann niemand
+    // fokussieren – und der Rückfall oben liefe ins Leere.
+    //
+    // Beim gewöhnlichen Blättern passiert hier nichts: Der Eintrag, auf dem
+    // der Fokus steht, ist immer sichtbar.
+    LaunchedEffect(selectedKey, categories) {
+        if (selectedKey == null || categories.isEmpty()) return@LaunchedEffect
+        val index = categories.indexOfFirst { it.key == selectedKey }
+        if (index < 0) return@LaunchedEffect
+        val visible = listState.layoutInfo.visibleItemsInfo
+        if (visible.none { it.index == index }) {
+            runCatching { listState.scrollToItem(index) }
+        }
+    }
+
     LazyColumn(
-        modifier = modifier.padding(vertical = TvSpacing.small),
+        state = listState,
+        modifier = modifier
+            .padding(vertical = TvSpacing.small)
+            .focusRestorer { selectedFocus },
         contentPadding = PaddingValues(horizontal = TvSpacing.small),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -414,6 +454,11 @@ private fun CategoryColumn(
                 // Genau so verhält sich TiviMate – ein Druck weniger pro Wechsel.
                 onFocused = { onSelect(category) },
                 onClick = { onSelect(category) },
+                modifier = if (category.key == selectedKey) {
+                    Modifier.focusRequester(selectedFocus)
+                } else {
+                    Modifier
+                },
             )
         }
     }
@@ -440,10 +485,11 @@ private fun CategoryRow(
     isSelected: Boolean,
     onFocused: () -> Unit,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(44.dp)
             .touchClickable(onClick)

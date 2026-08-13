@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -283,6 +284,7 @@ private fun VodBody(
     onPlayEpisode: (String) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
+    val categoryListState = rememberLazyListState()
     val selectedCategory = remember { FocusRequester() }
 
     // Beim Betreten des Bereichs steht der Fokus auf der **gewählten**
@@ -299,10 +301,19 @@ private fun VodBody(
     // nehmen, sobald er die Liste durchblättert.
     var hasPlacedInitialFocus by remember { mutableStateOf(false) }
     LaunchedEffect(state.categories.isNotEmpty()) {
-        if (!hasPlacedInitialFocus && state.categories.isNotEmpty()) {
-            hasPlacedInitialFocus = true
-            runCatching { selectedCategory.requestFocus() }
-        }
+        if (hasPlacedInitialFocus || state.categories.isEmpty()) return@LaunchedEffect
+        hasPlacedInitialFocus = true
+        // Erst in den sichtbaren Bereich holen, dann fokussieren.
+        //
+        // Ohne das Scrollen ging der Fokus ins Leere, sobald die gewählte
+        // Kategorie weiter unten stand: Die Liste hatte sie gar nicht
+        // gesetzt, und einen Eintrag, den es in der Komposition nicht gibt,
+        // kann niemand fokussieren. Der Fokus landete dann auf der ersten
+        // sichtbaren Kategorie – und weil die Auswahl dem Fokus folgt, war
+        // man mit einem Schlag in einer anderen Kategorie.
+        val index = state.categories.indexOfFirst { it.id == state.selectedCategoryId }
+        if (index >= 0) runCatching { categoryListState.scrollToItem(index) }
+        runCatching { selectedCategory.requestFocus() }
     }
 
     // Neue Kategorie -> Raster wieder an den Anfang. Ohne das bliebe die
@@ -338,7 +349,15 @@ private fun VodBody(
                     // Weil die Auswahl dem Fokus folgt, sprang damit bei
                     // jedem Verlassen des Rasters die Kategorie um, und man
                     // blätterte ungewollt durch die Reiter.
-                    .focusRestorer(),
+                    //
+                    // Der Rückfall greift, wenn es nichts zu merken gibt –
+                    // beim ersten Betreten und nach jedem Zurückkommen aus
+                    // einem anderen Bildschirm, denn der gemerkte Eintrag
+                    // überlebt das Abräumen der Ansicht nicht. Dann geht der
+                    // Fokus ausdrücklich auf die *gewählte* Kategorie statt
+                    // auf die räumlich nächste.
+                    .focusRestorer { selectedCategory },
+                state = categoryListState,
                 contentPadding = PaddingValues(TvSpacing.small),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
