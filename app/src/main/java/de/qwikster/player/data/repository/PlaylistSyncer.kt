@@ -253,7 +253,15 @@ class PlaylistSyncer @Inject constructor(
             val withPoster = previousPosters[movie.streamId]?.let { enrichment ->
                 movie.copy(posterUrl = enrichment.posterUrl ?: movie.posterUrl, plot = enrichment.plot)
             } ?: movie
-            withPoster.copy(addedAt = resolveAddedAt(movie.addedAt, previousAddedAt[movie.streamId], now, index))
+            withPoster.copy(
+                addedAt = resolveAddedAt(
+                    fromPanel = movie.addedAt,
+                    remembered = previousAddedAt[movie.streamId],
+                    now = now,
+                    index = index,
+                    isFirstImport = previousAddedAt.isEmpty(),
+                ),
+            )
         }
 
         vodDao.replaceMovies(playlist.id, moviesWithPosters.map { it.toEntity() })
@@ -297,10 +305,11 @@ class PlaylistSyncer @Inject constructor(
         val seriesWithDates = series.mapIndexed { index, entry ->
             entry.copy(
                 lastModified = resolveAddedAt(
-                    entry.lastModified,
-                    previousModifiedXtream[entry.seriesId],
-                    seriesNow,
-                    index,
+                    fromPanel = entry.lastModified,
+                    remembered = previousModifiedXtream[entry.seriesId],
+                    now = seriesNow,
+                    index = index,
+                    isFirstImport = previousModifiedXtream.isEmpty(),
                 ),
             )
         }
@@ -436,7 +445,15 @@ class PlaylistSyncer @Inject constructor(
             val previousAddedAt = vodDao.getMovieAddedTimes(playlist.id)
             val now = System.currentTimeMillis()
             val moviesWithAddedAt = movies.mapIndexed { index, movie ->
-                movie.copy(addedAt = resolveAddedAt(0L, previousAddedAt[movie.streamId], now, index))
+                movie.copy(
+                    addedAt = resolveAddedAt(
+                        fromPanel = 0L,
+                        remembered = previousAddedAt[movie.streamId],
+                        now = now,
+                        index = index,
+                        isFirstImport = previousAddedAt.isEmpty(),
+                    ),
+                )
             }
             vodDao.replaceMovies(playlist.id, moviesWithAddedAt.map { it.toEntity() })
         }
@@ -460,7 +477,13 @@ class PlaylistSyncer @Inject constructor(
             val now = System.currentTimeMillis()
             val seriesWithModified = series.mapIndexed { index, entry ->
                 entry.copy(
-                    lastModified = resolveAddedAt(0L, previousModified[entry.seriesId], now, index),
+                    lastModified = resolveAddedAt(
+                        fromPanel = 0L,
+                        remembered = previousModified[entry.seriesId],
+                        now = now,
+                        index = index,
+                        isFirstImport = previousModified.isEmpty(),
+                    ),
                 )
             }
             vodDao.replaceSeries(playlist.id, seriesWithModified.map { it.toEntity() })
@@ -530,29 +553,49 @@ class PlaylistSyncer @Inject constructor(
 private class SyncException(message: String, override val errorCode: String) : Exception(message), CodedException
 
 /**
- * Ermittelt den "hinzugefügt am"-Zeitpunkt, nach dem "Neu hinzugefügt"
- * sortiert.
+ * Ermittelt den "hinzugefügt am"-Zeitpunkt, nach dem alle Raster und Reihen
+ * sortieren.
  *
- * Drei Quellen, in dieser Reihenfolge:
+ * Die Reihenfolge der Quellen ist der ganze Trick, und sie ist bewusst
+ * anders, als man zuerst vermutet:
  *
- * 1. **Die Angabe des Panels.** Bei Xtream steht in `added` bzw.
- *    `last_modified` der tatsächliche Zeitpunkt – die beste Auskunft, die
- *    es gibt. Nicht jedes Panel füllt sie allerdings; dann steht dort 0.
- * 2. **Der bereits gemerkte Zeitpunkt.** Der Bestand wird bei jedem Sync
+ * 1. **Der bereits gemerkte Zeitpunkt.** Der Bestand wird bei jedem Sync
  *    komplett neu geschrieben; ohne dieses Nachtragen bekäme die ganze
- *    Liste jedes Mal denselben frischen Zeitstempel, und die Reihenfolge
- *    wäre nach dem ersten Refresh wertlos.
- * 3. **Die Position in der Liste.** Der Rückfall für alles Neue, und der
- *    Grund, warum hier überhaupt ein Index durchgereicht wird: Bekämen alle
- *    Neuzugänge denselben Zeitstempel – beim ersten Import also der gesamte
- *    Katalog –, wäre "Neu hinzugefügt" eine willkürliche Reihenfolge. Panels
- *    und M3U-Dateien hängen Neues hinten an, ein höherer Index heißt also
- *    "später dazugekommen". Eine Millisekunde je Eintrag genügt, um daraus
- *    eine eindeutige Sortierung zu machen; bei 30.000 Titeln sind das
- *    30 Sekunden Versatz.
+ *    Liste jedes Mal einen frischen Zeitstempel, und die Reihenfolge wäre
+ *    nach dem ersten Refresh wertlos.
+ *
+ * 2. **Beim allerersten Import: die Angabe des Panels.** Da gibt es noch
+ *    nichts zu merken, und `added` bzw. `last_modified` ist dann die einzige
+ *    echte Auskunft über das Alter eines Titels.
+ *
+ * 3. **Sonst: jetzt, plus die Position in der Liste.**
+ *
+ * Punkt 3 ist der Grund für den Umbau. Vorher hatte die Panel-Angabe immer
+ * Vorrang – mit der Folge, dass ein Film, der heute neu in die Playlist
+ * kommt, den das Panel aber schon vor zwei Jahren aufgenommen hat, sich
+ * zwei Jahre weit hinten einsortierte. Genau das, was der Zuschauer sehen
+ * will ("was ist neu reingekommen?"), verschwand also aus dem Blick.
+ * Taucht ein Titel bei einer Aktualisierung zum ersten Mal auf, ist er für
+ * *diese* Playlist neu – und gehört nach vorn, ganz gleich, was das Panel
+ * über sein Alter meint.
+ *
+ * Der Index sorgt dabei für eine eindeutige Reihenfolge innerhalb desselben
+ * Durchlaufs: Bekämen alle Neuzugänge denselben Zeitstempel, wäre ihre
+ * Reihenfolge Willkür. Panels und M3U-Dateien hängen Neues hinten an, ein
+ * höherer Index heißt also "später dazugekommen". Eine Millisekunde je
+ * Eintrag genügt; bei 30.000 Titeln sind das 30 Sekunden Versatz.
  */
-private fun resolveAddedAt(fromPanel: Long, remembered: Long?, now: Long, index: Int): Long =
-    fromPanel.takeIf { it > 0L } ?: remembered?.takeIf { it > 0L } ?: (now + index)
+private fun resolveAddedAt(
+    fromPanel: Long,
+    remembered: Long?,
+    now: Long,
+    index: Int,
+    isFirstImport: Boolean,
+): Long = when {
+    remembered != null && remembered > 0L -> remembered
+    isFirstImport && fromPanel > 0L -> fromPanel
+    else -> now + index
+}
 
 /**
  * Erkennt Kategorien, die Dauerkanäle enthalten ("24/7", "24-7", "24 7").

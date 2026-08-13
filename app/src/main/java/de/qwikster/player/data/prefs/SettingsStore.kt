@@ -62,7 +62,13 @@ data class AppSettings(
     /** Reihenfolge im Filme-Raster. */
     val movieSort: VodSort = VodSort.RECENT,
     /** Reihenfolge im Serien-Raster. */
-    val seriesSort: VodSort = VodSort.NAME_ASC,
+    /**
+     * Auch bei Serien stehen Neuzugänge vorn – wie bei Netflix, TiviMate und
+     * IBO Player. Hier stand alphabetisch, was die ganze Sortierarbeit im
+     * Serienbereich unsichtbar machte: Was neu hereinkam, versteckte sich
+     * irgendwo zwischen A und Z.
+     */
+    val seriesSort: VodSort = VodSort.RECENT,
     /**
      * Kategorien, die der Zuschauer ausgeblendet hat – je Bereich getrennt.
      *
@@ -124,7 +130,7 @@ class SettingsStore(
             proxyUser = prefs[KEY_PROXY_USER].orEmpty(),
             proxyPassword = prefs[KEY_PROXY_PASS].orEmpty(),
             movieSort = prefs[KEY_MOVIE_SORT].toVodSort(VodSort.RECENT),
-            seriesSort = prefs[KEY_SERIES_SORT].toVodSort(VodSort.NAME_ASC),
+            seriesSort = prefs[KEY_SERIES_SORT].toVodSort(VodSort.RECENT),
         )
     }
 

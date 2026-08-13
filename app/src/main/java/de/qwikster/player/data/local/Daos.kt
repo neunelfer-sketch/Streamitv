@@ -288,7 +288,7 @@ interface VodDao {
         """
         SELECT * FROM series
         WHERE playlistId = :playlistId AND (:categoryId IS NULL OR categoryId = :categoryId)
-        ORDER BY name
+        ORDER BY lastModified DESC, name
         """,
     )
     fun observeSeries(playlistId: Long, categoryId: String?): Flow<List<SeriesEntity>>
