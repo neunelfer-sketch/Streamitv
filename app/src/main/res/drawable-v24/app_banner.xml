@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TV-Banner (320x180 dp) für den Leanback-/Fire-TV-Launcher.
+
+  Dieselbe Bildmarke wie das App-Icon, nur größer gesetzt: dunkle Fläche,
+  ein "Q" mit Farbverlauf, dessen Schwanz in den Play-Knopf läuft. Auf der
+  Kachelreihe des Fernsehers steht das Banner neben denen von Netflix und
+  Prime Video – eine ruhige dunkle Fläche fällt dort weniger auf als eine
+  bunte, aber die Marke bleibt erkennbar.
+
+  Ab API 24, wegen der Farbverläufe; die Volltonfassung liegt in
+  `drawable/`.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <!-- Dunkle Fläche -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M0,0h320v180h-320z" />
+
+    <!-- Sehr sanfte Aufhellung nach oben links -->
+    <path android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="320"
+                android:endY="180"
+                android:startColor="#14FFFFFF"
+                android:endColor="#00FFFFFF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Ring des Q -->
+    <path
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M119,80 A31,31 0 1,0 181,80 A31,31 0 1,0 119,80">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="119"
+                android:startY="111"
+                android:endX="181"
+                android:endY="49"
+                android:startColor="#7C5CFF"
+                android:endColor="#D6D3FF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Schwanz des Q -->
+    <path
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M165,98 L183,116">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="165"
+                android:startY="98"
+                android:endX="183"
+                android:endY="116"
+                android:startColor="#8F6CFF"
+                android:endColor="#B9A8FF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Dunkler Ring um den Play-Knopf -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M192,122 m-29,0 a29,29 0 1,0 58,0 a29,29 0 1,0 -58,0 Z" />
+
+    <!-- Play-Knopf -->
+    <path
+        android:pathData="M192,122 m-23,0 a23,23 0 1,0 46,0 a23,23 0 1,0 -46,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="169"
+                android:startY="145"
+                android:endX="215"
+                android:endY="99"
+                android:startColor="#A78BFA"
+                android:endColor="#E2E0FF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Dreieck, aus dem Knopf ausgespart -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M186,111 L208,122 L186,134 Z" />
+</vector>

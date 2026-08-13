@@ -1,44 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- App-Icon im "Liquid Glass"-Stil: helles Blau als Grundfarbe, darüber
-     halbtransparente Flächen als Glas-Tiefe und -Glanz (statt Gradients,
-     damit es auch auf minSdk 22 zuverlässig aussieht), plus ein weißes "Q". -->
+<!--
+  App-Icon für Android 5 und 6.
+
+  Dieselbe Zeichnung wie in `mipmap-v24/`, nur in Volltonfarben:
+  Farbverläufe in Vektorgrafiken gibt es erst ab API 24. Auf einem Fire TV
+  Stick der 2. Generation (Fire OS 5, Android 5.1) bliebe eine
+  Verlaufsfüllung sonst einfach leer – ein schwarzes Icon wäre das Ergebnis.
+
+  Der Verlauf wird hier nicht nachgebaut, sondern durch je einen mittleren
+  Farbton ersetzt. Auf den Geräten, um die es geht, steht das Icon ohnehin
+  klein in einer Kachelreihe; ein Verlauf wäre dort nicht zu erkennen, eine
+  falsche Farbe dagegen schon.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Grundfarbe: leicht blauer Hintergrund -->
+    <!-- Dunkle Kachel mit weichen Ecken -->
     <path
-        android:fillColor="#79C2F2"
-        android:pathData="M0,0h108v108h-108z" />
+        android:fillColor="#24242E"
+        android:pathData="M27,0 L81,0 A27,27 0 0,1 108,27 L108,81 A27,27 0 0,1 81,108 L27,108 A27,27 0 0,1 0,81 L0,27 A27,27 0 0,1 27,0 Z" />
 
-    <!-- Tiefe: abgedunkelter Streifen am unteren Rand -->
+    <!-- Ring des Q -->
     <path
-        android:fillColor="#332B5A9E"
-        android:pathData="M0,70 L108,70 L108,108 L0,108 Z" />
-
-    <!-- Glasglanz: diagonaler heller Streifen -->
-    <path
-        android:fillColor="#4DFFFFFF"
-        android:pathData="M-10,32 L46,-12 L66,-12 L10,52 Z" />
-
-    <!-- Glanzpunkt oben links -->
-    <path
-        android:fillColor="#59FFFFFF"
-        android:pathData="M26,26 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 Z" />
-
-    <!-- "Q"-Schriftzug: Ring plus Schwanz -->
-    <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="10"
+        android:strokeColor="#A78BFA"
+        android:strokeWidth="14"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M37,49 A17,17 0 1,0 71,49 A17,17 0 1,0 37,49" />
+        android:pathData="M22,46 A24,24 0 1,0 70,46 A24,24 0 1,0 22,46" />
+
+    <!-- Schwanz des Q -->
     <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="10"
+        android:strokeColor="#A78BFA"
+        android:strokeWidth="14"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M63,60 L78,77" />
+        android:pathData="M58,60 L72,74" />
+
+    <!-- Dunkler Ring um den Play-Knopf -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M79,79 m-22,0 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0 Z" />
+
+    <!-- Play-Knopf -->
+    <path
+        android:fillColor="#C4B5FD"
+        android:pathData="M79,79 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 Z" />
+
+    <!-- Dreieck, aus dem Knopf ausgespart -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M74,70 L91,79 L74,88 Z" />
 </vector>

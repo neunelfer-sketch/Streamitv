@@ -1,43 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TV-Banner (320x180 dp) für den Leanback-Launcher, im "Liquid Glass"-Stil
-     passend zum App-Icon: heller blauer Grund, Glas-Tiefe/-Glanz, weißes "Q". -->
+<!--
+  TV-Banner für Android 5 und 6 – dieselbe Bildmarke wie in `drawable-v24/`,
+  nur in Volltonfarben. Begründung siehe `mipmap/ic_launcher.xml`:
+  Farbverläufe in Vektorgrafiken gibt es erst ab API 24, darunter bliebe die
+  Fläche leer.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="320dp"
     android:height="180dp"
     android:viewportWidth="320"
     android:viewportHeight="180">
 
-    <!-- Grundfarbe: leicht blauer Hintergrund -->
+    <!-- Dunkle Fläche -->
     <path
-        android:fillColor="#79C2F2"
+        android:fillColor="#24242E"
         android:pathData="M0,0h320v180h-320z" />
 
-    <!-- Tiefe: abgedunkelter Streifen am unteren Rand -->
+    <!-- Ring des Q -->
     <path
-        android:fillColor="#332B5A9E"
-        android:pathData="M0,120 L320,120 L320,180 L0,180 Z" />
-
-    <!-- Glasglanz: diagonaler heller Streifen -->
-    <path
-        android:fillColor="#4DFFFFFF"
-        android:pathData="M-20,60 L110,-20 L160,-20 L30,80 Z" />
-
-    <!-- Glanzpunkt oben links -->
-    <path
-        android:fillColor="#59FFFFFF"
-        android:pathData="M64,46 m-16,0 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0 Z" />
-
-    <!-- "Q"-Schriftzug: Ring plus Schwanz -->
-    <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="15"
+        android:strokeColor="#A78BFA"
+        android:strokeWidth="18"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M126,85 A34,34 0 1,0 194,85 A34,34 0 1,0 126,85" />
+        android:pathData="M119,80 A31,31 0 1,0 181,80 A31,31 0 1,0 119,80" />
+
+    <!-- Schwanz des Q -->
     <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="15"
+        android:strokeColor="#A78BFA"
+        android:strokeWidth="18"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M184,109 L210,135" />
+        android:pathData="M165,98 L183,116" />
+
+    <!-- Dunkler Ring um den Play-Knopf -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M192,122 m-29,0 a29,29 0 1,0 58,0 a29,29 0 1,0 -58,0 Z" />
+
+    <!-- Play-Knopf -->
+    <path
+        android:fillColor="#C4B5FD"
+        android:pathData="M192,122 m-23,0 a23,23 0 1,0 46,0 a23,23 0 1,0 -46,0 Z" />
+
+    <!-- Dreieck, aus dem Knopf ausgespart -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M186,111 L208,122 L186,134 Z" />
 </vector>

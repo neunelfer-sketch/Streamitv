@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  App-Icon: dunkle Kachel, ein großes "Q" mit Farbverlauf, unten rechts ein
+  Play-Knopf.
+
+  Der Play-Knopf sitzt nicht willkürlich dort: Der Schwanz des Q zeigt nach
+  unten rechts und läuft genau in ihn hinein. Aus dem Buchstaben und dem
+  Abspielzeichen wird dadurch eine Form statt zweier nebeneinandergestellter
+  Zeichen.
+
+  Diese Fassung gilt ab API 24 – erst dort kennen Vektorgrafiken
+  Farbverläufe. Für ältere Geräte (Fire OS 5 auf dem Stick der 2. Generation
+  ist Android 5.1) liegt in `mipmap/` dieselbe Zeichnung in Volltonfarbe.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Dunkle Kachel mit weichen Ecken -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M27,0 L81,0 A27,27 0 0,1 108,27 L108,81 A27,27 0 0,1 81,108 L27,108 A27,27 0 0,1 0,81 L0,27 A27,27 0 0,1 27,0 Z" />
+
+    <!-- Kaum sichtbare Aufhellung nach oben links: gibt der Fläche Tiefe,
+         ohne dass ein zweiter Farbton auffällt. -->
+    <path android:pathData="M27,0 L81,0 A27,27 0 0,1 108,27 L108,81 A27,27 0 0,1 81,108 L27,108 A27,27 0 0,1 0,81 L0,27 A27,27 0 0,1 27,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108"
+                android:startColor="#14FFFFFF"
+                android:endColor="#00FFFFFF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Ring des Q -->
+    <path
+        android:strokeWidth="14"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M22,46 A24,24 0 1,0 70,46 A24,24 0 1,0 22,46">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="22"
+                android:startY="70"
+                android:endX="70"
+                android:endY="22"
+                android:startColor="#7C5CFF"
+                android:endColor="#D6D3FF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Schwanz des Q, läuft auf den Play-Knopf zu -->
+    <path
+        android:strokeWidth="14"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M58,60 L72,74">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="58"
+                android:startY="60"
+                android:endX="72"
+                android:endY="74"
+                android:startColor="#8F6CFF"
+                android:endColor="#B9A8FF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Dunkler Ring um den Play-Knopf: trennt ihn sauber vom Schwanz,
+         auch wenn beide dieselbe Helligkeit hätten. -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M79,79 m-22,0 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0 Z" />
+
+    <!-- Play-Knopf -->
+    <path
+        android:pathData="M79,79 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="61"
+                android:startY="97"
+                android:endX="97"
+                android:endY="61"
+                android:startColor="#A78BFA"
+                android:endColor="#E2E0FF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Dreieck, aus dem Knopf ausgespart -->
+    <path
+        android:fillColor="#24242E"
+        android:pathData="M74,70 L91,79 L74,88 Z" />
+</vector>
