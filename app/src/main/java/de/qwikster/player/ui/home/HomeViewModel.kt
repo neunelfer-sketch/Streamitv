@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -45,6 +46,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -151,6 +153,9 @@ class HomeViewModel @Inject constructor(
 
     /** Zuletzt gefundene neue Fassung – überlebt einen Fehlversuch. */
     private var pendingUpdate: UpdateInfo? = null
+
+    /** Läuft das Vorladen der Programmzeitschrift? Siehe [prefetchEpg]. */
+    private var epgPrefetchJob: Job? = null
 
     /** Läuft gerade ein Download? Wird von "Später" mit abgebrochen. */
     private var updateJob: Job? = null
@@ -359,6 +364,16 @@ class HomeViewModel @Inject constructor(
             }
         }
 
+        // Beim Start ist keine Kategorie aktiv *ausgewählt* worden – die
+        // erste ergibt sich, sobald die Leiste geladen ist. Damit auch dann
+        // vorgeladen wird und nicht erst beim ersten Wechsel, wird sie hier
+        // einmalig abgewartet. `first()` beendet die Beobachtung sofort
+        // wieder; ein dauerhafter Sammler würde die Abfragen dahinter auch
+        // während der Wiedergabe am Leben halten.
+        viewModelScope.launch {
+            prefetchEpg(effectiveCategory.filterNotNull().first())
+        }
+
         // Einmalig nach einer Aktualisierung: kurzer "Was ist neu"-Hinweis.
         // Bei einer frischen Installation (kein gemerkter Stand) bleibt er
         // aus – neue Nutzer kennen die App noch gar nicht, ein "neu ist..."
@@ -450,6 +465,42 @@ class HomeViewModel @Inject constructor(
         // Fokus zurücksetzen, damit die Vorschau sofort zum ersten Sender
         // der neuen Kategorie springt.
         focusedChannelId.value = null
+        prefetchEpg(item)
+    }
+
+    /**
+     * Lädt die Programmzeitschrift der gewählten Kategorie im Voraus.
+     *
+     * Bisher passierte das erst, wenn der Fokus auf einem Sender stand –
+     * beim Durchblättern blieb die Zeile dann für einen Moment leer. Jetzt
+     * beginnt es, sobald die Kategorie gewählt ist.
+     *
+     * Die Wartezeit vorweg ist wesentlich: Die Auswahl folgt dem Fokus, ein
+     * Weg durch die Kategorienleiste wählt also jede überflogene Kategorie
+     * kurz aus. Ohne sie würde jede davon eine Ladewelle auslösen, obwohl
+     * der Zuschauer sie gar nicht sehen wollte. Erst wer stehen bleibt,
+     * löst etwas aus – dieselbe Überlegung wie bei der Vorschau.
+     */
+    private fun prefetchEpg(category: CategoryItem) {
+        epgPrefetchJob?.cancel()
+        epgPrefetchJob = viewModelScope.launch {
+            delay(EPG_PREFETCH_DELAY_MS)
+            val playlist = repository.getActivePlaylist() ?: return@launch
+
+            // Auf die Senderliste *dieser* Kategorie warten: Beim Umschalten
+            // steht in [channels] für einen Augenblick noch die vorherige.
+            val list = withTimeoutOrNull(CHANNEL_LIST_TIMEOUT_MS) {
+                channels.first { effectiveCategory.value?.key == category.key }
+            } ?: return@launch
+
+            // Sender ohne laufende Sendung sind genau die, denen die
+            // Programmzeitschrift fehlt – die Senderliste weiß das ohnehin
+            // schon, es braucht dafür keine eigene Abfrage.
+            epgRepository.prefetchShortEpg(
+                playlist = playlist,
+                channels = list.filter { it.current == null }.map { it.channel },
+            )
+        }
     }
 
     fun onChannelFocused(channel: Channel) {
@@ -629,5 +680,20 @@ class HomeViewModel @Inject constructor(
          * aufgeht, kurz genug, dass es beim Verweilen nicht träge wirkt.
          */
         private const val PREVIEW_DELAY_MS = 900L
+
+        /**
+         * Wartezeit, bevor die Programmzeitschrift einer Kategorie vorgeladen
+         * wird. Etwas länger als bei der Vorschau: Ein Vorladen kostet
+         * mehrere Anfragen statt einer, deshalb soll wirklich nur auslösen,
+         * wer bei einer Kategorie bleibt.
+         */
+        private const val EPG_PREFETCH_DELAY_MS = 1_200L
+
+        /**
+         * So lange wird höchstens auf die Senderliste der neuen Kategorie
+         * gewartet. Bleibt sie aus (leere Kategorie, laufender Abgleich),
+         * endet das Vorladen still, statt einen Auftrag offen zu halten.
+         */
+        private const val CHANNEL_LIST_TIMEOUT_MS = 8_000L
     }
 }

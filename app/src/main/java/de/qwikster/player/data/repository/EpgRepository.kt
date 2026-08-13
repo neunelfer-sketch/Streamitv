@@ -22,6 +22,7 @@ import de.qwikster.player.data.remote.epg.XmltvParser
 import de.qwikster.player.data.remote.xtream.XtreamApi
 import de.qwikster.player.data.remote.xtream.XtreamMapper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
@@ -60,6 +61,20 @@ class EpgRepository @Inject constructor(
     private val httpClient: OkHttpClient,
     private val xtreamApi: XtreamApi,
 ) {
+
+    /**
+     * Sender, deren Kurz-EPG in dieser Sitzung schon einmal angefragt wurde –
+     * siehe [prefetchShortEpg].
+     *
+     * Sitzt hier und nicht im ViewModel, weil dieses Objekt die ganze
+     * App-Laufzeit lebt: Ein Ausflug in den Player und zurück würde die
+     * Merkliste sonst leeren und alles noch einmal anfragen. Die Playlist
+     * gehört mit in den Schlüssel, weil Sender-IDs nur innerhalb einer
+     * Playlist eindeutig sind.
+     */
+    private val shortEpgAttempted = java.util.Collections.newSetFromMap(
+        java.util.concurrent.ConcurrentHashMap<Pair<Long, String>, Boolean>(),
+    )
 
     // -----------------------------------------------------------------------
     // Abfragen für die UI
@@ -292,6 +307,45 @@ class EpgRepository @Inject constructor(
      * Holt das Kurz-EPG eines einzelnen Senders direkt vom Panel.
      * Wird genutzt, wenn im Guide für einen Sender nichts hinterlegt ist.
      */
+    /**
+     * Holt das Kurz-EPG für eine ganze Senderliste im Voraus.
+     *
+     * Ohne das passierte es erst beim Fokussieren eines Senders: Wer die
+     * Liste durchblättert, sah dann für jeden Sender einen kurzen Moment
+     * nichts, bis die einzelne Anfrage zurück war. Vorgeladen steht es
+     * bereits da, sobald der Fokus ankommt.
+     *
+     * Drei Bremsen, damit daraus keine Lawine wird – Kategorien haben
+     * mitunter tausende Sender, und jedes Kurz-EPG ist eine eigene Anfrage:
+     *
+     * 1. [PREFETCH_LIMIT] begrenzt, wie viele Sender je Kategorie überhaupt
+     *    angefragt werden. Es sind die ersten der Liste, also genau die, die
+     *    der Zuschauer als Nächstes sieht.
+     * 2. [PREFETCH_DELAY_MS] zwischen zwei Anfragen. Panels beantworten einen
+     *    Schwall gleichzeitiger Zugriffe gern mit einer Abfuhr für alles
+     *    Weitere, auch für die laufende Wiedergabe.
+     * 3. [shortEpgAttempted] merkt sich, wonach schon einmal gefragt wurde.
+     *    Sender ohne Programmdaten beim Anbieter würden sonst bei jedem
+     *    Kategoriewechsel erneut abgefragt, und zwar dauerhaft erfolglos.
+     *
+     * Läuft sequenziell und ist an jeder Stelle abbrechbar: Der Aufrufer
+     * bricht ab, sobald eine andere Kategorie gewählt wird.
+     */
+    suspend fun prefetchShortEpg(playlist: Playlist, channels: List<Channel>) {
+        if (playlist.type != PlaylistType.XTREAM) return
+
+        var fetched = 0
+        for (channel in channels) {
+            if (fetched >= PREFETCH_LIMIT) return
+            if (channel.epgChannelId == null) continue
+            if (!shortEpgAttempted.add(playlist.id to channel.streamId)) continue
+
+            fetchShortEpg(playlist, channel)
+            fetched++
+            delay(PREFETCH_DELAY_MS)
+        }
+    }
+
     suspend fun fetchShortEpg(playlist: Playlist, channel: Channel): List<EpgProgram> {
         if (playlist.type != PlaylistType.XTREAM) return emptyList()
         val epgId = channel.epgChannelId ?: return emptyList()
@@ -325,5 +379,17 @@ class EpgRepository @Inject constructor(
          * drei, der Rest ist Sicherheitsabstand.
          */
         private const val CHANNEL_ID_CHUNK = 900
+
+        /**
+         * Sender je Kategorie, für die das Kurz-EPG vorgeladen wird.
+         *
+         * Genug, um die Senderliste bis weit über den sichtbaren Bereich
+         * hinaus zu füllen, und wenig genug, dass ein Kategoriewechsel das
+         * Panel nicht mit hunderten Anfragen überzieht.
+         */
+        private const val PREFETCH_LIMIT = 60
+
+        /** Abstand zwischen zwei Vorablade-Anfragen. */
+        private const val PREFETCH_DELAY_MS = 150L
     }
 }
