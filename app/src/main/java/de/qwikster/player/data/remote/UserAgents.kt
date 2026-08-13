@@ -24,14 +24,23 @@ import okhttp3.Response
  *    steht praktisch überall auf der Positivliste.
  * 3. **ffmpeg.** Was die meisten Set-Top-Boxen und Panel-eigenen Werkzeuge
  *    intern benutzen.
- * 4. **Ein gewöhnlicher Browser.** Der letzte Ausweg für Schutzschichten, die
+ * 4. **Die üblichen Android-Kennungen.** Die verbreiteten Player für
+ *    Fernseher sind fast alle Android-Anwendungen auf ExoPlayer- oder
+ *    OkHttp-Grundlage und melden sich entsprechend. Wer solche Player
+ *    durchlässt, erkennt sie in aller Regel an genau diesen Zeichenketten.
+ * 5. **Ein gewöhnlicher Browser.** Der letzte Ausweg für Schutzschichten, die
  *    Abspielprogramme grundsätzlich nicht mögen und nur Browser durchlassen.
+ *
+ * Die Kennungen unter 4 sind nach bestem Wissen nachgebildet, nicht aus den
+ * jeweiligen Programmen ausgelesen. Trifft eine davon nicht, hilft nur die
+ * echte Zeichenkette – auslesbar, indem man das funktionierende Programm
+ * einmal auf eine mitschreibende Adresse zeigen lässt.
  *
  * Der Preis ist eng begrenzt: Weitergeprobiert wird ausschließlich nach einer
  * *Abweisung*. Ein Serverfehler, eine falsche Adresse oder eine
  * Zeitüberschreitung bricht sofort ab – die scheitern beim zweiten Anlauf
- * genauso, und vier Fehlversuche statt einem würden nur die Wartezeit
- * vervierfachen.
+ * genauso, und ein Dutzend Fehlversuche statt einem würde nur die Wartezeit
+ * vervielfachen.
  */
 object UserAgents {
 
@@ -43,12 +52,43 @@ object UserAgents {
 
     private const val FFMPEG = "Lavf/60.16.100"
 
+    /**
+     * Was Androids eigener HTTP-Unterbau sendet, wenn eine Anwendung gar
+     * keinen Namen setzt. Wer "Android-Apps allgemein" durchlässt, prüft
+     * meistens hierauf.
+     */
+    private const val ANDROID = "Dalvik/2.1.0 (Linux; U; Android 11; AFTKA Build/RS8135.4021N)"
+
+    /** Der Standardname von OkHttp – die Grundlage fast aller Android-Player. */
+    private const val OKHTTP = "okhttp/4.12.0"
+
+    /** Die Form, in der sich ExoPlayer-Anwendungen üblicherweise melden. */
+    private const val EXOPLAYER =
+        "IBOPlayer/1.0 (Linux;Android 11) ExoPlayerLib/2.19.1"
+
+    private const val IBO = "IBOPlayer"
+
+    private const val TIVIMATE = "TiviMate/5.0.0 (Android)"
+
+    private const val SMARTERS = "IPTVSmartersPlayer"
+
     private const val BROWSER =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
     /** Die Reihenfolge, in der beim Import durchprobiert wird. */
-    val ALL = listOf(DEFAULT, VLC, FFMPEG, BROWSER)
+    val ALL = listOf(
+        DEFAULT,
+        VLC,
+        FFMPEG,
+        ANDROID,
+        OKHTTP,
+        EXOPLAYER,
+        IBO,
+        TIVIMATE,
+        SMARTERS,
+        BROWSER,
+    )
 }
 
 /**
