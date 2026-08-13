@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -129,7 +130,12 @@ class HomeViewModel @Inject constructor(
     /** Aus, solange der Vollbild-Player im Vordergrund ist. */
     private var previewEnabled = true
 
-    /** Ausgewählte Kategorie. Startwert: "Alle Sender". */
+    /**
+     * Angewählte Kategorie – der Wunsch des Zuschauers, nicht zwingend das,
+     * was angezeigt wird. Welcher Eintrag daraus wirklich wird, entscheidet
+     * [effectiveCategory]; der Startwert ist nur ein Platzhalter, bis die
+     * Kategorien geladen sind.
+     */
     private val selectedCategory = MutableStateFlow<CategoryItem>(CategoryItem.All(0))
     private val focusedChannelId = MutableStateFlow<String?>(null)
     private val searchQuery = MutableStateFlow("")
@@ -209,25 +215,75 @@ class HomeViewModel @Inject constructor(
             repository.observeChannels(ChannelFilter.Recent).map { it.size },
             hiddenCategories,
         ) { groups, allCount, favoriteCount, recentCount, hidden ->
+            val groupItems = groups.filterNot { it.id in hidden }.map { CategoryItem.Group(it) }
             buildList {
-                add(CategoryItem.All(allCount))
+                // "Alle Sender" ist absichtlich kein regulärer Eintrag mehr:
+                // Bei einer Playlist mit hunderten Kategorien ist er der
+                // einzige, den man nie gezielt anwählt, dafür aber jedes Mal
+                // durchqueren muss – und er zeigt genau die Sender, die der
+                // Zuschauer über die Kategorie-Sichtbarkeit ausgeblendet hat,
+                // nur eben nach Kategorie unsortiert.
+                //
+                // Als Notnagel bleibt er, solange die Playlist überhaupt
+                // keine Kategorien mitbringt: Eine M3U-Datei ohne
+                // `group-title` liefert keine, und ohne diesen Eintrag stünde
+                // der Zuschauer vor einer leeren Leiste und einer leeren
+                // Senderliste.
+                //
+                // Geprüft wird `groups`, nicht `groupItems`: Wer alle
+                // Kategorien selbst ausgeblendet hat, soll keinen Eintrag
+                // zurückbekommen, der die ausgeblendeten Sender zählt, aber
+                // (dank der Filterung im Repository) keinen einzigen anzeigt.
+                if (groups.isEmpty()) add(CategoryItem.All(allCount))
                 // Leere Spezial-Kategorien blenden wir aus, damit die Liste
                 // bei einer frischen Installation nicht halb tot wirkt.
                 if (favoriteCount > 0) add(CategoryItem.Favorites(favoriteCount))
                 if (recentCount > 0) add(CategoryItem.Recent(recentCount))
-                addAll(groups.filterNot { it.id in hidden }.map { CategoryItem.Group(it) })
+                addAll(groupItems)
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Die tatsächlich angezeigte Kategorie.
+     *
+     * [selectedCategory] startet mit "Alle Sender", einem Eintrag, den es in
+     * der Leiste in aller Regel gar nicht mehr gibt. Statt diesen Startwert
+     * beim ersten Laden nachträglich umzusetzen – was einen sichtbaren
+     * Sprung und beim Zurückkehren aus dem Player einen verlorenen Fokus
+     * bedeutete –, wird er hier auf den ersten wirklich vorhandenen Eintrag
+     * abgebildet.
+     *
+     * Solange noch keine Kategorie vorliegt, ist das Ergebnis bewusst `null`
+     * und **nicht** "Alle Sender": Ein solcher Rückfall würde für einen
+     * Moment sämtliche Sender laden – also genau die ausgeblendeten mit, die
+     * dann in der Vorschau kurz zu hören wären.
+     *
+     * `distinctUntilChanged` vergleicht nur den Schlüssel. Die Zählungen in
+     * den Einträgen ändern sich während der Synchronisierung ständig; ohne
+     * das würde jede geänderte Zahl die komplette Senderabfrage neu anstoßen.
+     */
+    private val effectiveCategory: StateFlow<CategoryItem?> =
+        combine(selectedCategory, categories) { selected, list ->
+            if (list.isEmpty()) null else list.firstOrNull { it.key == selected.key } ?: list.first()
+        }
+            .distinctUntilChanged { old, new -> old?.key == new?.key }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     // --- Sender der gewählten Kategorie ------------------------------------
 
     private val channels: StateFlow<List<ChannelWithProgram>> =
-        combine(selectedCategory, searchQuery) { category, query ->
-            if (query.isBlank()) category.toFilter() else ChannelFilter.Search(query)
+        combine(effectiveCategory, searchQuery) { category, query ->
+            when {
+                query.isNotBlank() -> ChannelFilter.Search(query)
+                category != null -> category.toFilter()
+                else -> null
+            }
         }
             // Ausgeblendete Kategorien filtert das Repository heraus – für
             // alle Bildschirme gemeinsam, siehe IptvRepository.withoutHidden.
-            .flatMapLatest { filter -> repository.observeChannels(filter) }
+            .flatMapLatest { filter ->
+                if (filter == null) flowOf(emptyList<Channel>()) else repository.observeChannels(filter)
+            }
             // Bei jedem Ticker-Schlag die laufende Sendung neu bestimmen.
             .combine(nowTicker) { channelList, now -> channelList to now }
             .flatMapLatest { (channelList, now) ->
@@ -241,7 +297,7 @@ class HomeViewModel @Inject constructor(
         repository.observeActivePlaylist(),
         categories,
         channels,
-        combine(selectedCategory, focusedChannelId, searchQuery) { c, f, q -> Triple(c, f, q) },
+        combine(effectiveCategory, focusedChannelId, searchQuery) { c, f, q -> Triple(c, f, q) },
         combine(settingsStore.settings, syncMessage, errorMessage, upcoming, updateVersion, ::AuxState),
     ) { playlist, categoryList, channelList, (category, focusedId, query), aux ->
         val focused = channelList.firstOrNull { it.channel.streamId == focusedId }
@@ -250,7 +306,7 @@ class HomeViewModel @Inject constructor(
         HomeUiState(
             playlist = playlist,
             categories = categoryList,
-            selectedCategoryKey = category.key,
+            selectedCategoryKey = category?.key,
             channels = channelList,
             focusedChannel = focused,
             upcoming = aux.upcoming,
