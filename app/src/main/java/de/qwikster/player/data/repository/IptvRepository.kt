@@ -195,6 +195,40 @@ class IptvRepository @Inject constructor(
             vodDao.observeSeries(playlist.id, categoryId).map { list -> list.map { it.toModel() } }
         }
 
+    // -----------------------------------------------------------------------
+    // Startansicht: nur so viele Titel, wie eine Reihe zeigt
+    // -----------------------------------------------------------------------
+    //
+    // Die Beschränkung passiert in der Datenbank statt im Speicher – bei
+    // Panels mit sechsstelligen Katalogen ist das der Unterschied zwischen
+    // zwanzig gelesenen Zeilen und einer Viertelmillion.
+
+    fun observeNewestMovies(limit: Int): Flow<List<Movie>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest emptyFlow()
+            vodDao.observeNewestMovies(playlist.id, limit).map { list -> list.map { it.toModel() } }
+        }
+
+    fun observeCategoryMovies(categoryId: String, limit: Int): Flow<List<Movie>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest emptyFlow()
+            vodDao.observeCategoryMovies(playlist.id, categoryId, limit)
+                .map { list -> list.map { it.toModel() } }
+        }
+
+    fun observeNewestSeries(limit: Int): Flow<List<Series>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest emptyFlow()
+            vodDao.observeNewestSeries(playlist.id, limit).map { list -> list.map { it.toModel() } }
+        }
+
+    fun observeCategorySeries(categoryId: String, limit: Int): Flow<List<Series>> =
+        playlistDao.observeActive().flatMapLatest { playlist ->
+            if (playlist == null) return@flatMapLatest emptyFlow()
+            vodDao.observeCategorySeries(playlist.id, categoryId, limit)
+                .map { list -> list.map { it.toModel() } }
+        }
+
     /** Zuletzt gesehene Filme samt Fortsetzpunkt. */
     fun observeRecentMovies(): Flow<List<RecentMovieRow>> =
         playlistDao.observeActive().flatMapLatest { playlist ->

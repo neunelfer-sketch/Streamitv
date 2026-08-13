@@ -196,16 +196,7 @@ class VodViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /**
-     * Die Reihen der Startansicht.
-     *
-     * Alles stammt aus **einer** Abfrage über den gesamten Bestand, der
-     * ohnehin geladen wird, sobald jemand "Alle" wählt – gruppiert wird im
-     * Speicher. Je Reihe nur [ROW_ITEM_LIMIT] Einträge: Weiter kommt
-     * niemand, ohne die Reihe komplett durchzublättern, und jedes Poster
-     * kostet Speicher.
-     */
-    /** Die vier Eingaben der Startansicht – `Triple` reicht dafür nicht mehr. */
+    /** Die Eingaben der Startansicht – `Triple` reicht dafür nicht mehr. */
     private data class OverviewInput(
         val kind: StreamKind,
         val categories: List<Category>,
@@ -213,86 +204,120 @@ class VodViewModel @Inject constructor(
         val hidden: Set<String>,
     )
 
+    /**
+     * Die Reihen der Startansicht.
+     *
+     * **Jede Reihe holt sich ihre zwanzig Poster selbst aus der Datenbank.**
+     * Das klingt nach mehr Arbeit als eine einzige große Abfrage, ist aber
+     * das Gegenteil: Vorher wurde der gesamte Bestand geladen, im Speicher
+     * sortiert, gruppiert und dann auf zwanzig je Reihe beschnitten. Bei
+     * einem Panel mit 178.000 Filmen entstand so eine Viertelmillion
+     * Objekte, um am Ende ein paar hundert Poster zu zeigen – und zwar bei
+     * jeder Aktualisierung aufs Neue. Auf einem Fire TV Stick ist das der
+     * Weg in dauernde Speicherbereinigungen und irgendwann in den Abbruch
+     * wegen Speichermangels.
+     *
+     * Jetzt liest die Datenbank je Reihe genau zwanzig Zeilen, getragen vom
+     * Index auf `(playlistId, categoryId)`.
+     *
+     * Die Zahl der Kategoriereihen ist auf [OVERVIEW_ROW_LIMIT] begrenzt:
+     * Jede Reihe ist eine eigene offene Abfrage, und niemand blättert sich
+     * mit dem Steuerkreuz durch hundert Reihen. Die übrigen Kategorien
+     * bleiben über die Liste links vollständig erreichbar.
+     */
     private val overviewRows: StateFlow<List<VodRow>> =
         combine(kind, realCategories, recentItems, hiddenCategories, ::OverviewInput)
             .flatMapLatest { (streamKind, cats, recent, hidden) ->
-            val allItems = if (streamKind == StreamKind.SERIES) {
-                repository.observeSeries(null).map { list ->
-                    list.map { series ->
-                        series.categoryId to VodItem(
-                            id = series.seriesId,
-                            title = series.name,
-                            subtitle = series.year,
-                            posterUrl = series.posterUrl,
-                        ) to series.lastModified
+                val isSeries = streamKind == StreamKind.SERIES
+                val shownCategories = cats.take(OVERVIEW_ROW_LIMIT)
+
+                // "Neu hinzugefügt" geht quer durch alle Kategorien, kennt
+                // also auch die ausgeblendeten. Deshalb wird großzügiger
+                // gelesen und erst danach aussortiert – sonst bliebe die
+                // Reihe bei vielen ausgeblendeten Kategorien halb leer.
+                // Ein paar hundert Zeilen sind dafür ein billiger Preis.
+                val newestFlow = if (isSeries) {
+                    repository.observeNewestSeries(NEWEST_FETCH_LIMIT).map { list ->
+                        list.withoutHidden(hidden) { it.categoryId }
+                            .take(ROW_ITEM_LIMIT)
+                            .map { series -> toItem(series) }
+                    }
+                } else {
+                    repository.observeNewestMovies(NEWEST_FETCH_LIMIT).map { list ->
+                        list.withoutHidden(hidden) { it.categoryId }
+                            .take(ROW_ITEM_LIMIT)
+                            .map { movie -> toItem(movie) }
                     }
                 }
-            } else {
-                repository.observeMovies(null).map { list ->
-                    list.map { movie ->
-                        movie.categoryId to VodItem(
-                            id = movie.streamId,
-                            title = movie.name,
-                            subtitle = movie.year,
-                            posterUrl = movie.posterUrl,
-                        ) to movie.addedAt
+
+                val categoryFlows = shownCategories.map { category ->
+                    if (isSeries) {
+                        repository.observeCategorySeries(category.id, ROW_ITEM_LIMIT)
+                            .map { list -> list.map { series -> toItem(series) } }
+                    } else {
+                        repository.observeCategoryMovies(category.id, ROW_ITEM_LIMIT)
+                            .map { list -> list.map { movie -> toItem(movie) } }
                     }
                 }
-            }
 
-            allItems.map { all ->
-                // Ausgeblendete Kategorien fallen komplett weg – auch aus
-                // "Neu hinzugefügt". Sonst tauchte ausgerechnet in der
-                // obersten Reihe genau das wieder auf, was der Zuschauer
-                // gerade weggeblendet hat.
-                val entries = if (hidden.isEmpty()) all else all.filterNot { it.first.first in hidden }
-                buildList {
-                    // 1. Angefangenes zuerst. Wer etwas offen hat, will fast
-                    //    immer genau dort weitermachen – das gehört nicht in
-                    //    eine Kategorie weiter unten, sondern nach ganz oben.
-                    if (recent.isNotEmpty()) {
-                        add(
-                            VodRow(
-                                id = RECENT_CATEGORY_ID,
-                                title = context.getString(R.string.category_continue_watching),
-                                items = recent.take(ROW_ITEM_LIMIT),
-                            ),
-                        )
-                    }
-
-                    // 2. Neuzugänge über alle Kategorien hinweg.
-                    val newest = entries.sortedByDescending { it.second }
-                        .map { it.first.second }
-                        .take(ROW_ITEM_LIMIT)
-                    if (newest.isNotEmpty()) {
-                        add(
-                            VodRow(
-                                id = "__new__",
-                                title = context.getString(R.string.category_recently_added),
-                                items = newest,
-                            ),
-                        )
-                    }
-
-                    // 3. Je Kategorie eine Reihe, in derselben Reihenfolge wie
-                    //    die Liste links – sonst suchte man eine Kategorie an
-                    //    zwei Stellen an verschiedenen Positionen.
-                    val byCategory = entries.groupBy({ it.first.first }, { it.first.second })
-                    cats.forEach { category ->
-                        val items = byCategory[category.id].orEmpty()
-                        if (items.isNotEmpty()) {
+                combine(listOf(newestFlow) + categoryFlows) { results ->
+                    buildList {
+                        // 1. Angefangenes zuerst. Wer etwas offen hat, will fast
+                        //    immer genau dort weitermachen – das gehört nicht in
+                        //    eine Kategorie weiter unten, sondern nach ganz oben.
+                        if (recent.isNotEmpty()) {
                             add(
                                 VodRow(
-                                    id = category.id,
-                                    title = category.name,
-                                    items = items.take(ROW_ITEM_LIMIT),
+                                    id = RECENT_CATEGORY_ID,
+                                    title = context.getString(R.string.category_continue_watching),
+                                    items = recent.take(ROW_ITEM_LIMIT),
                                 ),
                             )
                         }
+
+                        // 2. Neuzugänge über alle Kategorien hinweg.
+                        results.first().takeIf { it.isNotEmpty() }?.let { newest ->
+                            add(
+                                VodRow(
+                                    id = "__new__",
+                                    title = context.getString(R.string.category_recently_added),
+                                    items = newest,
+                                ),
+                            )
+                        }
+
+                        // 3. Je Kategorie eine Reihe, in derselben Reihenfolge wie
+                        //    die Liste links – sonst suchte man eine Kategorie an
+                        //    zwei Stellen an verschiedenen Positionen.
+                        shownCategories.forEachIndexed { index, category ->
+                            val items = results[index + 1]
+                            if (items.isNotEmpty()) {
+                                add(
+                                    VodRow(
+                                        id = category.id,
+                                        title = category.name,
+                                        items = items,
+                                    ),
+                                )
+                            }
+                        }
                     }
                 }
-            }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private fun toItem(movie: de.qwikster.player.data.model.Movie) = VodItem(
+        id = movie.streamId,
+        title = movie.name,
+        subtitle = movie.year,
+        posterUrl = movie.posterUrl,
+    )
+
+    private fun toItem(series: de.qwikster.player.data.model.Series) = VodItem(
+        id = series.seriesId,
+        title = series.name,
+        subtitle = series.year,
+        posterUrl = series.posterUrl,
+    )
 
     /**
      * Die tatsächlich wirksame Auswahl: Fällt sie auf "Zuletzt gesehen",
@@ -471,5 +496,23 @@ class VodViewModel @Inject constructor(
          * dem Steuerkreuz ohnehin nicht zu durchqueren.
          */
         const val ROW_ITEM_LIMIT = 20
+
+        /**
+         * Höchstzahl Kategoriereihen in der Startansicht.
+         *
+         * Jede Reihe hält eine eigene offene Datenbankabfrage. Bei Panels
+         * mit dreistellig vielen Kategorien wären das ebenso viele – und
+         * niemand blättert sich mit dem Steuerkreuz durch hundert Reihen.
+         * Die übrigen Kategorien bleiben über die Liste links vollständig
+         * erreichbar.
+         */
+        const val OVERVIEW_ROW_LIMIT = 20
+
+        /**
+         * Wie viele Neuzugänge gelesen werden, bevor ausgeblendete
+         * Kategorien aussortiert werden. Großzügig, damit die Reihe auch
+         * dann voll wird, wenn der Zuschauer das meiste ausgeblendet hat.
+         */
+        const val NEWEST_FETCH_LIMIT = 300
     }
 }

@@ -293,6 +293,62 @@ interface VodDao {
     )
     fun observeSeries(playlistId: Long, categoryId: String?): Flow<List<SeriesEntity>>
 
+    // -----------------------------------------------------------------------
+    // Abfragen für die Startansicht
+    // -----------------------------------------------------------------------
+    //
+    // Die Reihen der Startansicht zeigen je zwanzig Poster. Bis hierher holte
+    // sich die Oberfläche dafür den **gesamten** Bestand und sortierte,
+    // gruppierte und beschnitt ihn im Speicher. Bei einem Panel mit 178.000
+    // Filmen sind das eine Viertelmillion frisch erzeugter Objekte je
+    // Aktualisierung – auf einem Fire TV Stick der sichere Weg in lange
+    // Speicherbereinigungen und irgendwann in den Abbruch wegen
+    // Speichermangels.
+    //
+    // Die Beschränkung gehört in die Datenbank. `LIMIT` liest genau so viele
+    // Zeilen, wie gebraucht werden; der Index auf `(playlistId, categoryId)`
+    // trägt dabei die Einschränkung je Kategorie.
+
+    @Query(
+        """
+        SELECT * FROM movies
+        WHERE playlistId = :playlistId
+        ORDER BY addedAt DESC, name
+        LIMIT :limit
+        """,
+    )
+    fun observeNewestMovies(playlistId: Long, limit: Int): Flow<List<MovieEntity>>
+
+    @Query(
+        """
+        SELECT * FROM movies
+        WHERE playlistId = :playlistId AND categoryId = :categoryId
+        ORDER BY addedAt DESC, name
+        LIMIT :limit
+        """,
+    )
+    fun observeCategoryMovies(playlistId: Long, categoryId: String, limit: Int): Flow<List<MovieEntity>>
+
+    @Query(
+        """
+        SELECT * FROM series
+        WHERE playlistId = :playlistId
+        ORDER BY lastModified DESC, name
+        LIMIT :limit
+        """,
+    )
+    fun observeNewestSeries(playlistId: Long, limit: Int): Flow<List<SeriesEntity>>
+
+    @Query(
+        """
+        SELECT * FROM series
+        WHERE playlistId = :playlistId AND categoryId = :categoryId
+        ORDER BY lastModified DESC, name
+        LIMIT :limit
+        """,
+    )
+    fun observeCategorySeries(playlistId: Long, categoryId: String, limit: Int): Flow<List<SeriesEntity>>
+
     @Query("SELECT * FROM episodes WHERE playlistId = :playlistId AND seriesId = :seriesId ORDER BY season, episodeNumber")
     fun observeEpisodes(playlistId: Long, seriesId: String): Flow<List<EpisodeEntity>>
 
