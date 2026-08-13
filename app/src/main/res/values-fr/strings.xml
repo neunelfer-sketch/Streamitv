@@ -262,6 +262,8 @@
     <string name="error_content_not_loaded">Impossible de charger ce contenu</string>
     <string name="error_connection_failed">Échec de la connexion</string>
     <string name="error_http_status">Le serveur a répondu HTTP %1$d</string>
+    <string name="error_http_vendor_status">Rejeté par le fournisseur (code %1$d). Ce n’est pas une erreur HTTP normale mais un blocage devant le panneau – généralement à cause du lecteur, de la connexion internet (VPN/serveur) ou de la région. Les identifiants sont en général corrects.</string>
+    <string name="login_api_blocked_fallback">Le fournisseur bloque l’API du panneau (code %1$d). L’accès est configuré via l’export M3U : la TV en direct et les films fonctionnent, mais cette voie ne fournit pas les séries.</string>
     <string name="error_http_forbidden">Refusé par le fournisseur (403). En général, toutes les connexions simultanées autorisées sont déjà utilisées, ou l\'accès est lié à une autre connexion Internet.</string>
     <string name="error_github_http_status">GitHub a répondu HTTP %1$d</string>
     <string name="error_empty_response">Réponse vide</string>

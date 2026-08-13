@@ -13,10 +13,26 @@ import de.qwikster.player.R
  * Internetverbindung gebunden ist. Beides kann der Zuschauer selbst prüfen,
  * sobald er es weiß.
  */
-fun Context.httpErrorMessage(code: Int): String = when (code) {
-    403 -> getString(R.string.error_http_forbidden)
+fun Context.httpErrorMessage(code: Int): String = when {
+    code == 403 -> getString(R.string.error_http_forbidden)
+    isVendorStatus(code) -> getString(R.string.error_http_vendor_status, code)
     else -> getString(R.string.error_http_status, code)
 }
+
+/**
+ * Ein Statuscode, den es im HTTP-Standard gar nicht gibt (gültig sind 100–599).
+ *
+ * Solche Codes – in freier Wildbahn etwa 884 – stammen nicht von einem
+ * Webserver im üblichen Sinn, sondern von einer vorgeschalteten Schutzschicht
+ * des Anbieters: Sperrlisten für Abspielprogramme, VPN-/Server-Erkennung,
+ * Regionssperren oder ein Weiterverteilungsschutz. Für den Zuschauer heißt
+ * das etwas völlig anderes als ein technischer Fehler – die Zugangsdaten sind
+ * in aller Regel richtig, die Anfrage wird nur abgewiesen. Deshalb bekommt
+ * dieser Fall eine eigene Meldung, und die App unternimmt vorher noch einen
+ * zweiten Versuch unter einem verbreiteten Abspielprogramm-Namen (siehe
+ * `AppModule.provideOkHttpClient`).
+ */
+fun isVendorStatus(code: Int): Boolean = code < 100 || code > 599
 
 /**
  * Hängt einen kurzen Diagnosecode an eine für den Nutzer bestimmte

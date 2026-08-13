@@ -177,6 +177,14 @@ fun LoginScreen(
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = TvAccent)
                     Spacer(Modifier.height(TvSpacing.small))
                 }
+                state.noticeMessage?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TvOnSurfaceMuted,
+                    )
+                    Spacer(Modifier.height(TvSpacing.small))
+                }
                 state.errorMessage?.let {
                     Text(
                         text = it,

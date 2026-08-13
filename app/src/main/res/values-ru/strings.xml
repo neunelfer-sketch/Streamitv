@@ -262,6 +262,8 @@
     <string name="error_content_not_loaded">Не удалось загрузить содержимое</string>
     <string name="error_connection_failed">Не удалось подключиться</string>
     <string name="error_http_status">Сервер ответил кодом HTTP %1$d</string>
+    <string name="error_http_vendor_status">Отклонено поставщиком (код %1$d). Это не обычная ошибка HTTP, а блокировка перед панелью – чаще всего из-за плеера, интернет-соединения (VPN/сервер) или региона. Данные доступа обычно в порядке.</string>
+    <string name="login_api_blocked_fallback">Поставщик блокирует API панели (код %1$d). Доступ настраивается через экспорт M3U – эфир и фильмы работают, но сериалы этим путём не передаются.</string>
     <string name="error_http_forbidden">Отклонено провайдером (403). Обычно уже заняты все разрешённые одновременные подключения либо доступ привязан к другому интернет-соединению.</string>
     <string name="error_github_http_status">GitHub ответил кодом HTTP %1$d</string>
     <string name="error_empty_response">Пустой ответ</string>

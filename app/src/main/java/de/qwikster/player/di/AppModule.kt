@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import de.qwikster.player.BuildConfig
+import de.qwikster.player.core.isVendorStatus
 import de.qwikster.player.data.local.AppDatabase
 import de.qwikster.player.data.local.CategoryDao
 import de.qwikster.player.data.local.ChannelDao
@@ -123,7 +124,14 @@ object AppModule {
                 .header("User-Agent", PlaylistSyncer.USER_AGENT)
                 .build()
             val response = chain.proceed(request)
-            if (response.code != HTTP_FORBIDDEN) return@addInterceptor response
+            // Neben 403 auch alles, was der HTTP-Standard gar nicht kennt
+            // (gültig sind 100–599). Codes wie 884 kommen von einer
+            // vorgeschalteten Schutzschicht des Anbieters, und die entscheidet
+            // fast immer anhand des Abspielprogramm-Namens – genau der Fall,
+            // für den dieser Zweitversuch da ist.
+            if (response.code != HTTP_FORBIDDEN && !isVendorStatus(response.code)) {
+                return@addInterceptor response
+            }
 
             // Die erste Antwort muss geschlossen werden, bevor die nächste
             // Anfrage rausgeht – sonst bleibt die Verbindung im Pool hängen.

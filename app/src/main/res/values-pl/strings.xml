@@ -262,6 +262,8 @@
     <string name="error_content_not_loaded">Nie udało się wczytać treści</string>
     <string name="error_connection_failed">Połączenie nie powiodło się</string>
     <string name="error_http_status">Serwer odpowiedział kodem HTTP %1$d</string>
+    <string name="error_http_vendor_status">Odrzucone przez dostawcę (kod %1$d). To nie jest zwykły błąd HTTP, lecz blokada przed panelem – zwykle z powodu odtwarzacza, połączenia internetowego (VPN/serwer) lub regionu. Dane logowania są zwykle poprawne.</string>
+    <string name="login_api_blocked_fallback">Dostawca blokuje API panelu (kod %1$d). Dostęp zostanie skonfigurowany przez eksport M3U – telewizja na żywo i filmy działają, ale ta droga nie dostarcza seriali.</string>
     <string name="error_http_forbidden">Odrzucone przez dostawcę (403). Zwykle wszystkie dozwolone jednoczesne połączenia są już zajęte albo dostęp jest przypisany do innego łącza internetowego.</string>
     <string name="error_github_http_status">GitHub odpowiedział kodem HTTP %1$d</string>
     <string name="error_empty_response">Pusta odpowiedź</string>

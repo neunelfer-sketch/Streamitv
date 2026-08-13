@@ -262,6 +262,8 @@
     <string name="error_content_not_loaded">Kan deze inhoud niet laden</string>
     <string name="error_connection_failed">Verbinding mislukt</string>
     <string name="error_http_status">Server antwoordde met HTTP %1$d</string>
+    <string name="error_http_vendor_status">Geweigerd door de aanbieder (code %1$d). Dit is geen normale HTTP-fout maar een blokkade vóór het paneel – meestal vanwege de speler, de internetverbinding (VPN/server) of de regio. De inloggegevens kloppen meestal wel.</string>
+    <string name="login_api_blocked_fallback">De aanbieder blokkeert de paneel-API (code %1$d). De toegang wordt via de M3U-export ingesteld – live-tv en films werken, maar deze weg levert geen series.</string>
     <string name="error_http_forbidden">Geweigerd door de aanbieder (403). Meestal zijn alle toegestane gelijktijdige verbindingen al in gebruik, of is de toegang gebonden aan een andere internetverbinding.</string>
     <string name="error_github_http_status">GitHub antwoordde met HTTP %1$d</string>
     <string name="error_empty_response">Leeg antwoord</string>

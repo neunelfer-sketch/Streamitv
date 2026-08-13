@@ -262,6 +262,8 @@
     <string name="error_content_not_loaded">Impossibile caricare il contenuto</string>
     <string name="error_connection_failed">Connessione non riuscita</string>
     <string name="error_http_status">Il server ha risposto con HTTP %1$d</string>
+    <string name="error_http_vendor_status">Rifiutato dal fornitore (codice %1$d). Non è un normale errore HTTP ma un blocco davanti al pannello: di solito per il lettore, la connessione a internet (VPN/server) o la regione. Le credenziali di solito sono corrette.</string>
+    <string name="login_api_blocked_fallback">Il fornitore blocca l’API del pannello (codice %1$d). L’accesso viene configurato tramite l’esportazione M3U: TV in diretta e film funzionano, ma questa via non fornisce le serie.</string>
     <string name="error_http_forbidden">Rifiutato dal provider (403). Di solito tutte le connessioni simultanee consentite sono già occupate, oppure l\'accesso è legato a un\'altra connessione a internet.</string>
     <string name="error_github_http_status">GitHub ha risposto con HTTP %1$d</string>
     <string name="error_empty_response">Risposta vuota</string>

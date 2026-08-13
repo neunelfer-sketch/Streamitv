@@ -262,6 +262,8 @@
     <string name="error_content_not_loaded">تعذّر تحميل المحتوى</string>
     <string name="error_connection_failed">فشل الاتصال</string>
     <string name="error_http_status">استجاب الخادم برمز HTTP %1$d</string>
+    <string name="error_http_vendor_status">رفضه المزوّد (الرمز %1$d). ليس هذا خطأ HTTP عاديًا بل حجب أمام اللوحة – غالبًا بسبب المشغّل أو اتصال الإنترنت (VPN/خادم) أو المنطقة. بيانات الدخول سليمة عادةً.</string>
+    <string name="login_api_blocked_fallback">المزوّد يحجب واجهة اللوحة (الرمز %1$d). يتم إعداد الوصول عبر تصدير M3U بدلاً من ذلك – يعمل البث المباشر والأفلام، لكن هذا المسار لا يوفّر المسلسلات.</string>
     <string name="error_http_forbidden">‏تم الرفض من قِبل المزوّد (403). غالبًا ما تكون جميع الاتصالات المتزامنة المسموح بها مستخدمة بالفعل، أو أن الاشتراك مرتبط باتصال إنترنت آخر.</string>
     <string name="error_github_http_status">استجاب GitHub برمز HTTP %1$d</string>
     <string name="error_empty_response">استجابة فارغة</string>

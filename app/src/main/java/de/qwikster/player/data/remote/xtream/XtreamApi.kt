@@ -3,6 +3,7 @@ package de.qwikster.player.data.remote.xtream
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import de.qwikster.player.R
+import de.qwikster.player.core.isVendorStatus
 import de.qwikster.player.data.model.StreamKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,7 +63,17 @@ data class XtreamCredentials(
  */
 sealed class XtreamException(message: String, cause: Throwable? = null) : IOException(message, cause) {
     class InvalidUrl(message: String) : XtreamException(message)
-    class Http(val code: Int, message: String) : XtreamException(message)
+
+    class Http(val code: Int, message: String) : XtreamException(message) {
+        /**
+         * Die Anfrage wurde abgewiesen, statt an einem echten Serverfehler zu
+         * scheitern: 403, oder ein Code, den der HTTP-Standard gar nicht
+         * kennt (z. B. 884). Beides deutet auf eine Schutzschicht vor dem
+         * Panel hin – dann lohnt der Umweg über den M3U-Export.
+         */
+        val isBlocked: Boolean get() = code == 403 || isVendorStatus(code)
+    }
+
     class Auth(message: String) : XtreamException(message)
     class Parse(message: String, cause: Throwable) : XtreamException(message, cause)
 }
@@ -266,16 +277,55 @@ class XtreamApi @Inject constructor(
             if (!response.isSuccessful) {
                 throw XtreamException.Http(
                     response.code,
-                    context.getString(
-                        R.string.error_http_at_url,
-                        response.code,
-                        url.redactCredentials(),
-                    ),
+                    if (isVendorStatus(response.code)) {
+                        // Ein Code außerhalb von 100–599 ist kein Serverfehler,
+                        // sondern eine Abweisung. Die nackte Zahl samt URL
+                        // hülfe dem Zuschauer hier gar nichts.
+                        context.getString(R.string.error_http_vendor_status, response.code)
+                    } else {
+                        context.getString(
+                            R.string.error_http_at_url,
+                            response.code,
+                            url.redactCredentials(),
+                        )
+                    },
                 )
             }
             response.body?.string().orEmpty()
         }
     }
+
+    /**
+     * Prüft, ob der M3U-Export desselben Zugangs erreichbar ist.
+     *
+     * Etliche Anbieter sperren gezielt `player_api.php` – die Schnittstelle,
+     * über die sich ein Zugang bequem auslesen lässt –, lassen den klassischen
+     * `get.php`-Export aber offen, weil jeder gängige Player ihn braucht.
+     * Genau dann kann die App den Zugang trotzdem einrichten, statt den
+     * Zuschauer mit einer Fehlernummer stehen zu lassen.
+     *
+     * Geladen wird dabei nur der Anfang der Datei: Der `Range`-Kopf bittet um
+     * das erste Kilobyte, und selbst wenn der Server ihn übergeht, wird die
+     * Antwort nach der ersten Zeile geschlossen. Eine große Playlist wäre
+     * sonst zweistellig viele Megabyte groß, nur um eine Ja/Nein-Frage zu
+     * beantworten.
+     */
+    suspend fun m3uExportAvailable(credentials: XtreamCredentials): Boolean =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .url(buildM3uUrl(credentials))
+                .header("Range", "bytes=0-1023")
+                .build()
+            runCatching {
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use false
+                    val firstLine = response.body?.source()?.readUtf8Line().orEmpty()
+                    // \uFEFF ist die Byte-Reihenfolge-Markierung, die manche
+                    // Panels der Datei voranstellen.
+                    firstLine.trimStart('\uFEFF', ' ').startsWith("#EXTM3U", ignoreCase = true)
+                }
+            }.getOrDefault(false)
+        }
 
     private fun buildApiUrl(
         credentials: XtreamCredentials,

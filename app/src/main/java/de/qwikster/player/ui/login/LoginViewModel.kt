@@ -32,6 +32,8 @@ data class LoginUiState(
     val epgUrl: String = "",
     val isBusy: Boolean = false,
     val statusMessage: String? = null,
+    /** Kein Fehler, aber erwähnenswert – etwa der Umweg über den M3U-Export. */
+    val noticeMessage: String? = null,
     val errorMessage: String? = null,
     val isDone: Boolean = false,
 ) {
@@ -83,19 +85,51 @@ class LoginViewModel @Inject constructor(
                 it.copy(
                     isBusy = true,
                     errorMessage = null,
+                    noticeMessage = null,
                     statusMessage = context.getString(R.string.login_connecting),
                 )
             }
 
             try {
+                // Kann sich unterwegs noch ändern: Blockt der Anbieter die
+                // Panel-Schnittstelle, wird daraus ein M3U-Zugang.
+                var type = state.type
+                var m3uUrl = state.m3uUrl.trim()
+                var epgUrl = state.epgUrl.trim()
+
                 if (state.type == PlaylistType.XTREAM) {
                     val credentials = XtreamCredentials(
                         baseUrl = state.serverUrl,
                         username = state.username,
                         password = state.password,
                     )
-                    val auth = xtreamApi.authenticate(credentials)
-                    val info = auth.userInfo
+
+                    val auth = try {
+                        xtreamApi.authenticate(credentials)
+                    } catch (e: XtreamException.Http) {
+                        // Etliche Anbieter sperren `player_api.php` und
+                        // antworten mit 403 oder einem Code, den es im
+                        // HTTP-Standard gar nicht gibt (z. B. 884), lassen den
+                        // klassischen `get.php`-Export aber offen. Dann ist
+                        // der Zugang völlig in Ordnung und die App richtet ihn
+                        // über diesen Weg ein, statt den Zuschauer vor einer
+                        // Fehlernummer stehen zu lassen.
+                        if (!e.isBlocked || !xtreamApi.m3uExportAvailable(credentials)) throw e
+                        type = PlaylistType.M3U
+                        m3uUrl = xtreamApi.buildM3uUrl(credentials)
+                        if (epgUrl.isBlank()) epgUrl = xtreamApi.buildXmltvUrl(credentials)
+                        _uiState.update {
+                            it.copy(
+                                noticeMessage = context.getString(
+                                    R.string.login_api_blocked_fallback,
+                                    e.code,
+                                ),
+                            )
+                        }
+                        null
+                    }
+
+                    val info = auth?.userInfo
 
                     // Abgelaufene Abos melden `auth = 1`, liefern aber keine
                     // Streams – deshalb hier explizit warnen.
@@ -114,12 +148,16 @@ class LoginViewModel @Inject constructor(
                     name = state.name.ifBlank {
                         context.getString(R.string.playlist_default_name)
                     },
-                    type = state.type,
+                    type = type,
+                    // Server und Zugangsdaten bleiben auch beim Umweg über den
+                    // M3U-Export gespeichert: Sie kosten nichts und ersparen
+                    // ein erneutes Eintippen, falls der Anbieter die
+                    // Schnittstelle später wieder öffnet.
                     serverUrl = state.serverUrl.trim(),
                     username = state.username.trim(),
                     password = state.password.trim(),
-                    m3uUrl = state.m3uUrl.trim(),
-                    epgUrl = state.epgUrl.trim(),
+                    m3uUrl = m3uUrl,
+                    epgUrl = epgUrl,
                 )
 
                 val id = repository.savePlaylist(playlist)

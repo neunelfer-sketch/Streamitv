@@ -262,6 +262,8 @@
     <string name="error_content_not_loaded">No se ha podido cargar el contenido</string>
     <string name="error_connection_failed">Error de conexión</string>
     <string name="error_http_status">El servidor ha respondido con HTTP %1$d</string>
+    <string name="error_http_vendor_status">Rechazado por el proveedor (código %1$d). No es un error HTTP normal, sino un bloqueo delante del panel: normalmente por el reproductor, la conexión a internet (VPN/servidor) o la región. Las credenciales suelen estar bien.</string>
+    <string name="login_api_blocked_fallback">El proveedor bloquea la API del panel (código %1$d). El acceso se configura mediante la exportación M3U: la TV en directo y las películas funcionan, pero esta vía no proporciona series.</string>
     <string name="error_http_forbidden">Rechazado por el proveedor (403). Normalmente ya se están usando todas las conexiones simultáneas permitidas, o el acceso está vinculado a otra conexión a internet.</string>
     <string name="error_github_http_status">GitHub ha respondido con HTTP %1$d</string>
     <string name="error_empty_response">Respuesta vacía</string>

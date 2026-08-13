@@ -285,6 +285,8 @@
     <string name="error_content_not_loaded">Inhalt konnte nicht geladen werden</string>
     <string name="error_connection_failed">Verbindung fehlgeschlagen</string>
     <string name="error_http_status">Server antwortete mit HTTP %1$d</string>
+    <string name="error_http_vendor_status">Vom Anbieter abgewiesen (Code %1$d). Das ist kein normaler HTTP-Fehler, sondern eine Sperre vor dem Panel – meist wegen des Abspielprogramms, der Internetverbindung (VPN/Server) oder der Region. Zugangsdaten sind dabei in der Regel in Ordnung.</string>
+    <string name="login_api_blocked_fallback">Der Anbieter blockt die Panel-Schnittstelle (Code %1$d). Der Zugang wird stattdessen über den M3U-Export eingerichtet – Live-TV und Filme funktionieren, Serien liefert dieser Weg nicht.</string>
     <string name="error_http_forbidden">Vom Anbieter abgelehnt (403). Meist sind schon alle erlaubten gleichzeitigen Verbindungen belegt, oder der Zugang gilt nur für eine andere Internetverbindung.</string>
     <string name="error_github_http_status">GitHub antwortete mit HTTP %1$d</string>
     <string name="error_empty_response">Leere Antwort</string>
