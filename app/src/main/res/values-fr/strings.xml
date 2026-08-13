@@ -16,7 +16,6 @@
     <string name="category_all">Toutes les chaînes</string>
     <string name="category_favorites">Favoris</string>
     <string name="category_recent">Vus récemment</string>
-    <string name="category_all_titles">Tous les titres</string>
     <string name="proxy_note">Une adresse vide désactive le proxy. La résolution des noms est faite par le proxy, pas par l\'appareil.</string>
     <string name="proxy_disabled">Proxy désactivé</string>
     <string name="proxy_saved">Proxy enregistré – actif dès la prochaine connexion</string>
@@ -143,6 +142,7 @@
     <string name="settings_remove_playlist_desc">Supprime toutes les données locales de cette playlist</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_show_all">Tout afficher</string>
     <string name="categories_title">Catégories</string>
     <string name="categories_settings_desc">Choisir les catégories visibles</string>
     <string name="categories_subtitle">%1$d sur %2$d visibles</string>

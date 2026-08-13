@@ -16,7 +16,6 @@
     <string name="category_all">Tüm kanallar</string>
     <string name="category_favorites">Favoriler</string>
     <string name="category_recent">Son izlenenler</string>
-    <string name="category_all_titles">Tüm başlıklar</string>
     <string name="proxy_note">Boş adres vekil sunucuyu kapatır. Ad çözümlemesini cihaz değil vekil sunucu yapar.</string>
     <string name="proxy_disabled">Vekil sunucu kapatıldı</string>
     <string name="proxy_saved">Vekil sunucu kaydedildi – bir sonraki bağlantıdan itibaren geçerli</string>
@@ -143,6 +142,7 @@
     <string name="settings_remove_playlist_desc">Bu listeye ait tüm yerel verileri siler</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_show_all">Tümünü göster</string>
     <string name="categories_title">Kategoriler</string>
     <string name="categories_settings_desc">Hangi kategorilerin görüneceğini seçin</string>
     <string name="categories_subtitle">%2$d kategoriden %1$d tanesi görünür</string>

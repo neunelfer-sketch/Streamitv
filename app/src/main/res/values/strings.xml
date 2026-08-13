@@ -26,7 +26,6 @@
     <string name="category_all">Alle Sender</string>
     <string name="category_favorites">Favoriten</string>
     <string name="category_recent">Zuletzt gesehen</string>
-    <string name="category_all_titles">Alle Titel</string>
     <string name="proxy_note">Leere Adresse schaltet den Proxy ab. Die Namensauflösung übernimmt der Proxy, nicht das Gerät.</string>
     <string name="proxy_disabled">Proxy abgeschaltet</string>
     <string name="proxy_saved">Proxy gespeichert – wirkt ab der nächsten Verbindung</string>
@@ -160,6 +159,7 @@
     <string name="settings_remove_playlist_desc">Löscht alle lokalen Daten dieser Playlist</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_show_all">Alle anzeigen</string>
     <string name="categories_title">Kategorien</string>
     <string name="categories_settings_desc">Auswählen, welche Kategorien sichtbar sind</string>
     <string name="categories_subtitle">%1$d von %2$d sichtbar</string>

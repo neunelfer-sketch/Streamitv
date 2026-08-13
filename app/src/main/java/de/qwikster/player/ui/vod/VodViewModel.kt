@@ -53,13 +53,13 @@ const val RECENT_CATEGORY_ID = "__recent__"
 const val OVERVIEW_CATEGORY_ID = "__overview__"
 
 /**
- * Der gesamte Bestand in einem Raster, ohne Kategorie-Einschränkung.
+ * Die Reihe der Neuzugänge in der Startansicht.
  *
- * Bis hierher gab es das zwar (eine leere Auswahl zeigte alles), aber
- * keinen Eintrag dafür – erreichbar war es nur, indem man keine Kategorie
- * anwählte, und darauf kommt niemand. Jetzt steht es sichtbar ganz oben.
+ * Sie ist keine Kategorie, sondern ein Querschnitt durch alle – deshalb
+ * bekommt sie als einzige Reihe keine "Alle anzeigen"-Kachel: Es gäbe kein
+ * Ziel, das "alle davon" bedeuten könnte.
  */
-const val ALL_CATEGORY_ID = "__all__"
+const val NEWEST_ROW_ID = "__new__"
 
 /** Eine waagerechte Reihe der Startansicht. */
 data class VodRow(
@@ -189,7 +189,12 @@ class VodViewModel @Inject constructor(
             )
 
             buildList {
-                add(synthetic(ALL_CATEGORY_ID, R.string.category_all_titles))
+                // Kein "Alle Titel" mehr: Der Eintrag lud bei Panels mit
+                // sechsstelligen Katalogen den gesamten Bestand in ein
+                // einziges Raster – auf einem Fire TV Stick nicht zu
+                // stemmen, und mit dem Steuerkreuz ohnehin nicht zu
+                // durchqueren. Wer alles einer Kategorie sehen will, nimmt
+                // die "Alle anzeigen"-Kachel am Ende der jeweiligen Reihe.
                 add(synthetic(OVERVIEW_CATEGORY_ID, R.string.category_overview))
                 if (hasRecent) add(synthetic(RECENT_CATEGORY_ID, R.string.category_recent))
                 addAll(real)
@@ -279,7 +284,7 @@ class VodViewModel @Inject constructor(
                         results.first().takeIf { it.isNotEmpty() }?.let { newest ->
                             add(
                                 VodRow(
-                                    id = "__new__",
+                                    id = NEWEST_ROW_ID,
                                     title = context.getString(R.string.category_recently_added),
                                     items = newest,
                                 ),
@@ -347,9 +352,16 @@ class VodViewModel @Inject constructor(
     private val items: StateFlow<List<VodItem>> =
         combine(kind, effectiveCategoryId, sort, hiddenCategories, ::GridInput)
             .flatMapLatest { (streamKind, categoryId, order, hidden) ->
-                if (categoryId == OVERVIEW_CATEGORY_ID) {
+                if (categoryId == OVERVIEW_CATEGORY_ID || categoryId == null) {
                     // Die Startansicht zeigt Reihen, kein Raster – siehe
                     // [overviewRows]. Hier gäbe es nichts zu laden.
+                    //
+                    // `null` fällt bewusst mit hierher: Ohne Kategorie hieße
+                    // die Abfrage "alles", und "alles" sind bei manchen
+                    // Panels sechsstellig viele Titel in einem einzigen
+                    // Raster. Diesen Weg gibt es nicht mehr, und er soll
+                    // auch nicht über einen vergessenen Sonderfall
+                    // zurückkommen.
                     kotlinx.coroutines.flow.flowOf(emptyList())
                 } else if (categoryId == RECENT_CATEGORY_ID) {
                     // "Neu hinzugefügt" ergibt hier keinen Sinn – die Liste ist
@@ -367,8 +379,7 @@ class VodViewModel @Inject constructor(
                         }
                     }
                 } else if (streamKind == StreamKind.SERIES) {
-                    // "Alle Titel" heißt für die Datenbank: keine Einschränkung.
-                    repository.observeSeries(categoryId.takeUnless { it == ALL_CATEGORY_ID }).map { list ->
+                    repository.observeSeries(categoryId).map { list ->
                         list.withoutHidden(hidden) { it.categoryId }
                             .sortedFor(order, recentKey = { it.lastModified }, name = { it.name })
                             .map { series ->
@@ -381,7 +392,7 @@ class VodViewModel @Inject constructor(
                             }
                     }
                 } else {
-                    repository.observeMovies(categoryId.takeUnless { it == ALL_CATEGORY_ID }).map { list ->
+                    repository.observeMovies(categoryId).map { list ->
                         list.withoutHidden(hidden) { it.categoryId }
                             .sortedFor(order, recentKey = { it.addedAt }, name = { it.name })
                             .map { movie ->

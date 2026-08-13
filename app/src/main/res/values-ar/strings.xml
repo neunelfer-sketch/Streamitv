@@ -16,7 +16,6 @@
     <string name="category_all">كل القنوات</string>
     <string name="category_favorites">المفضلة</string>
     <string name="category_recent">شوهد مؤخرًا</string>
-    <string name="category_all_titles">كل العناوين</string>
     <string name="proxy_note">العنوان الفارغ يوقف الوكيل. يتولى الوكيل تحليل الأسماء وليس الجهاز.</string>
     <string name="proxy_disabled">تم إيقاف الوكيل</string>
     <string name="proxy_saved">تم حفظ الوكيل – يسري من الاتصال التالي</string>
@@ -143,6 +142,7 @@
     <string name="settings_remove_playlist_desc">يحذف كل البيانات المحفوظة لهذه القائمة</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_show_all">عرض الكل</string>
     <string name="categories_title">الفئات</string>
     <string name="categories_settings_desc">اختر الفئات التي تظهر</string>
     <string name="categories_subtitle">%1$d من %2$d ظاهرة</string>

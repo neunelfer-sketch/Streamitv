@@ -16,7 +16,6 @@
     <string name="category_all">All channels</string>
     <string name="category_favorites">Favourites</string>
     <string name="category_recent">Recently watched</string>
-    <string name="category_all_titles">All titles</string>
     <string name="proxy_note">An empty address turns the proxy off. Name resolution is done by the proxy, not the device.</string>
     <string name="proxy_disabled">Proxy turned off</string>
     <string name="proxy_saved">Proxy saved – applies from the next connection</string>
@@ -143,6 +142,7 @@
     <string name="settings_remove_playlist_desc">Deletes all local data for this playlist</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_show_all">Show all</string>
     <string name="categories_title">Categories</string>
     <string name="categories_settings_desc">Choose which categories are visible</string>
     <string name="categories_subtitle">%1$d of %2$d visible</string>

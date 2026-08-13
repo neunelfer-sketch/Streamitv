@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +47,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -389,6 +391,7 @@ private fun VodBody(
                     onPlayMovie = onPlayMovie,
                     onOpenSeries = onOpenSeries,
                     onPlayEpisode = onPlayEpisode,
+                    onOpenCategory = onSelectCategory,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
@@ -457,6 +460,7 @@ private fun VodRows(
     onPlayMovie: (String) -> Unit,
     onOpenSeries: (String) -> Unit,
     onPlayEpisode: (String) -> Unit,
+    onOpenCategory: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (rows.isEmpty()) {
@@ -523,8 +527,75 @@ private fun VodRows(
                                 ),
                         )
                     }
+
+                    // --- "Alle anzeigen" am Ende der Reihe --------------------
+                    // Eine Reihe zeigt zwanzig Titel; die Kategorie hat oft
+                    // tausende. Ohne diese Kachel wäre am zwanzigsten Poster
+                    // schlicht Schluss, und der Weg zum vollen Bestand führte
+                    // über die Kategorienliste links – wo man erst einmal
+                    // nachsehen muss, wie die Kategorie noch mal hieß.
+                    //
+                    // Nur bei Reihen, hinter denen wirklich eine Kategorie
+                    // steht. "Neu hinzugefügt" geht quer durch alle
+                    // Kategorien und hat kein Ziel, das "alle" bedeuten könnte.
+                    if (row.id != NEWEST_ROW_ID) {
+                        item(key = "${row.id}-showall") {
+                            ShowAllCard(
+                                onClick = { onOpenCategory(row.id) },
+                                modifier = Modifier.width(POSTER_WIDTH),
+                            )
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Die Kachel am Ende einer Reihe, die in das volle Raster der Kategorie führt.
+ *
+ * Bewusst so hoch wie ein Poster und an derselben Stelle in der Reihe: Sie
+ * ist der nächste Halt des Steuerkreuzes nach dem letzten Titel, nicht ein
+ * Knopf, den man woanders suchen muss.
+ */
+@Composable
+private fun ShowAllCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.touchClickable(onClick),
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+            containerColor = TvAccent.copy(alpha = 0.18f),
+            focusedContainerColor = TvAccent,
+            contentColor = TvAccent,
+            focusedContentColor = Color.White,
+        ),
+        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                // Genau die Höhe eines Posters samt Beschriftung, damit die
+                // Reihe keine Stufe bekommt.
+                .aspectRatio(2f / 3f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.GridView,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+            )
+            Spacer(Modifier.height(TvSpacing.small))
+            Text(
+                text = stringResource(R.string.vod_show_all),
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

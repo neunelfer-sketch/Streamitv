@@ -16,7 +16,6 @@
     <string name="category_all">Alle zenders</string>
     <string name="category_favorites">Favorieten</string>
     <string name="category_recent">Recent bekeken</string>
-    <string name="category_all_titles">Alle titels</string>
     <string name="proxy_note">Een leeg adres schakelt de proxy uit. Naamsomzetting doet de proxy, niet het apparaat.</string>
     <string name="proxy_disabled">Proxy uitgeschakeld</string>
     <string name="proxy_saved">Proxy opgeslagen – geldt vanaf de volgende verbinding</string>
@@ -143,6 +142,7 @@
     <string name="settings_remove_playlist_desc">Wist alle lokale gegevens van deze afspeellijst</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_show_all">Alles tonen</string>
     <string name="categories_title">Categorieën</string>
     <string name="categories_settings_desc">Kies welke categorieën zichtbaar zijn</string>
     <string name="categories_subtitle">%1$d van %2$d zichtbaar</string>

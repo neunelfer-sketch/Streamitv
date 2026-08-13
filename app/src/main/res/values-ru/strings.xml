@@ -16,7 +16,6 @@
     <string name="category_all">Все каналы</string>
     <string name="category_favorites">Избранное</string>
     <string name="category_recent">Недавно просмотренные</string>
-    <string name="category_all_titles">Все</string>
     <string name="proxy_note">Пустой адрес отключает прокси. Разрешение имён выполняет прокси, а не устройство.</string>
     <string name="proxy_disabled">Прокси отключён</string>
     <string name="proxy_saved">Прокси сохранён — действует со следующего подключения</string>
@@ -143,6 +142,7 @@
     <string name="settings_remove_playlist_desc">Удаляет все локальные данные этого плейлиста</string>
 
     <!-- Kategorien ein-/ausblenden -->
+    <string name="vod_show_all">Показать все</string>
     <string name="categories_title">Категории</string>
     <string name="categories_settings_desc">Выберите, какие категории показывать</string>
     <string name="categories_subtitle">Показано %1$d из %2$d</string>
