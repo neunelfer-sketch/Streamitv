@@ -133,21 +133,18 @@ fun HomeScreen(
     val isDialogVisible = state.showWhatsNew || isUpdatePromptVisible
     BackHandler(enabled = isDialogVisible) { }
 
-    // Beim Betreten soll der Fokus auf der Senderliste stehen – nicht auf der
-    // Kopfzeile. Sonst muss der Nutzer bei jedem Start zweimal nach unten.
+    // Wohin der Fokus beim Betreten geht, entscheidet die Senderliste selbst –
+    // siehe [ChannelColumn]. Sie kennt als Einzige die Position des Senders,
+    // auf den er gehört, und nur sie kann ihn vorher in den sichtbaren
+    // Bereich holen.
     //
-    // Solange ein Hinweis offen ist, bleibt der Fokus aber beim Dialog. Die
-    // Senderliste füllt sich erst kurz nach dem Start, also genau dann, wenn
-    // der "Was ist neu"-Hinweis schon steht – ohne diese Bedingung risse ihm
-    // das Nachladen den Fokus weg. Der Dialog fängt Tasten aber nur ab,
-    // solange einer seiner Knöpfe den Fokus hat: Danach liefe das Steuerkreuz
-    // wieder in die verdeckte Senderliste, OK öffnete den Player hinter dem
-    // Hinweis, und der Hinweis selbst ließe sich gar nicht mehr wegdrücken.
-    LaunchedEffect(state.channels.isNotEmpty(), isDialogVisible) {
-        if (state.channels.isNotEmpty() && !isDialogVisible) {
-            runCatching { channelListFocus.requestFocus() }
-        }
-    }
+    // Der Dialog-Fall bleibt: Solange ein Hinweis offen ist, darf die Liste
+    // den Fokus nicht an sich ziehen. Sie füllt sich erst kurz nach dem
+    // Start, also genau dann, wenn der "Was ist neu"-Hinweis schon steht.
+    // Der Dialog fängt Tasten nämlich nur ab, solange einer seiner Knöpfe
+    // den Fokus hat: Danach liefe das Steuerkreuz wieder in die verdeckte
+    // Senderliste, OK öffnete den Player hinter dem Hinweis, und der Hinweis
+    // selbst ließe sich gar nicht mehr wegdrücken.
 
     // Die Vorschau läuft nur, solange dieser Bildschirm auch vorne ist.
     //
@@ -227,6 +224,12 @@ fun HomeScreen(
                     isLoading = state.isLoading,
                     selectedCategoryKey = state.selectedCategoryKey,
                     focusRequester = channelListFocus,
+                    // Der Sender, auf dem der Fokus stehen soll: beim
+                    // Zurückkommen aus dem Player genau der, den man dort
+                    // gesehen hat. Beim ersten Betreten ist es der erste der
+                    // Liste – siehe HomeUiState.focusedChannel.
+                    restoreChannelId = state.focusedChannel?.channel?.streamId,
+                    canTakeFocus = !isDialogVisible,
                     onChannelClick = { channel ->
                         viewModel.markWatched(channel)
                         onOpenPlayer(channel)
@@ -488,6 +491,8 @@ private fun ChannelColumn(
     isLoading: Boolean,
     selectedCategoryKey: String?,
     focusRequester: FocusRequester,
+    restoreChannelId: String?,
+    canTakeFocus: Boolean,
     onChannelClick: (Channel) -> Unit,
     onChannelFocused: (Channel) -> Unit,
     onToggleFavorite: (Channel) -> Unit,
@@ -506,6 +511,54 @@ private fun ChannelColumn(
     // Bestand, ohne die ersten Sender je gesehen zu haben.
     LaunchedEffect(selectedCategoryKey) {
         runCatching { listState.scrollToItem(0) }
+    }
+
+    // --- Fokus auf den richtigen Sender ------------------------------------
+    //
+    // Bis hierher bekam beim Betreten die **Liste** den Fokus, nicht ein
+    // bestimmter Sender. Compose sucht sich dann selbst einen aus – in aller
+    // Regel den obersten sichtbaren. Beim Zurückkommen aus dem Player stand
+    // der Fokus deshalb irgendwo in der Nähe des gesehenen Senders, aber
+    // eben nicht auf ihm. Und weil hier die Auswahl dem Fokus folgt, wurde
+    // damit sofort ein anderer Sender ausgewählt und in der Vorschau
+    // angespielt: Man kam zurück und war woanders.
+    //
+    // Deshalb bekommt genau der Sender einen Fokusanker, auf dem der Fokus
+    // stehen soll. Zuerst muss er allerdings in den sichtbaren Bereich –
+    // einen Eintrag, den die Liste gar nicht gesetzt hat, kann niemand
+    // fokussieren.
+    val targetFocus = remember { FocusRequester() }
+
+    // Nur einmal je Aufruf des Bildschirms: Jede spätere Änderung erneut zu
+    // erzwingen hieße, dem Zuschauer beim Blättern die Fernbedienung aus der
+    // Hand zu nehmen.
+    var hasPlacedFocus by remember { mutableStateOf(false) }
+
+    // Sobald der Fokus sitzt, wird hier nichts mehr gesucht.
+    //
+    // Das ist kein Feinschliff: `restoreChannelId` folgt dem Fokus, ändert
+    // sich also bei jedem Tastendruck. Ohne diesen Riegel liefe die Suche
+    // bei jedem Druck einmal über den gesamten Bestand – bei Panels mit
+    // 57.000 Sendern ist das genau die Sorte Arbeit, die das Blättern zäh
+    // macht.
+    val targetChannelId = remember(channels, restoreChannelId, hasPlacedFocus) {
+        if (hasPlacedFocus) {
+            null
+        } else {
+            channels.firstOrNull { it.channel.streamId == restoreChannelId }?.channel?.streamId
+                ?: channels.firstOrNull()?.channel?.streamId
+        }
+    }
+
+    LaunchedEffect(targetChannelId, canTakeFocus) {
+        if (hasPlacedFocus || !canTakeFocus || targetChannelId == null) return@LaunchedEffect
+        val index = channels.indexOfFirst { it.channel.streamId == targetChannelId }
+        if (index < 0) return@LaunchedEffect
+        // Erst in den sichtbaren Bereich holen, dann fokussieren: Einen
+        // Eintrag, den die Liste nie gesetzt hat, kann niemand fokussieren.
+        runCatching { listState.scrollToItem(index) }
+        runCatching { targetFocus.requestFocus() }
+        hasPlacedFocus = true
     }
 
     Box(modifier = modifier) {
@@ -531,6 +584,11 @@ private fun ChannelColumn(
                         onFocused = { onChannelFocused(item.channel) },
                         onLongClick = { onToggleFavorite(item.channel) },
                         now = now,
+                        modifier = if (item.channel.streamId == targetChannelId) {
+                            Modifier.focusRequester(targetFocus)
+                        } else {
+                            Modifier
+                        },
                     )
                 }
             }
