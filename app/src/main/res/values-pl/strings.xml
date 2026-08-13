@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">Nie udało się odczytać odpowiedzi z %1$s</string>
     <string name="error_update_file_move">Nie udało się zapisać pobranego pliku</string>
 
+    <string name="user_agent_title">Tożsamość odtwarzacza</string>
+    <string name="user_agent_hint">Niektórzy dostawcy przepuszczają tylko wybrane odtwarzacze. Jeśli Twoja playlista działa w innej aplikacji, wybierz ją tutaj. Jeśli nie przejdzie, aplikacja próbuje dalej z pozostałymi.</string>
+    <string name="user_agent_auto">Automatycznie (zalecane)</string>
+    <string name="user_agent_selected">Wybrane</string>
+    <string name="user_agent_own">Qwikster (własna)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">Android (domyślnie)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">Odtwarzacz ExoPlayer</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">Przeglądarka (Chrome)</string>
 </resources>

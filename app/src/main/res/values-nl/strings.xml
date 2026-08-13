@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">Kan het antwoord van %1$s niet lezen</string>
     <string name="error_update_file_move">Kan het gedownloade bestand niet opslaan</string>
 
+    <string name="user_agent_title">Speler-identiteit</string>
+    <string name="user_agent_hint">Sommige aanbieders laten alleen bepaalde spelers door. Werkt je afspeellijst in een andere app, kies die hier. Komt hij er niet door, dan probeert de app de andere verder.</string>
+    <string name="user_agent_auto">Automatisch (aanbevolen)</string>
+    <string name="user_agent_selected">Geselecteerd</string>
+    <string name="user_agent_own">Qwikster (eigen)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">Android (standaard)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">ExoPlayer-speler</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">Browser (Chrome)</string>
 </resources>

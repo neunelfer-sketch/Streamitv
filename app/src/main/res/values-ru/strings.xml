@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">Не удалось прочитать ответ от %1$s</string>
     <string name="error_update_file_move">Не удалось сохранить скачанный файл</string>
 
+    <string name="user_agent_title">Идентификация плеера</string>
+    <string name="user_agent_hint">Некоторые поставщики пропускают только определённые плееры. Если ваш плейлист работает в другом приложении, выберите его здесь. Если не пройдёт, приложение продолжит перебирать остальные.</string>
+    <string name="user_agent_auto">Автоматически (рекомендуется)</string>
+    <string name="user_agent_selected">Выбрано</string>
+    <string name="user_agent_own">Qwikster (собственная)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">Android (по умолчанию)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">Плеер на ExoPlayer</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">Браузер (Chrome)</string>
 </resources>

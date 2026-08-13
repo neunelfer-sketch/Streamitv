@@ -76,7 +76,7 @@ object UserAgents {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-    /** Die Reihenfolge, in der beim Import durchprobiert wird. */
+    /** Die Reihenfolge, in der ohne eigene Wahl durchprobiert wird. */
     val ALL = listOf(
         DEFAULT,
         VLC,
@@ -89,6 +89,36 @@ object UserAgents {
         SMARTERS,
         BROWSER,
     )
+
+    /**
+     * Vom Zuschauer gewählte Kennung – leer heißt "automatisch".
+     *
+     * Bewusst ein schlichtes Feld statt eines durchgereichten Parameters:
+     * Die Kennung betrifft *jede* ausgehende Anfrage der App, vom Import über
+     * die Programmzeitschrift bis zum Stream. Sie durch ein halbes Dutzend
+     * Klassen zu fädeln, die damit sonst nichts zu tun haben, hätte an jeder
+     * Stelle eine Gelegenheit geschaffen, sie zu vergessen – und genau dort
+     * wäre sie dann wirkungslos gewesen, ohne dass es auffällt.
+     *
+     * Gesetzt wird sie an einer einzigen Stelle beim Start
+     * ([de.qwikster.player.QwiksterApplication]), gelesen aus mehreren
+     * Netzwerk-Threads – daher `@Volatile`.
+     */
+    @Volatile
+    var preferred: String = ""
+
+    /**
+     * Die Reihenfolge für den nächsten Versuch: die gewählte Kennung zuerst,
+     * danach die übrigen.
+     *
+     * Die anderen bleiben ausdrücklich stehen. Eine falsch getroffene Wahl
+     * soll den Zugang nicht versperren – sie soll ihn nur zuerst versuchen.
+     */
+    fun order(): List<String> {
+        val chosen = preferred.trim()
+        if (chosen.isEmpty()) return ALL
+        return listOf(chosen) + ALL.filterNot { it == chosen }
+    }
 }
 
 /**
@@ -108,7 +138,7 @@ object UserAgents {
  */
 fun OkHttpClient.executeTryingUserAgents(request: Request): Response {
     var rejected: Response? = null
-    for (agent in UserAgents.ALL) {
+    for (agent in UserAgents.order()) {
         rejected?.close()
         val response = newCall(
             request.newBuilder().header("User-Agent", agent).build(),

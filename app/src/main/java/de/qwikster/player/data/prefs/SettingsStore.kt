@@ -109,6 +109,17 @@ data class AppSettings(
     val hiddenLiveCategories: Set<String> = emptySet(),
     val hiddenMovieCategories: Set<String> = emptySet(),
     val hiddenSeriesCategories: Set<String> = emptySet(),
+    /**
+     * Kennung, unter der sich die App beim Anbieter meldet – leer heißt
+     * "automatisch durchprobieren".
+     *
+     * Es gibt Anbieter, deren Schutzschicht nur eine Handvoll bekannter
+     * Abspielprogramme durchlässt und allem anderen eine Abfuhr erteilt.
+     * Welches sie kennt, weiß nur der Zuschauer – nämlich das, in dem seine
+     * Playlist bereits läuft. Deshalb ist das hier wählbar und nicht
+     * geraten.
+     */
+    val userAgent: String = "",
     /** SOCKS5-Proxy: aus, solange keine Adresse hinterlegt ist. */
     val proxyEnabled: Boolean = false,
     val proxyHost: String = "",
@@ -152,6 +163,7 @@ class SettingsStore(
             hiddenLiveCategories = prefs[KEY_HIDDEN_LIVE].orEmpty(),
             hiddenMovieCategories = prefs[KEY_HIDDEN_VOD].orEmpty(),
             hiddenSeriesCategories = prefs[KEY_HIDDEN_SERIES].orEmpty(),
+            userAgent = prefs[KEY_USER_AGENT].orEmpty(),
             proxyEnabled = prefs[KEY_PROXY_ON] ?: false,
             proxyHost = prefs[KEY_PROXY_HOST].orEmpty(),
             proxyPort = prefs[KEY_PROXY_PORT] ?: 1080,
@@ -176,6 +188,12 @@ class SettingsStore(
     suspend fun setResumeLastChannel(value: Boolean) = edit { it[KEY_RESUME_LAST] = value }
     suspend fun setShowPreviewPlayer(value: Boolean) = edit { it[KEY_SHOW_PREVIEW] = value }
     suspend fun setMatchFrameRate(value: Boolean) = edit { it[KEY_MATCH_FRAME_RATE] = value }
+
+    /** Leer entfernt den Eintrag – siehe [AppSettings.userAgent]. */
+    suspend fun setUserAgent(value: String) = edit { prefs ->
+        val trimmed = value.trim()
+        if (trimmed.isEmpty()) prefs.remove(KEY_USER_AGENT) else prefs[KEY_USER_AGENT] = trimmed
+    }
 
     /** Merkt die ausgeblendeten Kategorien eines Bereichs. */
     suspend fun setHiddenCategories(kind: StreamKind, ids: Set<String>) = edit { prefs ->
@@ -360,6 +378,7 @@ class SettingsStore(
         private val KEY_HIDDEN_LIVE = stringSetPreferencesKey("hidden_categories_live")
         private val KEY_HIDDEN_VOD = stringSetPreferencesKey("hidden_categories_vod")
         private val KEY_HIDDEN_SERIES = stringSetPreferencesKey("hidden_categories_series")
+        private val KEY_USER_AGENT = stringPreferencesKey("user_agent")
         private val KEY_PROXY_ON = booleanPreferencesKey("proxy_enabled")
         private val KEY_PROXY_HOST = stringPreferencesKey("proxy_host")
         private val KEY_PROXY_PORT = intPreferencesKey("proxy_port")

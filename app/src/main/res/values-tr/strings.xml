@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">%1$s yanıtı okunamadı</string>
     <string name="error_update_file_move">İndirilen dosya kaydedilemedi</string>
 
+    <string name="user_agent_title">Oynatıcı kimliği</string>
+    <string name="user_agent_hint">Bazı sağlayıcılar yalnızca belirli oynatıcılara izin verir. Oynatma listen başka bir uygulamada çalışıyorsa onu buradan seç. Geçemezse uygulama diğerlerini denemeye devam eder.</string>
+    <string name="user_agent_auto">Otomatik (önerilir)</string>
+    <string name="user_agent_selected">Seçili</string>
+    <string name="user_agent_own">Qwikster (kendi)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">Android (varsayılan)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">ExoPlayer oynatıcı</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">Tarayıcı (Chrome)</string>
 </resources>

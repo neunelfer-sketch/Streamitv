@@ -70,6 +70,7 @@ fun SettingsScreen(
     onOpenCrashReport: () -> Unit,
     onOpenCategories: () -> Unit,
     onOpenPlaylists: () -> Unit,
+    onOpenUserAgent: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -178,6 +179,18 @@ fun SettingsScreen(
                     title = stringResource(R.string.categories_title),
                     value = stringResource(R.string.categories_settings_desc),
                     onClick = onOpenCategories,
+                )
+            }
+            item {
+                SettingsRow(
+                    title = stringResource(R.string.user_agent_title),
+                    // Der eingestellte Wert gehört in die Zeile: Wer hier
+                    // etwas verstellt hat, weil ein Anbieter blockte, soll
+                    // Monate später ohne Suchen sehen, was eingestellt ist.
+                    value = state.settings.userAgent.ifBlank {
+                        stringResource(R.string.user_agent_auto)
+                    },
+                    onClick = onOpenUserAgent,
                 )
             }
             item { SettingsSection(stringResource(R.string.settings_section_playback)) }

@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">Impossible de lire la réponse de %1$s</string>
     <string name="error_update_file_move">Impossible d\'enregistrer le fichier téléchargé</string>
 
+    <string name="user_agent_title">Identité du lecteur</string>
+    <string name="user_agent_hint">Certains fournisseurs n’acceptent que quelques lecteurs. Si votre playlist fonctionne dans une autre application, choisissez-la ici. Si elle ne passe pas, l’application essaie les autres.</string>
+    <string name="user_agent_auto">Automatique (recommandé)</string>
+    <string name="user_agent_selected">Sélectionné</string>
+    <string name="user_agent_own">Qwikster (propre)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">Android (par défaut)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">Lecteur ExoPlayer</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">Navigateur (Chrome)</string>
 </resources>

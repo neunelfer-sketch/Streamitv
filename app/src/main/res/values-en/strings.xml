@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">Could not read the response from %1$s</string>
     <string name="error_update_file_move">Could not store the downloaded file</string>
 
+    <string name="user_agent_title">Player identity</string>
+    <string name="user_agent_hint">Some providers only let certain players through. If your playlist works in another app, pick it here. If it does not get through, the app keeps trying the others.</string>
+    <string name="user_agent_auto">Automatic (recommended)</string>
+    <string name="user_agent_selected">Selected</string>
+    <string name="user_agent_own">Qwikster (own)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">Android (default)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">ExoPlayer player</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">Browser (Chrome)</string>
 </resources>

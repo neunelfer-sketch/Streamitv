@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">تعذّرت قراءة استجابة %1$s</string>
     <string name="error_update_file_move">تعذّر حفظ الملف الذي تم تنزيله</string>
 
+    <string name="user_agent_title">هوية المشغّل</string>
+    <string name="user_agent_hint">بعض المزوّدين يسمحون لمشغّلات معيّنة فقط. إذا كانت قائمتك تعمل في تطبيق آخر، فاخترْه هنا. وإن لم يمرّ، يواصل التطبيق تجربة البقية.</string>
+    <string name="user_agent_auto">تلقائي (موصى به)</string>
+    <string name="user_agent_selected">محدَّد</string>
+    <string name="user_agent_own">Qwikster (الخاصة)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">أندرويد (الافتراضي)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">مشغّل ExoPlayer</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">متصفّح (Chrome)</string>
 </resources>

@@ -129,8 +129,9 @@ object AppModule {
                 return@addInterceptor chain.proceed(original)
             }
 
+            val agents = UserAgents.order()
             val request = original.newBuilder()
-                .header("User-Agent", UserAgents.DEFAULT)
+                .header("User-Agent", agents.first())
                 .build()
             val response = chain.proceed(request)
             // Neben 403 auch alles, was der HTTP-Standard gar nicht kennt
@@ -145,7 +146,7 @@ object AppModule {
             response.close()
             chain.proceed(
                 request.newBuilder()
-                    .header("User-Agent", UserAgents.VLC)
+                    .header("User-Agent", agents.getOrElse(1) { UserAgents.VLC })
                     .build(),
             )
         }

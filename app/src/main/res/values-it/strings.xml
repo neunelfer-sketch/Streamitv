@@ -276,4 +276,18 @@
     <string name="error_response_unreadable">Impossibile leggere la risposta da %1$s</string>
     <string name="error_update_file_move">Impossibile salvare il file scaricato</string>
 
+    <string name="user_agent_title">Identità del lettore</string>
+    <string name="user_agent_hint">Alcuni fornitori lasciano passare solo certi lettori. Se la tua playlist funziona in un’altra app, selezionala qui. Se non passa, l’app continua a provare le altre.</string>
+    <string name="user_agent_auto">Automatico (consigliato)</string>
+    <string name="user_agent_selected">Selezionato</string>
+    <string name="user_agent_own">Qwikster (propria)</string>
+    <string name="user_agent_vlc">VLC</string>
+    <string name="user_agent_ffmpeg">ffmpeg</string>
+    <string name="user_agent_android">Android (predefinito)</string>
+    <string name="user_agent_okhttp">OkHttp</string>
+    <string name="user_agent_exoplayer">Lettore ExoPlayer</string>
+    <string name="user_agent_ibo">IBO Player</string>
+    <string name="user_agent_tivimate">TiviMate</string>
+    <string name="user_agent_smarters">IPTV Smarters</string>
+    <string name="user_agent_browser">Browser (Chrome)</string>
 </resources>
