@@ -36,7 +36,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
 import de.qwikster.player.R
 import de.qwikster.player.core.TimeFormat
 import de.qwikster.player.data.model.ChannelWithProgram
@@ -68,7 +68,17 @@ fun ChannelListItem(
     onFocused: () -> Unit,
     onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    now: Long = System.currentTimeMillis(),
+    /**
+     * Bezugszeit für den Fortschrittsbalken.
+     *
+     * Bewusst **ohne** Standardwert. Hier stand `System.currentTimeMillis()`,
+     * und ein Standardwert, der sich bei jedem Aufruf ändert, nimmt Compose
+     * jede Möglichkeit, diese Zeile zu überspringen – siehe
+     * [de.qwikster.player.ui.common.rememberMinuteTicker]. Wer diese
+     * Komponente benutzt, gibt deshalb ausdrücklich eine Zeit an, die eine
+     * Weile stabil bleibt.
+     */
+    now: Long,
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val channel = item.channel
@@ -173,6 +183,17 @@ fun ChannelListItem(
  *
  * Sehr viele Panels liefern tote Logo-URLs; ohne Platzhalter hätte die
  * Liste dann unruhige Lücken.
+ *
+ * **Bewusst `AsyncImage` und nicht `SubcomposeAsyncImage`.** Letzteres war
+ * hier der teuerste Posten der ganzen Senderliste: Es baut je Bild ein
+ * `SubcomposeLayout` auf, also eine eigene kleine Komposition mitten im
+ * Messvorgang, und das je sichtbarer Zeile. Coil rät davon in
+ * Bildlauflisten ausdrücklich ab. Auf einem Fire TV Stick war das beim
+ * Durchblättern deutlich zu spüren.
+ *
+ * Der Fehlerfall braucht dafür kein Subcompose, nur ein Merkmal: Schlägt
+ * das Laden fehl, tritt derselbe Platzhalter an die Stelle, den auch ein
+ * Sender ganz ohne Logo bekommt.
  */
 @Composable
 fun ChannelLogo(
@@ -180,13 +201,19 @@ fun ChannelLogo(
     contentDescription: String,
     modifier: Modifier = Modifier,
 ) {
+    // Schlüssel auf die Adresse: Beim Weiterblättern verwendet Compose
+    // dieselbe Einheit für den nächsten Sender wieder – ohne den Schlüssel
+    // bliebe das Fehlermerkmal des vorigen Senders stehen, und ein Sender
+    // mit gültigem Logo zeigte grundlos den Platzhalter.
+    var failed by remember(logoUrl) { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
             .background(TvSurfaceElevated),
         contentAlignment = Alignment.Center,
     ) {
-        if (logoUrl.isNullOrBlank()) {
+        if (logoUrl.isNullOrBlank() || failed) {
             Icon(
                 imageVector = Icons.Default.Tv,
                 contentDescription = contentDescription,
@@ -194,22 +221,14 @@ fun ChannelLogo(
                 modifier = Modifier.size(20.dp),
             )
         } else {
-            SubcomposeAsyncImage(
+            AsyncImage(
                 model = logoUrl,
                 contentDescription = contentDescription,
                 contentScale = ContentScale.Fit,
+                onError = { failed = true },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(4.dp),
-                error = {
-                    Icon(
-                        imageVector = Icons.Default.Tv,
-                        contentDescription = null,
-                        tint = TvOnSurfaceMuted,
-                        modifier = Modifier.size(20.dp),
-                    )
-                },
-                loading = {},
             )
         }
     }

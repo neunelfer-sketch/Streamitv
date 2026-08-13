@@ -72,6 +72,7 @@ import de.qwikster.player.data.model.Channel
 import de.qwikster.player.data.model.ChannelWithProgram
 import de.qwikster.player.ui.common.COMPACT_WIDTH_BREAKPOINT
 import de.qwikster.player.ui.common.modalInputTrap
+import de.qwikster.player.ui.common.rememberMinuteTicker
 import de.qwikster.player.ui.common.touchClickable
 import de.qwikster.player.ui.components.ChannelListItem
 import de.qwikster.player.ui.components.ChannelLogo
@@ -494,6 +495,11 @@ private fun ChannelColumn(
 ) {
     val listState = rememberLazyListState()
 
+    // Eine Bezugszeit für alle Zeilen, die eine Minute lang stabil bleibt –
+    // erst dadurch darf Compose unveränderte Zeilen überspringen. Siehe
+    // rememberMinuteTicker.
+    val now = rememberMinuteTicker()
+
     // Neue Kategorie -> Liste wieder ganz nach oben. Ohne das bliebe die
     // Bildlaufposition der vorherigen Kategorie stehen: Wer in "Alle Sender"
     // weit unten war und auf "Sport" wechselt, landet dort mitten im
@@ -524,6 +530,7 @@ private fun ChannelColumn(
                         onClick = { onChannelClick(item.channel) },
                         onFocused = { onChannelFocused(item.channel) },
                         onLongClick = { onToggleFavorite(item.channel) },
+                        now = now,
                     )
                 }
             }

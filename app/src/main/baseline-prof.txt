@@ -1,0 +1,59 @@
+# Baseline Profile – sagt Android, welchen Code es schon bei der
+# Installation übersetzen soll, statt ihn beim ersten Durchlauf zu
+# interpretieren.
+#
+# Warum das hier besonders viel bringt:
+# Compose baut jeden Bildschirm zur Laufzeit auf. Ohne Profil läuft dieser
+# Aufbau beim allerersten Mal interpretiert, bis der JIT-Übersetzer warm
+# ist – auf einem Fire TV Stick sind das die zähen ersten Sekunden nach dem
+# Start, der stockende erste Bildlauf durch die Senderliste und das späte
+# Erscheinen des Filme-Rasters. Genau die Stellen, die als "ruckelt" auffallen.
+#
+# Zwei Dinge, die man dazu wissen muss:
+#
+# 1. Die Wirkung setzt nicht sofort ein. Bei einer seitlich installierten
+#    App schreibt `ProfileInstaller` das Profil beim ersten Start weg;
+#    übersetzt wird es danach vom System im Leerlauf. Der Gewinn zeigt sich
+#    also ab dem zweiten oder dritten Start, nicht unmittelbar nach dem
+#    Aufspielen.
+#
+# 2. Ein aus echten Messläufen erzeugtes Profil wäre genauer als diese
+#    Auswahl. Dafür braucht es einen Messlauf auf einem Gerät oder Emulator;
+#    solange es den nicht gibt, ist eine gezielte Auswahl der heißen Pakete
+#    das Nächstbeste – und deutlich besser als gar kein Profil.
+#
+# Bewusst *nicht* aufgeführt sind Netz- und Serialisierungsbibliotheken
+# (OkHttp, Okio, kotlinx.serialization): Deren Zeit geht auf Leitung und
+# Server, nicht auf den Übersetzer. Sie mit aufzunehmen verlängerte nur die
+# Installation, ohne etwas sichtbar zu beschleunigen.
+
+# --- Eigener Code: Bildschirme, ViewModels, Datenschicht -------------------
+HSPLde/qwikster/player/**->**(**)**
+
+# --- Compose: der Aufbau jedes Bildschirms --------------------------------
+HSPLandroidx/compose/runtime/**->**(**)**
+HSPLandroidx/compose/ui/**->**(**)**
+HSPLandroidx/compose/foundation/**->**(**)**
+HSPLandroidx/compose/animation/**->**(**)**
+HSPLandroidx/compose/material3/**->**(**)**
+HSPLandroidx/tv/material3/**->**(**)**
+
+# --- Navigation und Lebenszyklus: jeder Bildschirmwechsel -----------------
+HSPLandroidx/navigation/**->**(**)**
+HSPLandroidx/lifecycle/**->**(**)**
+
+# --- Datenschicht: Senderliste und Programmzeitschrift --------------------
+HSPLandroidx/room/**->**(**)**
+HSPLandroidx/sqlite/**->**(**)**
+HSPLandroidx/datastore/**->**(**)**
+
+# --- Nebenläufigkeit: trägt jede Abfrage und jeden Zustandsfluss ----------
+HSPLkotlinx/coroutines/**->**(**)**
+
+# --- Bilder: Senderlogos und Poster im Bildlauf ---------------------------
+HSPLcoil/**->**(**)**
+
+# --- Wiedergabe: Aufbau des Players beim ersten Sender --------------------
+HSPLandroidx/media3/exoplayer/**->**(**)**
+HSPLandroidx/media3/common/**->**(**)**
+HSPLandroidx/media3/ui/**->**(**)**

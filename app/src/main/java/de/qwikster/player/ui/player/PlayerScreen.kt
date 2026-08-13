@@ -72,6 +72,7 @@ import de.qwikster.player.ui.common.KeepScreenOn
 import de.qwikster.player.ui.common.LockScreenOrientation
 import de.qwikster.player.ui.common.MatchDisplayFrameRate
 import de.qwikster.player.ui.common.dpadEvents
+import de.qwikster.player.ui.common.rememberMinuteTicker
 import de.qwikster.player.ui.theme.TvAccent
 import de.qwikster.player.ui.theme.TvFavorite
 import de.qwikster.player.ui.theme.TvOnSurfaceMuted
@@ -604,6 +605,10 @@ private fun ChannelZapper(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
 
+    // Stabile Bezugszeit, damit die Zeilen übersprungen werden dürfen –
+    // siehe rememberMinuteTicker.
+    val now = rememberMinuteTicker()
+
     // Beim Öffnen zum laufenden Sender springen.
     LaunchedEffect(Unit) {
         val index = state.currentIndex
@@ -637,6 +642,7 @@ private fun ChannelZapper(
                     isPlaying = item.channel.streamId == state.currentChannel?.streamId,
                     onClick = { onSelect(item.channel) },
                     onFocused = {},
+                    now = now,
                 )
             }
         }

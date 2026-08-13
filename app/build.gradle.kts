@@ -163,6 +163,13 @@ dependencies {
     // Bilder (Sender-Logos, VOD-Poster)
     implementation(libs.coil.compose)
 
+    // Spielt das Baseline Profile (src/main/baseline-prof.txt) auf dem Gerät
+    // ein. Für eine seitlich installierte App ist das zwingend: Ohne einen
+    // App-Store, der das Profil beim Installieren mitgibt, gäbe es niemanden,
+    // der es dem System überreicht – die vorkompilierten Pfade blieben
+    // ungenutzt im Paket liegen.
+    implementation(libs.androidx.profileinstaller)
+
     // DI
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
