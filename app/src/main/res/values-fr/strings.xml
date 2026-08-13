@@ -142,6 +142,14 @@
     <string name="settings_remove_playlist">Supprimer la playlist</string>
     <string name="settings_remove_playlist_desc">Supprime toutes les données locales de cette playlist</string>
 
+    <!-- Kategorien ein-/ausblenden -->
+    <string name="categories_title">Catégories</string>
+    <string name="categories_settings_desc">Choisir les catégories visibles</string>
+    <string name="categories_subtitle">%1$d sur %2$d visibles</string>
+    <string name="categories_show_all">Tout afficher</string>
+    <string name="categories_hide_all">Tout masquer</string>
+    <string name="categories_empty">Aucune catégorie pour cette section.</string>
+
     <string name="settings_section_playback">Lecture</string>
     <string name="settings_buffer_size">Taille de la mémoire tampon</string>
     <string name="settings_buffer_seconds">%1$d s</string>

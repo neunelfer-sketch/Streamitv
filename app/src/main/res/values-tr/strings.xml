@@ -142,6 +142,14 @@
     <string name="settings_remove_playlist">Listeyi kaldır</string>
     <string name="settings_remove_playlist_desc">Bu listeye ait tüm yerel verileri siler</string>
 
+    <!-- Kategorien ein-/ausblenden -->
+    <string name="categories_title">Kategoriler</string>
+    <string name="categories_settings_desc">Hangi kategorilerin görüneceğini seçin</string>
+    <string name="categories_subtitle">%2$d kategoriden %1$d tanesi görünür</string>
+    <string name="categories_show_all">Tümünü göster</string>
+    <string name="categories_hide_all">Tümünü gizle</string>
+    <string name="categories_empty">Bu alan için kategori yok.</string>
+
     <string name="settings_section_playback">Oynatma</string>
     <string name="settings_buffer_size">Arabellek boyutu</string>
     <string name="settings_buffer_seconds">%1$d sn</string>

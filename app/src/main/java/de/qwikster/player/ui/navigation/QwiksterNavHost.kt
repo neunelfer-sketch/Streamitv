@@ -20,6 +20,7 @@ import de.qwikster.player.ui.home.HomeScreen
 import de.qwikster.player.ui.login.LoginScreen
 import de.qwikster.player.ui.player.PlayerScreen
 import de.qwikster.player.ui.search.SearchScreen
+import de.qwikster.player.ui.settings.CategoryVisibilityScreen
 import de.qwikster.player.ui.settings.CrashReportScreen
 import de.qwikster.player.ui.settings.EpgSourceScreen
 import de.qwikster.player.ui.settings.SettingsScreen
@@ -43,6 +44,7 @@ object Routes {
     const val EPG_SOURCE = "epg_source"
     const val PROXY = "proxy"
     const val CRASH_REPORT = "crash_report"
+    const val CATEGORIES = "categories"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
     const val MOVIE_DETAIL = "movie_detail/{streamId}"
@@ -193,6 +195,7 @@ fun QwiksterNavHost(
                 onOpenEpgSource = { navController.navigate(Routes.EPG_SOURCE) },
                 onOpenProxy = { navController.navigate(Routes.PROXY) },
                 onOpenCrashReport = { navController.navigate(Routes.CRASH_REPORT) },
+                onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
                 onPlaylistRemoved = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
@@ -207,6 +210,10 @@ fun QwiksterNavHost(
 
         composable(Routes.CRASH_REPORT) {
             CrashReportScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.CATEGORIES) {
+            CategoryVisibilityScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.EPG_SOURCE) {

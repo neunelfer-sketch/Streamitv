@@ -142,6 +142,14 @@
     <string name="settings_remove_playlist">Afspeellijst verwijderen</string>
     <string name="settings_remove_playlist_desc">Wist alle lokale gegevens van deze afspeellijst</string>
 
+    <!-- Kategorien ein-/ausblenden -->
+    <string name="categories_title">Categorieën</string>
+    <string name="categories_settings_desc">Kies welke categorieën zichtbaar zijn</string>
+    <string name="categories_subtitle">%1$d van %2$d zichtbaar</string>
+    <string name="categories_show_all">Alles tonen</string>
+    <string name="categories_hide_all">Alles verbergen</string>
+    <string name="categories_empty">Er zijn geen categorieën voor dit onderdeel.</string>
+
     <string name="settings_section_playback">Afspelen</string>
     <string name="settings_buffer_size">Buffergrootte</string>
     <string name="settings_buffer_seconds">%1$d s</string>

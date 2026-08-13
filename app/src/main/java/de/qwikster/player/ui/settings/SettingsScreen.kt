@@ -68,6 +68,7 @@ fun SettingsScreen(
     onOpenEpgSource: () -> Unit,
     onOpenProxy: () -> Unit,
     onOpenCrashReport: () -> Unit,
+    onOpenCategories: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -164,6 +165,13 @@ fun SettingsScreen(
                 )
             }
 
+            item {
+                SettingsRow(
+                    title = stringResource(R.string.categories_title),
+                    value = stringResource(R.string.categories_settings_desc),
+                    onClick = onOpenCategories,
+                )
+            }
             item { SettingsSection(stringResource(R.string.settings_section_playback)) }
             item {
                 val preset = SettingsStore.BUFFER_PRESETS

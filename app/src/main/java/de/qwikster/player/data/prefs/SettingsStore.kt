@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import de.qwikster.player.R
 import de.qwikster.player.data.model.AspectRatioMode
@@ -62,13 +63,32 @@ data class AppSettings(
     val movieSort: VodSort = VodSort.RECENT,
     /** Reihenfolge im Serien-Raster. */
     val seriesSort: VodSort = VodSort.NAME_ASC,
+    /**
+     * Kategorien, die der Zuschauer ausgeblendet hat – je Bereich getrennt.
+     *
+     * Gespeichert werden die *ausgeblendeten*, nicht die sichtbaren. Der
+     * Unterschied ist wesentlich: Ein Panel nimmt laufend neue Kategorien
+     * auf, und die sollen von selbst erscheinen. Bei einer Liste sichtbarer
+     * Kategorien bliebe dagegen jede Neuheit unsichtbar, bis jemand sie von
+     * Hand freischaltet – und niemand kommt auf die Idee, dort nachzusehen.
+     */
+    val hiddenLiveCategories: Set<String> = emptySet(),
+    val hiddenMovieCategories: Set<String> = emptySet(),
+    val hiddenSeriesCategories: Set<String> = emptySet(),
     /** SOCKS5-Proxy: aus, solange keine Adresse hinterlegt ist. */
     val proxyEnabled: Boolean = false,
     val proxyHost: String = "",
     val proxyPort: Int = 1080,
     val proxyUser: String = "",
     val proxyPassword: String = "",
-)
+) {
+    /** Die ausgeblendeten Kategorien des jeweiligen Bereichs. */
+    fun hiddenCategories(kind: StreamKind): Set<String> = when (kind) {
+        StreamKind.LIVE -> hiddenLiveCategories
+        StreamKind.SERIES -> hiddenSeriesCategories
+        else -> hiddenMovieCategories
+    }
+}
 
 /**
  * Persistiert die Einstellungen in DataStore.
@@ -95,6 +115,9 @@ class SettingsStore(
             resumeLastChannel = prefs[KEY_RESUME_LAST] ?: true,
             showPreviewPlayer = prefs[KEY_SHOW_PREVIEW] ?: true,
             matchFrameRate = prefs[KEY_MATCH_FRAME_RATE] ?: true,
+            hiddenLiveCategories = prefs[KEY_HIDDEN_LIVE].orEmpty(),
+            hiddenMovieCategories = prefs[KEY_HIDDEN_VOD].orEmpty(),
+            hiddenSeriesCategories = prefs[KEY_HIDDEN_SERIES].orEmpty(),
             proxyEnabled = prefs[KEY_PROXY_ON] ?: false,
             proxyHost = prefs[KEY_PROXY_HOST].orEmpty(),
             proxyPort = prefs[KEY_PROXY_PORT] ?: 1080,
@@ -119,6 +142,19 @@ class SettingsStore(
     suspend fun setResumeLastChannel(value: Boolean) = edit { it[KEY_RESUME_LAST] = value }
     suspend fun setShowPreviewPlayer(value: Boolean) = edit { it[KEY_SHOW_PREVIEW] = value }
     suspend fun setMatchFrameRate(value: Boolean) = edit { it[KEY_MATCH_FRAME_RATE] = value }
+
+    /** Merkt die ausgeblendeten Kategorien eines Bereichs. */
+    suspend fun setHiddenCategories(kind: StreamKind, ids: Set<String>) = edit { prefs ->
+        val key = when (kind) {
+            StreamKind.LIVE -> KEY_HIDDEN_LIVE
+            StreamKind.SERIES -> KEY_HIDDEN_SERIES
+            else -> KEY_HIDDEN_VOD
+        }
+        // Leere Mengen ganz entfernen statt leer zu speichern – so bleibt der
+        // Ausgangszustand "nichts ausgeblendet" auch nach einem Zurücksetzen
+        // wirklich der Ausgangszustand.
+        if (ids.isEmpty()) prefs.remove(key) else prefs[key] = ids
+    }
 
     suspend fun setProxy(enabled: Boolean, host: String, port: Int, user: String, password: String) = edit {
         it[KEY_PROXY_ON] = enabled
@@ -227,6 +263,9 @@ class SettingsStore(
         private val KEY_RESUME_LAST = booleanPreferencesKey("resume_last_channel")
         private val KEY_SHOW_PREVIEW = booleanPreferencesKey("show_preview_player")
         private val KEY_MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
+        private val KEY_HIDDEN_LIVE = stringSetPreferencesKey("hidden_categories_live")
+        private val KEY_HIDDEN_VOD = stringSetPreferencesKey("hidden_categories_vod")
+        private val KEY_HIDDEN_SERIES = stringSetPreferencesKey("hidden_categories_series")
         private val KEY_PROXY_ON = booleanPreferencesKey("proxy_enabled")
         private val KEY_PROXY_HOST = stringPreferencesKey("proxy_host")
         private val KEY_PROXY_PORT = intPreferencesKey("proxy_port")

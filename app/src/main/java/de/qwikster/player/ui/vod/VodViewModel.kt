@@ -118,8 +118,15 @@ class VodViewModel @Inject constructor(
     // ganz oben – nur eben neben Neuzugängen und Kategorien statt allein.
     private val selectedCategoryId = MutableStateFlow<String?>(OVERVIEW_CATEGORY_ID)
 
+    /** Vom Zuschauer ausgeblendete Kategorien des gerade gezeigten Bereichs. */
+    private val hiddenCategories: StateFlow<Set<String>> =
+        combine(kind, settingsStore.settings) { streamKind, settings ->
+            settings.hiddenCategories(streamKind)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
     private val realCategories: StateFlow<List<Category>> = kind
         .flatMapLatest { repository.observeCategories(it) }
+        .combine(hiddenCategories) { list, hidden -> list.filterNot { it.id in hidden } }
         .map { list -> list.sortedWith(CATEGORY_ORDER) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -198,10 +205,17 @@ class VodViewModel @Inject constructor(
      * niemand, ohne die Reihe komplett durchzublättern, und jedes Poster
      * kostet Speicher.
      */
+    /** Die vier Eingaben der Startansicht – `Triple` reicht dafür nicht mehr. */
+    private data class OverviewInput(
+        val kind: StreamKind,
+        val categories: List<Category>,
+        val recent: List<VodItem>,
+        val hidden: Set<String>,
+    )
+
     private val overviewRows: StateFlow<List<VodRow>> =
-        combine(kind, realCategories, recentItems) { streamKind, cats, recent ->
-            Triple(streamKind, cats, recent)
-        }.flatMapLatest { (streamKind, cats, recent) ->
+        combine(kind, realCategories, recentItems, hiddenCategories, ::OverviewInput)
+            .flatMapLatest { (streamKind, cats, recent, hidden) ->
             val allItems = if (streamKind == StreamKind.SERIES) {
                 repository.observeSeries(null).map { list ->
                     list.map { series ->
@@ -226,7 +240,12 @@ class VodViewModel @Inject constructor(
                 }
             }
 
-            allItems.map { entries ->
+            allItems.map { all ->
+                // Ausgeblendete Kategorien fallen komplett weg – auch aus
+                // "Neu hinzugefügt". Sonst tauchte ausgerechnet in der
+                // obersten Reihe genau das wieder auf, was der Zuschauer
+                // gerade weggeblendet hat.
+                val entries = if (hidden.isEmpty()) all else all.filterNot { it.first.first in hidden }
                 buildList {
                     // 1. Angefangenes zuerst. Wer etwas offen hat, will fast
                     //    immer genau dort weitermachen – das gehört nicht in
@@ -292,11 +311,17 @@ class VodViewModel @Inject constructor(
             if (streamKind == StreamKind.SERIES) settings.seriesSort else settings.movieSort
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VodSort.RECENT)
 
+    /** Die vier Eingaben des Rasters. */
+    private data class GridInput(
+        val kind: StreamKind,
+        val categoryId: String?,
+        val sort: VodSort,
+        val hidden: Set<String>,
+    )
+
     private val items: StateFlow<List<VodItem>> =
-        combine(kind, effectiveCategoryId, sort) { streamKind, categoryId, order ->
-            Triple(streamKind, categoryId, order)
-        }
-            .flatMapLatest { (streamKind, categoryId, order) ->
+        combine(kind, effectiveCategoryId, sort, hiddenCategories, ::GridInput)
+            .flatMapLatest { (streamKind, categoryId, order, hidden) ->
                 if (categoryId == OVERVIEW_CATEGORY_ID) {
                     // Die Startansicht zeigt Reihen, kein Raster – siehe
                     // [overviewRows]. Hier gäbe es nichts zu laden.
@@ -319,7 +344,8 @@ class VodViewModel @Inject constructor(
                 } else if (streamKind == StreamKind.SERIES) {
                     // "Alle Titel" heißt für die Datenbank: keine Einschränkung.
                     repository.observeSeries(categoryId.takeUnless { it == ALL_CATEGORY_ID }).map { list ->
-                        list.sortedFor(order, recentKey = { it.lastModified }, name = { it.name })
+                        list.withoutHidden(hidden) { it.categoryId }
+                            .sortedFor(order, recentKey = { it.lastModified }, name = { it.name })
                             .map { series ->
                                 VodItem(
                                     id = series.seriesId,
@@ -331,7 +357,8 @@ class VodViewModel @Inject constructor(
                     }
                 } else {
                     repository.observeMovies(categoryId.takeUnless { it == ALL_CATEGORY_ID }).map { list ->
-                        list.sortedFor(order, recentKey = { it.addedAt }, name = { it.name })
+                        list.withoutHidden(hidden) { it.categoryId }
+                            .sortedFor(order, recentKey = { it.addedAt }, name = { it.name })
                             .map { movie ->
                                 VodItem(
                                     id = movie.streamId,
@@ -399,6 +426,19 @@ class VodViewModel @Inject constructor(
      * Panels mischen "DER PATE" und "Der Pate" munter, und ein reiner
      * Zeichenvergleich stellte sonst alle Großschreibungen vor die anderen.
      */
+    /**
+     * Wirft die Einträge ausgeblendeter Kategorien weg.
+     *
+     * Die Abkürzung bei leerer Menge ist kein Geiz: Im Raster "Alle Titel"
+     * geht das hier über den gesamten Bestand, und der ist bei manchen
+     * Panels sechsstellig. Wer nichts ausgeblendet hat, soll dafür auch
+     * nichts bezahlen.
+     */
+    private inline fun <T> List<T>.withoutHidden(
+        hidden: Set<String>,
+        crossinline categoryId: (T) -> String?,
+    ): List<T> = if (hidden.isEmpty()) this else filterNot { categoryId(it) in hidden }
+
     private inline fun <T> List<T>.sortedFor(
         order: VodSort,
         crossinline recentKey: (T) -> Long,

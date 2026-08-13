@@ -182,6 +182,11 @@ class HomeViewModel @Inject constructor(
 
     // --- Kategorien --------------------------------------------------------
 
+    /** Vom Zuschauer ausgeblendete Live-Kategorien – siehe CategoryVisibilityScreen. */
+    private val hiddenCategories: StateFlow<Set<String>> = settingsStore.settings
+        .map { it.hiddenLiveCategories }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
     private val categories: StateFlow<List<CategoryItem>> =
         combine(
             repository.observeCategories(StreamKind.LIVE),
@@ -191,14 +196,15 @@ class HomeViewModel @Inject constructor(
             repository.observeChannelCount(),
             repository.observeFavoriteCount(),
             repository.observeChannels(ChannelFilter.Recent).map { it.size },
-        ) { groups, allCount, favoriteCount, recentCount ->
+            hiddenCategories,
+        ) { groups, allCount, favoriteCount, recentCount, hidden ->
             buildList {
                 add(CategoryItem.All(allCount))
                 // Leere Spezial-Kategorien blenden wir aus, damit die Liste
                 // bei einer frischen Installation nicht halb tot wirkt.
                 if (favoriteCount > 0) add(CategoryItem.Favorites(favoriteCount))
                 if (recentCount > 0) add(CategoryItem.Recent(recentCount))
-                addAll(groups.map { CategoryItem.Group(it) })
+                addAll(groups.filterNot { it.id in hidden }.map { CategoryItem.Group(it) })
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -209,6 +215,14 @@ class HomeViewModel @Inject constructor(
             if (query.isBlank()) category.toFilter() else ChannelFilter.Search(query)
         }
             .flatMapLatest { filter -> repository.observeChannels(filter) }
+            // Sender ausgeblendeter Kategorien verschwinden auch aus "Alle
+            // Sender" und aus der Suche. Alles andere wäre eine halbe Sache:
+            // Wer eine Kategorie wegblendet, will ihre Sender nicht weiter im
+            // Gesamtbestand vor sich haben.
+            .combine(hiddenCategories) { channelList, hidden ->
+                if (hidden.isEmpty()) channelList
+                else channelList.filterNot { it.categoryId in hidden }
+            }
             // Bei jedem Ticker-Schlag die laufende Sendung neu bestimmen.
             .combine(nowTicker) { channelList, now -> channelList to now }
             .flatMapLatest { (channelList, now) ->

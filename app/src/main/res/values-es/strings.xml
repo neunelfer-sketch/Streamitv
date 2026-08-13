@@ -142,6 +142,14 @@
     <string name="settings_remove_playlist">Eliminar lista</string>
     <string name="settings_remove_playlist_desc">Borra todos los datos locales de esta lista</string>
 
+    <!-- Kategorien ein-/ausblenden -->
+    <string name="categories_title">Categorías</string>
+    <string name="categories_settings_desc">Elegir qué categorías se muestran</string>
+    <string name="categories_subtitle">%1$d de %2$d visibles</string>
+    <string name="categories_show_all">Mostrar todas</string>
+    <string name="categories_hide_all">Ocultar todas</string>
+    <string name="categories_empty">No hay categorías para esta sección.</string>
+
     <string name="settings_section_playback">Reproducción</string>
     <string name="settings_buffer_size">Tamaño del búfer</string>
     <string name="settings_buffer_seconds">%1$d s</string>

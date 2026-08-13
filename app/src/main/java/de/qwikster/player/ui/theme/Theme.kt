@@ -31,6 +31,9 @@ val TvOnSurfaceMuted = Color(0xFF98A2B8)
 val TvLive = Color(0xFFFF4757)
 val TvFavorite = Color(0xFFFFC048)
 
+/** "Eingeschaltet" – für Zustandsanzeigen wie die Kategorien-Sichtbarkeit. */
+val TvOn = Color(0xFF34C759)
+
 private val QwiksterColorScheme = darkColorScheme(
     primary = TvAccent,
     onPrimary = Color.White,

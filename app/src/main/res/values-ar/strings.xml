@@ -142,6 +142,14 @@
     <string name="settings_remove_playlist">إزالة القائمة</string>
     <string name="settings_remove_playlist_desc">يحذف كل البيانات المحفوظة لهذه القائمة</string>
 
+    <!-- Kategorien ein-/ausblenden -->
+    <string name="categories_title">الفئات</string>
+    <string name="categories_settings_desc">اختر الفئات التي تظهر</string>
+    <string name="categories_subtitle">%1$d من %2$d ظاهرة</string>
+    <string name="categories_show_all">إظهار الكل</string>
+    <string name="categories_hide_all">إخفاء الكل</string>
+    <string name="categories_empty">لا توجد فئات لهذا القسم.</string>
+
     <string name="settings_section_playback">التشغيل</string>
     <string name="settings_buffer_size">حجم التخزين المؤقت</string>
     <string name="settings_buffer_seconds">%1$d ث</string>
