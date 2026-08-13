@@ -141,6 +141,13 @@
     <string name="settings_remove_playlist">إزالة القائمة</string>
     <string name="settings_remove_playlist_desc">يحذف كل البيانات المحفوظة لهذه القائمة</string>
 
+    <!-- Mehrere Playlists -->
+    <string name="playlists_title">قوائم التشغيل</string>
+    <string name="playlists_settings_desc">احفظ عدة مصادر وبدّل بينها</string>
+    <string name="playlists_hint">موافق للاختيار · اضغط مع الاستمرار للإزالة</string>
+    <string name="playlists_add">إضافة قائمة أخرى</string>
+    <string name="playlists_active">نشط</string>
+
     <!-- Kategorien ein-/ausblenden -->
     <string name="vod_remove_hint">اضغط مع الاستمرار على OK للإزالة</string>
     <string name="vod_show_all">عرض الكل</string>

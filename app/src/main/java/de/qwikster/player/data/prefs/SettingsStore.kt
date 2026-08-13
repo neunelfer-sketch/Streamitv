@@ -19,8 +19,36 @@ import de.qwikster.player.data.model.VodSort
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "qwikster_settings")
+
+/**
+ * Eine hinterlegte Verbindung, wie sie außerhalb der Datenbank liegt.
+ *
+ * Eigener Typ statt des Domänenmodells [Playlist]: Was hier gespeichert
+ * wird, muss über Programmversionen hinweg lesbar bleiben. Das Domänenmodell
+ * darf sich ändern (Felder dazu, Felder weg), diese Form nicht ohne
+ * Rücksicht auf das, was auf den Geräten schon liegt. `id` fehlt bewusst –
+ * sie vergibt die Datenbank, und die wird beim Wiederherstellen ohnehin neu
+ * aufgebaut.
+ */
+@Serializable
+private data class StoredPlaylist(
+    val name: String,
+    val type: String,
+    val serverUrl: String = "",
+    val username: String = "",
+    val password: String = "",
+    val m3uUrl: String = "",
+    val epgUrl: String = "",
+    val isActive: Boolean = false,
+)
+
+/** Unbekannte Felder überlesen: So kann eine ältere App eine neuere Ablage lesen. */
+private val PLAYLIST_JSON = Json { ignoreUnknownKeys = true }
 
 /**
  * Eine auswählbare Puffergröße: Beschriftung als Ressourcen-Kennung,
@@ -194,26 +222,85 @@ class SettingsStore(
      * liegen im app-eigenen Bereich. Es entsteht also kein neues Risiko –
      * verschlüsseln müsste man dann beides.
      */
-    suspend fun rememberPlaylist(playlist: Playlist) = edit { prefs ->
-        prefs[KEY_PL_NAME] = playlist.name
-        prefs[KEY_PL_TYPE] = playlist.type.name
-        prefs[KEY_PL_SERVER] = playlist.serverUrl
-        prefs[KEY_PL_USER] = playlist.username
-        prefs[KEY_PL_PASS] = playlist.password
-        prefs[KEY_PL_M3U] = playlist.m3uUrl
-        prefs[KEY_PL_EPG] = playlist.epgUrl
-    }
-
-    /** Vergisst die Verbindung – beim Entfernen der Playlist. */
-    suspend fun forgetPlaylist() = edit { prefs ->
+    suspend fun rememberPlaylists(playlists: List<Playlist>, activeId: Long?) = edit { prefs ->
+        if (playlists.isEmpty()) {
+            prefs.remove(KEY_PLAYLISTS)
+        } else {
+            prefs[KEY_PLAYLISTS] = PLAYLIST_JSON.encodeToString(
+                playlists.map { playlist ->
+                    StoredPlaylist(
+                        name = playlist.name,
+                        type = playlist.type.name,
+                        serverUrl = playlist.serverUrl,
+                        username = playlist.username,
+                        password = playlist.password,
+                        m3uUrl = playlist.m3uUrl,
+                        epgUrl = playlist.epgUrl,
+                        isActive = playlist.id == activeId,
+                    )
+                },
+            )
+        }
+        // Die Einzelfelder der früheren Fassung fliegen mit raus, sobald hier
+        // etwas Neues steht – sonst läge dieselbe Verbindung doppelt vor und
+        // ein späterer Rückfall auf die alten Felder brächte einen Geist
+        // zurück, den der Zuschauer längst entfernt hat.
         listOf(
             KEY_PL_NAME, KEY_PL_TYPE, KEY_PL_SERVER,
             KEY_PL_USER, KEY_PL_PASS, KEY_PL_M3U, KEY_PL_EPG,
         ).forEach { prefs.remove(it) }
     }
 
-    /** Die gesicherte Verbindung, oder `null` wenn keine hinterlegt ist. */
-    suspend fun rememberedPlaylist(): Playlist? {
+    /**
+     * Alle hinterlegten Verbindungen.
+     *
+     * Liegt noch nichts in der Listenform vor, wird die Einzelverbindung der
+     * früheren Fassung gelesen und als einelementige Liste zurückgegeben –
+     * wer vor diesem Update eine Playlist eingerichtet hatte, behält sie.
+     */
+    suspend fun rememberedPlaylists(): List<Playlist> {
+        val raw = context.dataStore.data.first()[KEY_PLAYLISTS]
+        if (raw.isNullOrBlank()) return listOfNotNull(rememberedPlaylist())
+
+        val stored = runCatching {
+            PLAYLIST_JSON.decodeFromString<List<StoredPlaylist>>(raw)
+        }.getOrElse { return listOfNotNull(rememberedPlaylist()) }
+
+        return stored.mapNotNull { entry ->
+            val type = runCatching { PlaylistType.valueOf(entry.type) }.getOrNull()
+                ?: return@mapNotNull null
+            val hasSource = when (type) {
+                PlaylistType.XTREAM -> entry.serverUrl.isNotBlank()
+                PlaylistType.M3U -> entry.m3uUrl.isNotBlank()
+            }
+            if (!hasSource) return@mapNotNull null
+            Playlist(
+                name = entry.name.ifBlank { context.getString(R.string.playlist_default_name) },
+                type = type,
+                serverUrl = entry.serverUrl,
+                username = entry.username,
+                password = entry.password,
+                m3uUrl = entry.m3uUrl,
+                epgUrl = entry.epgUrl,
+                // Bewusst 0: Der Zwischenspeicher ist weg, also soll die
+                // ausgewählte Playlist sofort neu laden.
+                lastSyncAt = 0L,
+                lastEpgSyncAt = 0L,
+            )
+        }
+    }
+
+    /** Welche der hinterlegten Verbindungen zuletzt ausgewählt war. */
+    suspend fun rememberedActiveIndex(): Int {
+        val raw = context.dataStore.data.first()[KEY_PLAYLISTS] ?: return 0
+        val stored = runCatching {
+            PLAYLIST_JSON.decodeFromString<List<StoredPlaylist>>(raw)
+        }.getOrNull() ?: return 0
+        return stored.indexOfFirst { it.isActive }.takeIf { it >= 0 } ?: 0
+    }
+
+    /** Die gesicherte Verbindung der früheren Fassung, oder `null`. */
+    private suspend fun rememberedPlaylist(): Playlist? {
         val prefs = context.dataStore.data.first()
         val type = prefs[KEY_PL_TYPE]
             ?.let { name -> runCatching { PlaylistType.valueOf(name) }.getOrNull() }
@@ -269,6 +356,7 @@ class SettingsStore(
         private val KEY_RESUME_LAST = booleanPreferencesKey("resume_last_channel")
         private val KEY_SHOW_PREVIEW = booleanPreferencesKey("show_preview_player")
         private val KEY_MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
+        private val KEY_PLAYLISTS = stringPreferencesKey("remembered_playlists")
         private val KEY_HIDDEN_LIVE = stringSetPreferencesKey("hidden_categories_live")
         private val KEY_HIDDEN_VOD = stringSetPreferencesKey("hidden_categories_vod")
         private val KEY_HIDDEN_SERIES = stringSetPreferencesKey("hidden_categories_series")

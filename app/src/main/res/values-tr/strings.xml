@@ -141,6 +141,13 @@
     <string name="settings_remove_playlist">Listeyi kaldır</string>
     <string name="settings_remove_playlist_desc">Bu listeye ait tüm yerel verileri siler</string>
 
+    <!-- Mehrere Playlists -->
+    <string name="playlists_title">Oynatma listeleri</string>
+    <string name="playlists_settings_desc">Birden fazla kaynak ekleyin ve aralarında geçiş yapın</string>
+    <string name="playlists_hint">OK seçer · kaldırmak için OK tuşuna basılı tutun</string>
+    <string name="playlists_add">Başka bir liste ekle</string>
+    <string name="playlists_active">Etkin</string>
+
     <!-- Kategorien ein-/ausblenden -->
     <string name="vod_remove_hint">Kaldırmak için OK tuşuna basılı tutun</string>
     <string name="vod_show_all">Tümünü göster</string>

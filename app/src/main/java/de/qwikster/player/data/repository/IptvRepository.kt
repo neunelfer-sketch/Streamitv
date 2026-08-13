@@ -81,13 +81,38 @@ class IptvRepository @Inject constructor(
 
     /** Legt eine Playlist an und macht sie zur aktiven. Gibt die neue ID zurück. */
     suspend fun savePlaylist(playlist: Playlist): Long {
-        // Zusätzlich außerhalb der Datenbank sichern – siehe
-        // [restorePlaylistIfMissing].
-        settingsStore.rememberPlaylist(playlist)
-        return playlistDao.insertAndActivate(playlist.toEntity(isActive = true))
+        val id = playlistDao.insertAndActivate(playlist.toEntity(isActive = true))
+        rememberAllPlaylists()
+        return id
     }
 
-    suspend fun setActivePlaylist(id: Long) = playlistDao.setActive(id)
+    /**
+     * Wechselt die aktive Playlist.
+     *
+     * Die Daten der anderen bleiben unangetastet in der Datenbank liegen –
+     * jede Tabelle führt ihre `playlistId` mit, und jede Abfrage schränkt
+     * darauf ein. Ein Wechsel lädt also nichts neu und wirft nichts weg; er
+     * ändert nur, worauf alle Abfragen zeigen. Ob die neu gewählte Playlist
+     * eine Auffrischung braucht, entscheidet danach der Hauptbildschirm
+     * anhand ihres eigenen `lastSyncAt`.
+     */
+    suspend fun setActivePlaylist(id: Long) {
+        playlistDao.setActive(id)
+        rememberAllPlaylists()
+    }
+
+    /**
+     * Schreibt den aktuellen Stand aller Playlists neben die Datenbank.
+     *
+     * Nach **jeder** Änderung, nicht nur beim Anlegen: Die Datenbank ist ein
+     * Zwischenspeicher und wird bei einer Schemaänderung verworfen. Was hier
+     * nicht steht, ist nach dem nächsten Update weg – und niemand tippt
+     * gern Serveradresse und Zugangsdaten mit einer Fernbedienung neu ein.
+     */
+    private suspend fun rememberAllPlaylists() {
+        val all = playlistDao.observeAll().first().map { it.toModel() }
+        settingsStore.rememberPlaylists(all, playlistDao.getActive()?.id)
+    }
 
     /**
      * Setzt die EPG-Quelle der aktiven Playlist.
@@ -102,12 +127,22 @@ class IptvRepository @Inject constructor(
         val current = playlistDao.getActive()?.toModel() ?: return
         val updated = current.copy(epgUrl = url.trim(), lastEpgSyncAt = 0L)
         playlistDao.insert(updated.toEntity(isActive = true))
-        settingsStore.rememberPlaylist(updated)
+        rememberAllPlaylists()
     }
 
+    /**
+     * Entfernt eine Playlist samt ihrer zwischengespeicherten Inhalte.
+     *
+     * Bleibt danach noch eine übrig, wird sie zur aktiven – sonst stünde der
+     * Zuschauer vor einer Einrichtungsseite, obwohl er noch Zugänge hat.
+     */
     suspend fun deletePlaylist(id: Long) {
+        val wasActive = playlistDao.getActive()?.id == id
         playlistDao.delete(id)
-        settingsStore.forgetPlaylist()
+        if (wasActive) {
+            playlistDao.observeAll().first().firstOrNull()?.let { playlistDao.setActive(it.id) }
+        }
+        rememberAllPlaylists()
     }
 
     /**
@@ -126,8 +161,16 @@ class IptvRepository @Inject constructor(
      */
     suspend fun restorePlaylistIfMissing() {
         if (playlistDao.getActive() != null) return
-        val remembered = settingsStore.rememberedPlaylist() ?: return
-        playlistDao.insertAndActivate(remembered.toEntity(isActive = true))
+        val remembered = settingsStore.rememberedPlaylists()
+        if (remembered.isEmpty()) return
+
+        // Alle einspielen, danach die zuletzt gewählte aktivieren. Die IDs
+        // vergibt die Datenbank neu – das ist unbedenklich, weil mit ihr auch
+        // sämtliche zwischengespeicherten Inhalte weg sind, die darauf
+        // verwiesen hätten.
+        val ids = remembered.map { playlistDao.insert(it.toEntity(isActive = false)) }
+        val activeIndex = settingsStore.rememberedActiveIndex().coerceIn(ids.indices)
+        playlistDao.setActive(ids[activeIndex])
     }
 
     // -----------------------------------------------------------------------

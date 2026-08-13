@@ -141,6 +141,13 @@
     <string name="settings_remove_playlist">Afspeellijst verwijderen</string>
     <string name="settings_remove_playlist_desc">Wist alle lokale gegevens van deze afspeellijst</string>
 
+    <!-- Mehrere Playlists -->
+    <string name="playlists_title">Afspeellijsten</string>
+    <string name="playlists_settings_desc">Meerdere bronnen opslaan en wisselen</string>
+    <string name="playlists_hint">OK kiest · houd OK ingedrukt om te verwijderen</string>
+    <string name="playlists_add">Nog een afspeellijst toevoegen</string>
+    <string name="playlists_active">Actief</string>
+
     <!-- Kategorien ein-/ausblenden -->
     <string name="vod_remove_hint">Houd OK ingedrukt om te verwijderen</string>
     <string name="vod_show_all">Alles tonen</string>

@@ -69,6 +69,7 @@ fun SettingsScreen(
     onOpenProxy: () -> Unit,
     onOpenCrashReport: () -> Unit,
     onOpenCategories: () -> Unit,
+    onOpenPlaylists: () -> Unit,
     onPlaylistRemoved: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -165,6 +166,13 @@ fun SettingsScreen(
                 )
             }
 
+            item {
+                SettingsRow(
+                    title = stringResource(R.string.playlists_title),
+                    value = stringResource(R.string.playlists_settings_desc),
+                    onClick = onOpenPlaylists,
+                )
+            }
             item {
                 SettingsRow(
                     title = stringResource(R.string.categories_title),

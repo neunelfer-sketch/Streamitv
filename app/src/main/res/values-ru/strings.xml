@@ -141,6 +141,13 @@
     <string name="settings_remove_playlist">Удалить плейлист</string>
     <string name="settings_remove_playlist_desc">Удаляет все локальные данные этого плейлиста</string>
 
+    <!-- Mehrere Playlists -->
+    <string name="playlists_title">Плейлисты</string>
+    <string name="playlists_settings_desc">Сохраняйте несколько источников и переключайтесь</string>
+    <string name="playlists_hint">OK выбирает · удерживайте OK, чтобы убрать</string>
+    <string name="playlists_add">Добавить ещё плейлист</string>
+    <string name="playlists_active">Активен</string>
+
     <!-- Kategorien ein-/ausblenden -->
     <string name="vod_remove_hint">Удерживайте OK, чтобы убрать</string>
     <string name="vod_show_all">Показать все</string>

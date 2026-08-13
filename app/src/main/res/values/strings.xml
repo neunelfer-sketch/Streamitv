@@ -158,6 +158,13 @@
     <string name="settings_remove_playlist">Playlist entfernen</string>
     <string name="settings_remove_playlist_desc">Löscht alle lokalen Daten dieser Playlist</string>
 
+    <!-- Mehrere Playlists -->
+    <string name="playlists_title">Playlists</string>
+    <string name="playlists_settings_desc">Mehrere Zugänge hinterlegen und umschalten</string>
+    <string name="playlists_hint">OK wählt aus · OK lang drücken entfernt</string>
+    <string name="playlists_add">Weitere Playlist hinzufügen</string>
+    <string name="playlists_active">Aktiv</string>
+
     <!-- Kategorien ein-/ausblenden -->
     <string name="vod_remove_hint">OK lang drücken zum Entfernen</string>
     <string name="vod_show_all">Alle anzeigen</string>

@@ -141,6 +141,13 @@
     <string name="settings_remove_playlist">Usuń playlistę</string>
     <string name="settings_remove_playlist_desc">Usuwa wszystkie lokalne dane tej playlisty</string>
 
+    <!-- Mehrere Playlists -->
+    <string name="playlists_title">Playlisty</string>
+    <string name="playlists_settings_desc">Zapisz kilka źródeł i przełączaj się między nimi</string>
+    <string name="playlists_hint">OK wybiera · przytrzymaj OK, aby usunąć</string>
+    <string name="playlists_add">Dodaj kolejną playlistę</string>
+    <string name="playlists_active">Aktywna</string>
+
     <!-- Kategorien ein-/ausblenden -->
     <string name="vod_remove_hint">Przytrzymaj OK, aby usunąć</string>
     <string name="vod_show_all">Pokaż wszystkie</string>

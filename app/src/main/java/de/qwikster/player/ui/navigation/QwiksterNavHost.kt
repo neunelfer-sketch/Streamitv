@@ -22,6 +22,7 @@ import de.qwikster.player.ui.player.PlayerScreen
 import de.qwikster.player.ui.search.SearchScreen
 import de.qwikster.player.ui.settings.CategoryVisibilityScreen
 import de.qwikster.player.ui.settings.CrashReportScreen
+import de.qwikster.player.ui.settings.PlaylistsScreen
 import de.qwikster.player.ui.settings.EpgSourceScreen
 import de.qwikster.player.ui.settings.SettingsScreen
 import de.qwikster.player.ui.settings.ProxyScreen
@@ -45,6 +46,8 @@ object Routes {
     const val PROXY = "proxy"
     const val CRASH_REPORT = "crash_report"
     const val CATEGORIES = "categories"
+    const val PLAYLISTS = "playlists"
+    const val ADD_PLAYLIST = "add_playlist"
 
     /** Filme, Serien und Episoden über ihre ID – die IDs enthalten keine Zugangsdaten. */
     const val MOVIE_DETAIL = "movie_detail/{streamId}"
@@ -196,6 +199,7 @@ fun QwiksterNavHost(
                 onOpenProxy = { navController.navigate(Routes.PROXY) },
                 onOpenCrashReport = { navController.navigate(Routes.CRASH_REPORT) },
                 onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
+                onOpenPlaylists = { navController.navigate(Routes.PLAYLISTS) },
                 onPlaylistRemoved = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
@@ -214,6 +218,22 @@ fun QwiksterNavHost(
 
         composable(Routes.CATEGORIES) {
             CategoryVisibilityScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.PLAYLISTS) {
+            PlaylistsScreen(
+                onBack = { navController.popBackStack() },
+                onAddPlaylist = { navController.navigate(Routes.ADD_PLAYLIST) },
+            )
+        }
+
+        // Dieselbe Einrichtungsmaske wie beim ersten Start, nur mit einem
+        // anderen Ziel danach: Wer eine weitere Playlist anlegt, will zurück
+        // in die Übersicht und nicht auf den Hauptbildschirm geworfen werden.
+        // Die neue Playlist ist danach die aktive – das ist der Grund, warum
+        // man sie überhaupt angelegt hat.
+        composable(Routes.ADD_PLAYLIST) {
+            LoginScreen(onDone = { navController.popBackStack() })
         }
 
         composable(Routes.EPG_SOURCE) {
