@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -286,6 +287,43 @@ private fun VodBody(
     val gridState = rememberLazyGridState()
     val categoryListState = rememberLazyListState()
     val selectedCategory = remember { FocusRequester() }
+    val firstGridItem = remember { FocusRequester() }
+
+    /**
+     * Der Eintrag, an dem [selectedCategory] hängt.
+     *
+     * Normalerweise die gewählte Kategorie. Ist die gerade nicht in der
+     * Liste, wandert der Anker auf den ersten Eintrag – und das ist kein
+     * Schönheitsdetail, sondern verhindert einen Absturz: Beim Abgleich der
+     * Playlist wird die Kategorientabelle komplett neu geschrieben, ist also
+     * für einen Moment leer oder unvollständig. Trifft ein Fokuswechsel in
+     * die Liste genau diesen Moment, verlangt der Fokus-Rückfall unten einen
+     * Anker, den es nicht gibt – und ein Fokusanker ohne Element wirft.
+     */
+    val focusAnchorId = remember(state.categories, state.selectedCategoryId) {
+        if (state.categories.any { it.id == state.selectedCategoryId }) {
+            state.selectedCategoryId
+        } else {
+            state.categories.firstOrNull()?.id
+        }
+    }
+
+    /**
+     * Nach "Alle anzeigen" soll der Fokus ins Raster wandern.
+     *
+     * Ohne das führte die Kachel ins Nichts: Mit dem Wechsel in die
+     * Kategorie verschwindet die Reihenansicht samt der Kachel, auf der der
+     * Fokus stand. Es blieb kein fokussiertes Element übrig, das Steuerkreuz
+     * war wirkungslos, und nur Zurück tat noch etwas – zweimal gedrückt
+     * verlässt das die App. Genau danach sah es aus, als schlösse sie sich
+     * von allein.
+     */
+    var jumpToGrid by remember { mutableStateOf(false) }
+    LaunchedEffect(state.selectedCategoryId, state.items.isNotEmpty()) {
+        if (!jumpToGrid || state.isOverview || state.items.isEmpty()) return@LaunchedEffect
+        jumpToGrid = false
+        runCatching { firstGridItem.requestFocus() }
+    }
 
     // Beim Betreten des Bereichs steht der Fokus auf der **gewählten**
     // Kategorie – nicht dort, wo ihn Compose zufällig zuerst findet, aber
@@ -368,7 +406,7 @@ private fun VodBody(
                             .fillMaxWidth()
                             .height(44.dp)
                             .then(
-                                if (category.id == state.selectedCategoryId) {
+                                if (category.id == focusAnchorId) {
                                     Modifier.focusRequester(selectedCategory)
                                 } else {
                                     Modifier
@@ -412,7 +450,10 @@ private fun VodBody(
                     onPlayMovie = onPlayMovie,
                     onOpenSeries = onOpenSeries,
                     onPlayEpisode = onPlayEpisode,
-                    onOpenCategory = onSelectCategory,
+                    onOpenCategory = { categoryId ->
+                        jumpToGrid = true
+                        onSelectCategory(categoryId)
+                    },
                     onRemoveFromContinueWatching = onRemoveFromContinueWatching,
                     modifier = Modifier
                         .weight(1f)
@@ -441,7 +482,7 @@ private fun VodBody(
                 horizontalArrangement = Arrangement.spacedBy(TvSpacing.medium),
                 verticalArrangement = Arrangement.spacedBy(TvSpacing.medium),
             ) {
-                items(state.items, key = { it.id }) { item ->
+                itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->
                     PosterCard(
                         title = item.title,
                         subtitle = item.subtitle,
@@ -458,6 +499,11 @@ private fun VodBody(
                             { onRemoveFromContinueWatching(item) }
                         } else {
                             null
+                        },
+                        modifier = if (index == 0) {
+                            Modifier.focusRequester(firstGridItem)
+                        } else {
+                            Modifier
                         },
                     )
                 }

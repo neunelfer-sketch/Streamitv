@@ -422,6 +422,20 @@ private fun CategoryColumn(
     val listState = rememberLazyListState()
     val selectedFocus = remember { FocusRequester() }
 
+    /**
+     * Der Eintrag, an dem [selectedFocus] hängt.
+     *
+     * Normalerweise die gewählte Kategorie; ist die gerade nicht in der
+     * Liste, der erste Eintrag. Das ist kein Schönheitsdetail: Beim Abgleich
+     * der Playlist wird die Kategorientabelle komplett neu geschrieben, ist
+     * also für einen Moment leer oder unvollständig. Trifft ein Fokuswechsel
+     * in die Liste genau diesen Moment, verlangt der Rückfall unten einen
+     * Anker, den es nicht gibt – und ein Fokusanker ohne Element wirft.
+     */
+    val focusAnchorKey = remember(categories, selectedKey) {
+        if (categories.any { it.key == selectedKey }) selectedKey else categories.firstOrNull()?.key
+    }
+
     // Die gewählte Kategorie in den sichtbaren Bereich holen, solange sie es
     // nicht ist. Einen Eintrag, den die Liste nie gesetzt hat, kann niemand
     // fokussieren – und der Rückfall oben liefe ins Leere.
@@ -454,7 +468,7 @@ private fun CategoryColumn(
                 // Genau so verhält sich TiviMate – ein Druck weniger pro Wechsel.
                 onFocused = { onSelect(category) },
                 onClick = { onSelect(category) },
-                modifier = if (category.key == selectedKey) {
+                modifier = if (category.key == focusAnchorKey) {
                     Modifier.focusRequester(selectedFocus)
                 } else {
                     Modifier
