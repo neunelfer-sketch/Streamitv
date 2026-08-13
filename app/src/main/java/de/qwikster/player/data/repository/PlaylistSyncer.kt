@@ -18,6 +18,7 @@ import de.qwikster.player.data.model.Movie
 import de.qwikster.player.data.model.Playlist
 import de.qwikster.player.data.model.PlaylistType
 import de.qwikster.player.data.model.StreamKind
+import de.qwikster.player.data.remote.executeTryingUserAgents
 import de.qwikster.player.data.remote.m3u.M3uParser
 import de.qwikster.player.data.remote.xtream.XtreamApi
 import de.qwikster.player.data.remote.xtream.XtreamCredentials
@@ -382,11 +383,11 @@ class PlaylistSyncer @Inject constructor(
 
         val request = Request.Builder()
             .url(playlist.m3uUrl)
-            // Manche Hoster blocken den OkHttp-Standard-User-Agent.
-            .header("User-Agent", USER_AGENT)
             .build()
 
-        val parsed = httpClient.newCall(request).execute().use { response ->
+        // Bei einer Abweisung werden weitere Abspielprogramm-Namen probiert:
+        // Vor vielen Adressen sitzt ein CDN, das nur bekannte durchlässt.
+        val parsed = httpClient.executeTryingUserAgents(request).use { response ->
             if (!response.isSuccessful) {
                 throw SyncException(
                     context.httpErrorMessage(response.code),
@@ -522,20 +523,6 @@ class PlaylistSyncer @Inject constructor(
          * nachgereicht statt eines Ausschnitts (siehe [syncInBackground]).
          */
         private const val SYNC_REPLAY = 16
-
-        /** Wird auch beim Streamen benutzt – manche Panels prüfen darauf. */
-        const val USER_AGENT = "Qwikster/1.0 (Android TV)"
-
-        /**
-         * Zweitname für Panels, die nur bekannte Player durchlassen.
-         *
-         * VLC ist der mit Abstand am weitesten verbreitete Abspieler für
-         * IPTV-Ströme und steht deshalb praktisch überall auf der
-         * Positivliste. Er kommt ausschließlich dann zum Einsatz, wenn ein
-         * Server den eigenen Namen bereits mit 403 abgewiesen hat – siehe
-         * den Interceptor in `AppModule`.
-         */
-        const val FALLBACK_USER_AGENT = "VLC/3.0.20 LibVLC/3.0.20"
 
         /** Pause zwischen zwei `get_vod_info`-Abfragen bei der Cover-Anreicherung. */
         private const val ENRICHMENT_DELAY_MS = 200L

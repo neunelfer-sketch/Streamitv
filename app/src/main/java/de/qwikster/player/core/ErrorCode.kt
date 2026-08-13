@@ -35,6 +35,17 @@ fun Context.httpErrorMessage(code: Int): String = when {
 fun isVendorStatus(code: Int): Boolean = code < 100 || code > 599
 
 /**
+ * Die Anfrage wurde **abgewiesen**, statt an einem echten Serverfehler zu
+ * scheitern.
+ *
+ * Das ist der Unterschied, der über den Zweitversuch entscheidet: Ein 500er
+ * oder eine Zeitüberschreitung wird beim zweiten Anlauf genauso scheitern,
+ * eine Abweisung dagegen hängt am Namen des Abspielprogramms – und der lässt
+ * sich ändern. Siehe [de.qwikster.player.data.remote.UserAgents].
+ */
+fun isBlockedStatus(code: Int): Boolean = code == 403 || isVendorStatus(code)
+
+/**
  * Hängt einen kurzen Diagnosecode an eine für den Nutzer bestimmte
  * Fehlermeldung an.
  *

@@ -19,6 +19,7 @@ import de.qwikster.player.data.model.EpgProgram
 import de.qwikster.player.data.model.Playlist
 import de.qwikster.player.data.model.PlaylistType
 import de.qwikster.player.data.remote.epg.XmltvParser
+import de.qwikster.player.data.remote.executeTryingUserAgents
 import de.qwikster.player.data.remote.xtream.XtreamApi
 import de.qwikster.player.data.remote.xtream.XtreamMapper
 import kotlinx.coroutines.Dispatchers
@@ -212,12 +213,11 @@ class EpgRepository @Inject constructor(
 
         val request = Request.Builder()
             .url(url)
-            .header("User-Agent", PlaylistSyncer.USER_AGENT)
             .header("Accept-Encoding", "gzip")
             .build()
 
         val count = try {
-            httpClient.newCall(request).execute().use { response ->
+            httpClient.executeTryingUserAgents(request).use { response ->
                 if (!response.isSuccessful) {
                     emit(
                         EpgSyncProgress.Failed(

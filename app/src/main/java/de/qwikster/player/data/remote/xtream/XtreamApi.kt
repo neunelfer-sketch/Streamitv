@@ -3,8 +3,10 @@ package de.qwikster.player.data.remote.xtream
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import de.qwikster.player.R
+import de.qwikster.player.core.isBlockedStatus
 import de.qwikster.player.core.isVendorStatus
 import de.qwikster.player.data.model.StreamKind
+import de.qwikster.player.data.remote.executeTryingUserAgents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -71,7 +73,7 @@ sealed class XtreamException(message: String, cause: Throwable? = null) : IOExce
          * kennt (z. B. 884). Beides deutet auf eine Schutzschicht vor dem
          * Panel hin – dann lohnt der Umweg über den M3U-Export.
          */
-        val isBlocked: Boolean get() = code == 403 || isVendorStatus(code)
+        val isBlocked: Boolean get() = isBlockedStatus(code)
     }
 
     class Auth(message: String) : XtreamException(message)
@@ -273,7 +275,7 @@ class XtreamApi @Inject constructor(
             .header("Accept", "application/json")
             .build()
 
-        httpClient.newCall(request).execute().use { response ->
+        httpClient.executeTryingUserAgents(request).use { response ->
             if (!response.isSuccessful) {
                 throw XtreamException.Http(
                     response.code,
@@ -317,7 +319,7 @@ class XtreamApi @Inject constructor(
                 .header("Range", "bytes=0-1023")
                 .build()
             runCatching {
-                httpClient.newCall(request).execute().use { response ->
+                httpClient.executeTryingUserAgents(request).use { response ->
                     if (!response.isSuccessful) return@use false
                     val firstLine = response.body?.source()?.readUtf8Line().orEmpty()
                     // \uFEFF ist die Byte-Reihenfolge-Markierung, die manche

@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import de.qwikster.player.BuildConfig
-import de.qwikster.player.core.isVendorStatus
+import de.qwikster.player.core.isBlockedStatus
 import de.qwikster.player.data.local.AppDatabase
 import de.qwikster.player.data.local.CategoryDao
 import de.qwikster.player.data.local.ChannelDao
@@ -15,6 +15,7 @@ import de.qwikster.player.data.local.UserDataDao
 import de.qwikster.player.data.local.VodDao
 import de.qwikster.player.data.prefs.ProxySettings
 import de.qwikster.player.data.prefs.SettingsStore
+import de.qwikster.player.data.remote.UserAgents
 import de.qwikster.player.data.repository.PlaylistSyncer
 import dagger.Module
 import dagger.Provides
@@ -39,9 +40,6 @@ import javax.inject.Singleton
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class ApplicationScope
-
-/** "Zugriff verweigert" – siehe den User-Agent-Zweitversuch im OkHttp-Client. */
-private const val HTTP_FORBIDDEN = 403
 
 /**
  * Räumt die Tabelle der ausgebauten Aufnahmefunktion weg.
@@ -120,8 +118,19 @@ object AppModule {
         // es in genau diesem Fall einmal selbst erneut. Der zweite Versuch
         // kostet nur dort etwas, wo es ohnehin schon fehlgeschlagen war.
         .addInterceptor { chain ->
-            val request = chain.request().newBuilder()
-                .header("User-Agent", PlaylistSyncer.USER_AGENT)
+            val original = chain.request()
+
+            // Wer selbst einen Namen mitgibt, regelt auch die Zweitversuche
+            // selbst: Der Import probiert eine ganze Reihe durch (siehe
+            // `executeTryingUserAgents`), und ein Überschreiben hier machte
+            // das wirkungslos. Betroffen ist damit alles, was *keinen* Namen
+            // setzt – vor allem die Streams des Players.
+            if (original.header("User-Agent") != null) {
+                return@addInterceptor chain.proceed(original)
+            }
+
+            val request = original.newBuilder()
+                .header("User-Agent", UserAgents.DEFAULT)
                 .build()
             val response = chain.proceed(request)
             // Neben 403 auch alles, was der HTTP-Standard gar nicht kennt
@@ -129,16 +138,14 @@ object AppModule {
             // vorgeschalteten Schutzschicht des Anbieters, und die entscheidet
             // fast immer anhand des Abspielprogramm-Namens – genau der Fall,
             // für den dieser Zweitversuch da ist.
-            if (response.code != HTTP_FORBIDDEN && !isVendorStatus(response.code)) {
-                return@addInterceptor response
-            }
+            if (!isBlockedStatus(response.code)) return@addInterceptor response
 
             // Die erste Antwort muss geschlossen werden, bevor die nächste
             // Anfrage rausgeht – sonst bleibt die Verbindung im Pool hängen.
             response.close()
             chain.proceed(
                 request.newBuilder()
-                    .header("User-Agent", PlaylistSyncer.FALLBACK_USER_AGENT)
+                    .header("User-Agent", UserAgents.VLC)
                     .build(),
             )
         }

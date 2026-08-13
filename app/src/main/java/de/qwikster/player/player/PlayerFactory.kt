@@ -16,7 +16,6 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import androidx.media3.extractor.ts.TsExtractor
-import de.qwikster.player.data.repository.PlaylistSyncer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.OkHttpClient
 import javax.inject.Inject
@@ -192,8 +191,11 @@ class PlayerFactory @Inject constructor(
      * Panels akzeptieren.
      */
     private fun buildDataSourceFactory(): DataSource.Factory {
+        // Den Namen setzt bewusst der OkHttp-Interceptor (siehe AppModule) und
+        // nicht diese Fabrik: Nur wenn hier keiner steht, greift dort der
+        // Zweitversuch unter einem verbreiteten Abspieler-Namen – und genau
+        // den braucht ein Stream, den das Panel mit 403 abweist.
         val httpFactory = OkHttpDataSource.Factory(okHttpClient)
-            .setUserAgent(PlaylistSyncer.USER_AGENT)
             .setDefaultRequestProperties(
                 mapOf(
                     "Accept" to "*/*",
