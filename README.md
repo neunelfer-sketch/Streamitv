@@ -1,4 +1,4 @@
-# 9elf Player
+# xOTT Player
 
 IPTV-Player für **Android TV** und **Fire TV** im Stil von TiviMate.
 Nativ umgesetzt mit **Kotlin, Jetpack Compose for TV und Media3/ExoPlayer**.
@@ -17,9 +17,9 @@ und in allen dreien ist der native Weg klar im Vorteil:
 ## Projektstruktur
 
 ```
-app/src/main/java/de/neunelf/player/
+app/src/main/java/de/xott/player/
 │
-├─ NeunelfPlayerApplication.kt  Hilt-Einstieg, Coil-Bildcache
+├─ XottPlayerApplication.kt  Hilt-Einstieg, Coil-Bildcache
 ├─ MainActivity.kt              Single Activity, Bild-in-Bild
 │
 ├─ core/
@@ -120,8 +120,8 @@ Dateien jenseits von 100 MB auf einem Stick durchlaufen.
 Jeder Push auf `main` oder einen `claude/*`-Branch baut die App auf GitHub
 Actions und hängt zwei APKs an ein Release:
 
-- `9elf-Player-vX.Y.Z.apk` – optimierter Build, dieser gehört auf den Stick
-- `9elf-Player-vX.Y.Z-debug.apk` – nur für die Fehlersuche, deutlich größer
+- `xOTT-Player-vX.Y.Z.apk` – optimierter Build, dieser gehört auf den Stick
+- `xOTT-Player-vX.Y.Z-debug.apk` – nur für die Fehlersuche, deutlich größer
   und langsamer
 
 Weil dieses Repository privat ist, sind seine Release-Dateien nicht ohne
@@ -131,7 +131,7 @@ Repository gespiegelt, das ausschließlich die APKs enthält.
 
 Dafür sind zwei Dinge nötig:
 
-1. Ein öffentliches Repository, standardmäßig `9elf-player-releases`.
+1. Ein öffentliches Repository, standardmäßig `xOTT-player-releases`.
    Ein anderer Name lässt sich über die Repository-Variable
    `PUBLIC_RELEASE_REPO` einstellen.
 2. Ein Zugriffstoken mit Schreibrecht auf dieses Repository, hinterlegt als
@@ -185,4 +185,4 @@ Voraussetzungen: JDK 17, Android SDK 35, `minSdk 22` (deckt Fire OS 5 ab).
 
 ---
 
-_Developed by 9elf_
+_Developed by xOTT_

@@ -14,11 +14,11 @@
 }
 
 # Alle DTOs samt ihrer generierten $$serializer-Klassen behalten.
--keep,includedescriptorclasses class de.neunelf.player.data.remote.**$$serializer { *; }
--keepclassmembers class de.neunelf.player.data.remote.** {
+-keep,includedescriptorclasses class de.xott.player.data.remote.**$$serializer { *; }
+-keepclassmembers class de.xott.player.data.remote.** {
     *** Companion;
 }
--keepclasseswithmembers class de.neunelf.player.data.remote.** {
+-keepclasseswithmembers class de.xott.player.data.remote.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 

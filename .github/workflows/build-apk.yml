@@ -35,7 +35,7 @@ jobs:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       # Ziel für die öffentlichen Testbuilds. Über eine Repository-Variable
       # überschreibbar, falls das Repo mal anders heißt.
-      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/9elf-Player' }}
+      PUBLIC_RELEASE_REPO: ${{ vars.PUBLIC_RELEASE_REPO || 'neunelfer-sketch/xOTT-Player' }}
 
     steps:
       - name: Quellcode auschecken
@@ -89,12 +89,12 @@ jobs:
         run: |
           mkdir -p out
           VERSION="v1.0.${{ github.run_number }}"
-          cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-$VERSION.apk"
-          cp app/build/outputs/apk/debug/app-debug.apk "out/9elf-Player-$VERSION-debug.apk"
+          cp app/build/outputs/apk/release/app-release.apk "out/xOTT-Player-$VERSION.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "out/xOTT-Player-$VERSION-debug.apk"
           # Gleichbleibender Dateiname: zusammen mit der "latest"-Weiterleitung
           # von GitHub ergibt sich eine Adresse, die über alle Versionen hinweg
           # gleich bleibt. Auf einer Fernbedienung tippt man sie genau einmal.
-          cp app/build/outputs/apk/release/app-release.apk "out/9elf-Player-latest.apk"
+          cp app/build/outputs/apk/release/app-release.apk "out/xOTT-Player-latest.apk"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           ls -lh out/
 
@@ -135,8 +135,8 @@ jobs:
           find raw -name '*.apk' -exec cp {} out/ \;
           ls -lh out/
 
-          VERSION=$(ls out/ | grep -oE '^9elf-Player-v[0-9]+\.[0-9]+\.[0-9]+\.apk$' \
-            | head -1 | sed -E 's/^9elf-Player-(v[0-9.]+)\.apk$/\1/')
+          VERSION=$(ls out/ | grep -oE '^xOTT-Player-v[0-9]+\.[0-9]+\.[0-9]+\.apk$' \
+            | head -1 | sed -E 's/^xOTT-Player-(v[0-9.]+)\.apk$/\1/')
           if [ -z "$VERSION" ]; then
             echo "::error::Im Artefakt von Lauf $RUN_ID steckt keine versionierte APK."
             exit 1
@@ -180,7 +180,7 @@ jobs:
           gh release create "$VERSION" out/*.apk \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
-            --title "9elf Player $VERSION" \
+            --title "xOTT Player $VERSION" \
             --notes "Testbuild vom Branch \`${{ github.ref_name }}\`.
 
           **Zum Installieren auf dem Fire TV Stick**
@@ -188,10 +188,10 @@ jobs:
           1. In den Einstellungen unter *Mein Fire TV → Entwickleroptionen* die
              Installation unbekannter Apps für den Downloader erlauben.
           2. Die App *Downloader* öffnen und die URL der Datei
-             \`9elf-Player-$VERSION.apk\` von dieser Seite eingeben.
+             \`xOTT-Player-$VERSION.apk\` von dieser Seite eingeben.
           3. Nach dem Download auf *Installieren* gehen.
 
-          \`9elf-Player-$VERSION.apk\` ist der optimierte Build – den nehmen.
+          \`xOTT-Player-$VERSION.apk\` ist der optimierte Build – den nehmen.
           \`…-debug.apk\` ist nur für die Fehlersuche gedacht und läuft langsamer.
 
           Beide sind mit einem öffentlichen Testschlüssel signiert, nicht mit
@@ -221,13 +221,13 @@ jobs:
           VERSION="${{ steps.version.outputs.value }}"
           # Bewusst nur die fertige APK, nicht der Debug-Build: der ist
           # 25 MB groß, langsamer und dient allein der Fehlersuche.
-          # 9elf-Player-latest.apk ist dieselbe Datei unter festem Namen und
+          # xOTT-Player-latest.apk ist dieselbe Datei unter festem Namen und
           # sorgt für die gleichbleibende Download-Adresse.
-          FILES=("out/9elf-Player-$VERSION.apk" "out/9elf-Player-latest.apk")
+          FILES=("out/xOTT-Player-$VERSION.apk" "out/xOTT-Player-latest.apk")
           echo "Spiegele nach $PUBLIC_RELEASE_REPO: ${FILES[*]}"
           gh release create "$VERSION" "${FILES[@]}" \
             --repo "$PUBLIC_RELEASE_REPO" \
-            --title "9elf Player $VERSION" \
+            --title "xOTT Player $VERSION" \
             --notes "Testbuild für Android TV und Fire TV.
 
           **Installation auf dem Fire TV Stick**
@@ -236,10 +236,10 @@ jobs:
              unbekannter Apps für *Downloader* erlauben.
           2. In der App *Downloader* diese Adresse eingeben – sie bleibt für
              alle künftigen Versionen gleich:
-             \`github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk\`
+             \`github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/xOTT-Player-latest.apk\`
           3. Nach dem Laden auf *Installieren* gehen.
 
-          Beide Dateien sind identisch – \`9elf-Player-latest.apk\` trägt nur
+          Beide Dateien sind identisch – \`xOTT-Player-latest.apk\` trägt nur
           den festen Namen für die dauerhafte Adresse.
 
           Signiert mit einem öffentlichen Testschlüssel, nicht mit einem
@@ -254,5 +254,5 @@ jobs:
           if [ -n "$RELEASE_TOKEN" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Öffentlich (direkt auf dem Stick ladbar):" >> $GITHUB_STEP_SUMMARY
-            echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/9elf-Player-latest.apk" >> $GITHUB_STEP_SUMMARY
+            echo "https://github.com/$PUBLIC_RELEASE_REPO/releases/latest/download/xOTT-Player-latest.apk" >> $GITHUB_STEP_SUMMARY
           fi

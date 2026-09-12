@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">9elf Player</string>
+    <string name="app_name">xOTT Player</string>
 
     <!-- Login / Playlist-Einrichtung -->
     <string name="login_title">Playlist hinzufügen</string>
@@ -50,5 +50,5 @@
     <string name="settings_refresh_epg">EPG aktualisieren</string>
     <string name="settings_buffer">Puffergröße</string>
     <string name="settings_remove_playlist">Playlist entfernen</string>
-    <string name="settings_about">Über 9elf Player</string>
+    <string name="settings_about">Über xOTT Player</string>
 </resources>

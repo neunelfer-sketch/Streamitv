@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "de.neunelf.player"
+    namespace = "de.xott.player"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "de.neunelf.player"
+        applicationId = "de.xott.player"
         // minSdk 22 deckt Fire OS 5 (Fire TV Stick 2. Gen) sowie Android TV 5.1 ab.
         minSdk = 22
         targetSdk = 34
