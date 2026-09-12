@@ -42,7 +42,24 @@ enum class OverlayMode {
     INFO,
 }
 
+/** Woher der aktuell spielende Inhalt kommt – bestimmt, welche Bedienelemente sinnvoll sind. */
+enum class PlaybackContentType {
+    /** Normaler Live-Sender: Zappen, EPG, Favorit sind verfügbar. */
+    LIVE,
+
+    /** Aufgezeichnete/verpasste Sendung eines archivfähigen Senders. */
+    CATCHUP,
+
+    /** Film oder Serienepisode: kein Zappen, keine Senderliste. */
+    VOD,
+}
+
+/** Nur für VOD/Episoden: der Player kennt hier keinen [Channel]. */
+private data class VodPlayback(val title: String)
+
 data class PlayerUiState(
+    val contentType: PlaybackContentType = PlaybackContentType.LIVE,
+    val title: String = "",
     val currentChannel: Channel? = null,
     val currentProgram: EpgProgram? = null,
     val nextProgram: EpgProgram? = null,
@@ -52,17 +69,29 @@ data class PlayerUiState(
     val settings: AppSettings = AppSettings(),
     val isFavorite: Boolean = false,
 ) {
-    /** Index des laufenden Senders – Basis für Zappen und Listen-Autoscroll. */
+    /** Index des laufenden Senders – Basis für Zappen und Listen-Autoscroll. Nur bei LIVE sinnvoll. */
     val currentIndex: Int
         get() = channels.indexOfFirst { it.channel.streamId == currentChannel?.streamId }
+
+    /** Zappen und die Senderliste (▼) ergeben nur bei einem laufenden Sender Sinn. */
+    val isZappable: Boolean get() = contentType != PlaybackContentType.VOD
 }
 
 /**
  * Steuert den Vollbild-Player.
  *
- * Die Senderliste wird hier komplett vorgehalten (nicht nur der laufende
- * Sender), weil Zappen mit den Kanaltasten sonst einen Datenbankzugriff
- * je Tastendruck bräuchte – auf einem Fire TV Stick deutlich spürbar.
+ * Deckt drei Wiedergabe-Arten ab, die sich denselben Player und dieselben
+ * Overlays teilen, aber unterschiedliche Metadaten mitbringen:
+ * - **Live** ([playChannel]): kennt EPG, Favorit, Zappen.
+ * - **Catch-up** ([playCatchup]): derselbe Sender, aber eine vergangene
+ *   Sendung statt des Live-Feeds – die Info-Leiste zeigt deren fixe
+ *   Zeit/Titel statt der gerade laufenden Sendung.
+ * - **VOD** ([playVod]): Film oder Episode ohne Sender-Identität, deshalb
+ *   ohne Zapp-/Senderlisten-Overlay ([PlayerUiState.isZappable]).
+ *
+ * Die Senderliste wird komplett vorgehalten (nicht nur der laufende Sender),
+ * weil Zappen mit den Kanaltasten sonst einen Datenbankzugriff je
+ * Tastendruck bräuchte – auf einem Fire TV Stick deutlich spürbar.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -74,6 +103,8 @@ class PlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val currentChannelId = MutableStateFlow<String?>(null)
+    private val catchupProgram = MutableStateFlow<EpgProgram?>(null)
+    private val vodPlayback = MutableStateFlow<VodPlayback?>(null)
     private val overlay = MutableStateFlow(OverlayMode.NONE)
 
     private val channels: StateFlow<List<ChannelWithProgram>> =
@@ -83,25 +114,43 @@ class PlayerViewModel @Inject constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Bündelt alle "was läuft gerade"-Flags in einen Flow, damit `combine` unter 5 Argumenten bleibt. */
+    private val selection: StateFlow<Triple<String?, EpgProgram?, VodPlayback?>> =
+        combine(currentChannelId, catchupProgram, vodPlayback) { id, catchup, vod -> Triple(id, catchup, vod) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Triple(null, null, null))
+
     val uiState: StateFlow<PlayerUiState> = combine(
         channels,
-        currentChannelId,
+        selection,
         overlay,
         playerManager.state,
         settingsStore.settings,
-    ) { channelList, channelId, overlayMode, playback, settings ->
-        val entry = channelList.firstOrNull { it.channel.streamId == channelId }
+    ) { channelList, (channelId, catchup, vod), overlayMode, playback, settings ->
+        if (vod != null) {
+            PlayerUiState(
+                contentType = PlaybackContentType.VOD,
+                title = vod.title,
+                playback = playback,
+                overlay = overlayMode,
+                settings = settings,
+            )
+        } else {
+            val entry = channelList.firstOrNull { it.channel.streamId == channelId }
+            val isCatchup = catchup != null
 
-        PlayerUiState(
-            currentChannel = entry?.channel,
-            currentProgram = entry?.current,
-            nextProgram = entry?.next,
-            channels = channelList,
-            playback = playback,
-            overlay = overlayMode,
-            settings = settings,
-            isFavorite = entry?.channel?.isFavorite ?: false,
-        )
+            PlayerUiState(
+                contentType = if (isCatchup) PlaybackContentType.CATCHUP else PlaybackContentType.LIVE,
+                title = entry?.channel?.name.orEmpty(),
+                currentChannel = entry?.channel,
+                currentProgram = if (isCatchup) catchup else entry?.current,
+                nextProgram = if (isCatchup) null else entry?.next,
+                channels = channelList,
+                playback = playback,
+                overlay = overlayMode,
+                settings = settings,
+                isFavorite = entry?.channel?.isFavorite ?: false,
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerUiState())
 
     /** Der ExoPlayer für die `PlayerView` – wird von der UI direkt gebraucht. */
@@ -111,9 +160,11 @@ class PlayerViewModel @Inject constructor(
     // Wiedergabe
     // -----------------------------------------------------------------------
 
-    /** Startet einen Sender. Wird auch beim Zappen aufgerufen. */
+    /** Startet einen Live-Sender. Wird auch beim Zappen aufgerufen. */
     fun playChannel(channel: Channel) {
         currentChannelId.value = channel.streamId
+        catchupProgram.value = null
+        vodPlayback.value = null
         viewModelScope.launch {
             val settings = settingsStore.settings.first()
 
@@ -140,13 +191,58 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    /** Nächster Sender in der Liste (Kanal +). */
+    /**
+     * Startet die Catch-up-Wiedergabe einer vergangenen Sendung (aus dem
+     * TV-Guide angetippt). Nur möglich, wenn der Sender ein Archiv anbietet
+     * ([Channel.hasArchive]) – siehe [IptvRepository.resolveCatchupUrl].
+     */
+    fun playCatchup(channel: Channel, program: EpgProgram) {
+        currentChannelId.value = channel.streamId
+        catchupProgram.value = program
+        vodPlayback.value = null
+        viewModelScope.launch {
+            val settings = settingsStore.settings.first()
+            playerManager.setPreferredLanguages(
+                audio = settings.preferredAudioLanguage,
+                subtitle = settings.preferredSubtitleLanguage,
+                subtitlesOn = settings.subtitlesEnabled,
+            )
+
+            val url = repository.resolveCatchupUrl(channel, program) ?: return@launch
+            playerManager.play(
+                url = url,
+                title = channel.name,
+                isLive = false,
+                bufferMs = settings.bufferMs,
+            )
+        }
+    }
+
+    /** Startet einen Film oder eine Serienepisode. */
+    fun playVod(title: String, url: String, startPositionMs: Long = 0L) {
+        currentChannelId.value = null
+        catchupProgram.value = null
+        vodPlayback.value = VodPlayback(title)
+        viewModelScope.launch {
+            val settings = settingsStore.settings.first()
+            playerManager.play(
+                url = url,
+                title = title,
+                isLive = false,
+                startPositionMs = startPositionMs,
+                bufferMs = settings.bufferMs,
+            )
+        }
+    }
+
+    /** Nächster Sender in der Liste (Kanal +). Ohne Wirkung außerhalb von LIVE/CATCHUP. */
     fun nextChannel() = zap(+1)
 
     /** Vorheriger Sender (Kanal −). */
     fun previousChannel() = zap(-1)
 
     private fun zap(direction: Int) {
+        if (!uiState.value.isZappable) return
         val list = channels.value
         if (list.isEmpty()) return
         val index = uiState.value.currentIndex
@@ -164,6 +260,7 @@ class PlayerViewModel @Inject constructor(
     // -----------------------------------------------------------------------
 
     fun showOverlay(mode: OverlayMode) {
+        if (mode == OverlayMode.CHANNELS && !uiState.value.isZappable) return
         overlay.value = mode
     }
 

@@ -6,18 +6,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import de.neunelf.player.data.model.Channel
+import de.neunelf.player.data.model.EpgProgram
 import de.neunelf.player.data.model.StreamKind
 import de.neunelf.player.ui.guide.GuideScreen
 import de.neunelf.player.ui.home.HomeScreen
 import de.neunelf.player.ui.login.LoginScreen
 import de.neunelf.player.ui.player.PlayerScreen
+import de.neunelf.player.ui.player.StartVod
+import de.neunelf.player.ui.settings.ChannelManagerScreen
 import de.neunelf.player.ui.settings.SettingsScreen
+import de.neunelf.player.ui.vod.MovieDetailScreen
+import de.neunelf.player.ui.vod.SeriesDetailScreen
 import de.neunelf.player.ui.vod.VodScreen
 
 /** Alle Ziele der App. */
@@ -29,15 +36,32 @@ object Routes {
     const val MOVIES = "movies"
     const val SERIES = "series"
     const val SETTINGS = "settings"
+    const val CHANNEL_MANAGER = "channel_manager"
+    const val MOVIE_DETAIL = "movie_detail/{playlistId}/{streamId}"
+    const val SERIES_DETAIL = "series_detail/{playlistId}/{seriesId}"
+
+    fun movieDetail(playlistId: Long, streamId: String) = "movie_detail/$playlistId/$streamId"
+    fun seriesDetail(playlistId: Long, seriesId: String) = "series_detail/$playlistId/$seriesId"
+
+    val movieDetailArgs: List<NamedNavArgument> = listOf(
+        navArgument("playlistId") { type = NavType.LongType },
+        navArgument("streamId") { type = NavType.StringType },
+    )
+    val seriesDetailArgs: List<NamedNavArgument> = listOf(
+        navArgument("playlistId") { type = NavType.LongType },
+        navArgument("seriesId") { type = NavType.StringType },
+    )
 }
 
 /**
  * Navigationsgraph.
  *
- * Der aktuell laufende Sender wird **nicht** als Argument durch die Route
- * geschleust, sondern in einem gemeinsamen Zustand gehalten. Grund: das
- * Channel-Objekt enthält URLs mit Zugangsdaten – die haben in einer
+ * Der aktuell laufende Sender/Inhalt wird **nicht** als Argument durch die
+ * Route geschleust, sondern in gemeinsamem Zustand gehalten. Grund: Channel-
+ * und Wiedergabe-Objekte enthalten URLs mit Zugangsdaten – die haben in einer
  * Navigations-URL (und damit potenziell im Backstack-Log) nichts verloren.
+ * Nur reine IDs (Playlist-/Stream-/Serien-ID) laufen als Routenargumente,
+ * für Filme/Serien-Details und die Kanalverwaltung.
  */
 @Composable
 fun NeunelfPlayerNavHost(
@@ -45,8 +69,31 @@ fun NeunelfPlayerNavHost(
     onEnterPip: () -> Unit,
     navController: NavHostController = rememberNavController(),
 ) {
-    // Der Sender, den der Player abspielen soll.
+    // Was der Player als Nächstes abspielen soll.
     var pendingChannel by remember { mutableStateOf<Channel?>(null) }
+    var pendingCatchupProgram by remember { mutableStateOf<EpgProgram?>(null) }
+    var pendingVod by remember { mutableStateOf<StartVod?>(null) }
+
+    fun openLiveChannel(channel: Channel) {
+        pendingChannel = channel
+        pendingCatchupProgram = null
+        pendingVod = null
+        navController.navigate(Routes.PLAYER)
+    }
+
+    fun openCatchup(channel: Channel, program: EpgProgram) {
+        pendingChannel = channel
+        pendingCatchupProgram = program
+        pendingVod = null
+        navController.navigate(Routes.PLAYER)
+    }
+
+    fun openVod(title: String, url: String) {
+        pendingChannel = null
+        pendingCatchupProgram = null
+        pendingVod = StartVod(title, url)
+        navController.navigate(Routes.PLAYER)
+    }
 
     val startDestination = if (hasPlaylist) Routes.HOME else Routes.LOGIN
 
@@ -75,10 +122,7 @@ fun NeunelfPlayerNavHost(
 
         composable(Routes.HOME) {
             HomeScreen(
-                onOpenPlayer = { channel ->
-                    pendingChannel = channel
-                    navController.navigate(Routes.PLAYER)
-                },
+                onOpenPlayer = { channel -> openLiveChannel(channel) },
                 onOpenGuide = { navController.navigate(Routes.GUIDE) },
                 onOpenMovies = { navController.navigate(Routes.MOVIES) },
                 onOpenSeries = { navController.navigate(Routes.SERIES) },
@@ -88,10 +132,8 @@ fun NeunelfPlayerNavHost(
 
         composable(Routes.GUIDE) {
             GuideScreen(
-                onPlayChannel = { channel ->
-                    pendingChannel = channel
-                    navController.navigate(Routes.PLAYER)
-                },
+                onPlayChannel = { channel -> openLiveChannel(channel) },
+                onPlayCatchup = { channel, program -> openCatchup(channel, program) },
                 onBack = { navController.popBackStack() },
             )
         }
@@ -99,6 +141,8 @@ fun NeunelfPlayerNavHost(
         composable(Routes.PLAYER) {
             PlayerScreen(
                 startChannel = pendingChannel,
+                startCatchupProgram = pendingCatchupProgram,
+                startVod = pendingVod,
                 onExit = { navController.popBackStack() },
                 onEnterPip = onEnterPip,
             )
@@ -107,7 +151,9 @@ fun NeunelfPlayerNavHost(
         composable(Routes.MOVIES) {
             VodScreen(
                 kind = StreamKind.VOD,
-                onPlayMovie = { /* Detailansicht folgt – Film startet über den Player */ },
+                onOpenMovie = { playlistId, streamId ->
+                    navController.navigate(Routes.movieDetail(playlistId, streamId))
+                },
                 onOpenSeries = {},
             )
         }
@@ -115,20 +161,41 @@ fun NeunelfPlayerNavHost(
         composable(Routes.SERIES) {
             VodScreen(
                 kind = StreamKind.SERIES,
-                onPlayMovie = {},
-                onOpenSeries = { /* Staffelübersicht folgt */ },
+                onOpenMovie = {},
+                onOpenSeries = { playlistId, seriesId ->
+                    navController.navigate(Routes.seriesDetail(playlistId, seriesId))
+                },
+            )
+        }
+
+        composable(Routes.MOVIE_DETAIL, arguments = Routes.movieDetailArgs) {
+            MovieDetailScreen(
+                onPlay = { title, url -> openVod(title, url) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.SERIES_DETAIL, arguments = Routes.seriesDetailArgs) {
+            SeriesDetailScreen(
+                onPlayEpisode = { title, url -> openVod(title, url) },
+                onBack = { navController.popBackStack() },
             )
         }
 
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
+                onOpenChannelManager = { navController.navigate(Routes.CHANNEL_MANAGER) },
                 onPlaylistRemoved = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
             )
+        }
+
+        composable(Routes.CHANNEL_MANAGER) {
+            ChannelManagerScreen()
         }
     }
 }

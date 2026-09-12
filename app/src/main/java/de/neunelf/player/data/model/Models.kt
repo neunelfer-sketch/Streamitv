@@ -166,6 +166,18 @@ data class ChannelWithProgram(
     val next: EpgProgram? = null,
 )
 
+/**
+ * Ein Sender in der Kanalverwaltung (Einstellungen): Rohdaten plus
+ * Ausgeblendet-Status, unabhängig von Favoriten/Verlauf.
+ */
+data class ManagedChannel(
+    val streamId: String,
+    val name: String,
+    val logoUrl: String?,
+    val number: Int,
+    val isHidden: Boolean,
+)
+
 /** Seitenverhältnis-Modi des Players (zyklisch per Schnellmenü umschaltbar). */
 enum class AspectRatioMode(val label: String) {
     FIT("Anpassen"),

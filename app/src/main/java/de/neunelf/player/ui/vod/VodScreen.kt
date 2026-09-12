@@ -58,8 +58,8 @@ import de.neunelf.player.ui.theme.TvSurfaceVariant
 @Composable
 fun VodScreen(
     kind: StreamKind,
-    onPlayMovie: (String) -> Unit,
-    onOpenSeries: (String) -> Unit,
+    onOpenMovie: (playlistId: Long, streamId: String) -> Unit,
+    onOpenSeries: (playlistId: Long, seriesId: String) -> Unit,
     viewModel: VodViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -134,7 +134,11 @@ fun VodScreen(
                     subtitle = item.subtitle,
                     posterUrl = item.posterUrl,
                     onClick = {
-                        if (kind == StreamKind.VOD) onPlayMovie(item.id) else onOpenSeries(item.id)
+                        if (kind == StreamKind.VOD) {
+                            onOpenMovie(item.playlistId, item.id)
+                        } else {
+                            onOpenSeries(item.playlistId, item.id)
+                        }
                     },
                 )
             }

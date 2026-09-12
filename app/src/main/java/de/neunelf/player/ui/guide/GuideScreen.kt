@@ -89,6 +89,7 @@ import kotlin.math.roundToInt
 @Composable
 fun GuideScreen(
     onPlayChannel: (Channel) -> Unit,
+    onPlayCatchup: (Channel, EpgProgram) -> Unit,
     onBack: () -> Unit,
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
@@ -161,7 +162,16 @@ fun GuideScreen(
                         windowEnd = state.window.end,
                         scrollState = timelineScroll,
                         onProgramFocused = { program -> viewModel.onProgramFocused(channel, program) },
-                        onProgramClick = { onPlayChannel(channel) },
+                        onProgramClick = { program ->
+                            val now = System.currentTimeMillis()
+                            when {
+                                program.isLiveAt(now) -> onPlayChannel(channel)
+                                program.endAt <= now && channel.hasArchive -> onPlayCatchup(channel, program)
+                                program.endAt <= now -> Unit // vorbei, kein Archiv verfügbar
+                                else -> Unit // liegt in der Zukunft
+                            }
+                        },
+                        onPlayLive = { onPlayChannel(channel) },
                     )
                 }
             }
@@ -332,7 +342,8 @@ private fun GuideRow(
     windowEnd: Long,
     scrollState: androidx.compose.foundation.ScrollState,
     onProgramFocused: (EpgProgram?) -> Unit,
-    onProgramClick: () -> Unit,
+    onProgramClick: (EpgProgram) -> Unit,
+    onPlayLive: () -> Unit,
 ) {
     Row(modifier = Modifier.height(ROW_HEIGHT)) {
 
@@ -373,14 +384,15 @@ private fun GuideRow(
         ) {
             if (programs.isEmpty()) {
                 // Ohne EPG-Daten eine durchgehende Platzhalterkachel über die
-                // volle Fensterbreite – sonst wirkt die Zeile "kaputt".
+                // volle Fensterbreite – sonst wirkt die Zeile "kaputt". Ein Klick
+                // startet trotzdem den Live-Sender, nur eben ohne Programmwahl.
                 ProgramCell(
                     title = "Keine Programminformationen",
                     widthMinutes = ((windowEnd - windowStart) / 60_000L).toInt(),
                     isPlaceholder = true,
                     isLive = false,
                     onFocused = { onProgramFocused(null) },
-                    onClick = onProgramClick,
+                    onClick = onPlayLive,
                 )
                 return@Row
             }
@@ -404,7 +416,7 @@ private fun GuideRow(
                         isPlaceholder = true,
                         isLive = false,
                         onFocused = { onProgramFocused(null) },
-                        onClick = onProgramClick,
+                        onClick = onPlayLive,
                     )
                 }
 
@@ -416,7 +428,7 @@ private fun GuideRow(
                     isLive = program.isLiveAt(now),
                     progress = if (program.isLiveAt(now)) program.progressAt(now) else null,
                     onFocused = { onProgramFocused(program) },
-                    onClick = onProgramClick,
+                    onClick = { onProgramClick(program) },
                 )
 
                 cursor = end
@@ -430,7 +442,7 @@ private fun GuideRow(
                     isPlaceholder = true,
                     isLive = false,
                     onFocused = { onProgramFocused(null) },
-                    onClick = onProgramClick,
+                    onClick = onPlayLive,
                 )
             }
         }

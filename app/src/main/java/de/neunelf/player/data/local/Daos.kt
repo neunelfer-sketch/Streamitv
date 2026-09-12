@@ -67,7 +67,10 @@ interface CategoryDao {
         """
         SELECT c.*, (
             SELECT COUNT(*) FROM channels ch
+            LEFT JOIN channel_overrides o
+                   ON o.playlistId = ch.playlistId AND o.streamId = ch.streamId
             WHERE ch.playlistId = c.playlistId AND ch.categoryId = c.categoryId
+              AND IFNULL(o.isHidden, 0) = 0
         ) AS channelCount
         FROM categories c
         WHERE c.playlistId = :playlistId AND c.kind = :kind
@@ -116,8 +119,11 @@ interface ChannelDao {
                ON f.playlistId = ch.playlistId AND f.streamId = ch.streamId AND f.kind = 'LIVE'
         LEFT JOIN recents r
                ON r.playlistId = ch.playlistId AND r.streamId = ch.streamId AND r.kind = 'LIVE'
+        LEFT JOIN channel_overrides o
+               ON o.playlistId = ch.playlistId AND o.streamId = ch.streamId
         WHERE ch.playlistId = :playlistId AND ch.categoryId = :categoryId
-        ORDER BY ch.number, ch.name
+          AND IFNULL(o.isHidden, 0) = 0
+        ORDER BY COALESCE(o.customOrder, ch.number), ch.name
         """,
     )
     fun observeByCategory(playlistId: Long, categoryId: String): Flow<List<ChannelRow>>
@@ -132,8 +138,11 @@ interface ChannelDao {
                ON f.playlistId = ch.playlistId AND f.streamId = ch.streamId AND f.kind = 'LIVE'
         LEFT JOIN recents r
                ON r.playlistId = ch.playlistId AND r.streamId = ch.streamId AND r.kind = 'LIVE'
+        LEFT JOIN channel_overrides o
+               ON o.playlistId = ch.playlistId AND o.streamId = ch.streamId
         WHERE ch.playlistId = :playlistId
-        ORDER BY ch.number, ch.name
+          AND IFNULL(o.isHidden, 0) = 0
+        ORDER BY COALESCE(o.customOrder, ch.number), ch.name
         """,
     )
     fun observeAll(playlistId: Long): Flow<List<ChannelRow>>
@@ -147,7 +156,10 @@ interface ChannelDao {
                ON f.playlistId = ch.playlistId AND f.streamId = ch.streamId AND f.kind = 'LIVE'
         LEFT JOIN recents r
                ON r.playlistId = ch.playlistId AND r.streamId = ch.streamId AND r.kind = 'LIVE'
+        LEFT JOIN channel_overrides o
+               ON o.playlistId = ch.playlistId AND o.streamId = ch.streamId
         WHERE ch.playlistId = :playlistId
+          AND IFNULL(o.isHidden, 0) = 0
         ORDER BY f.sortOrder, f.addedAt
         """,
     )
@@ -164,7 +176,10 @@ interface ChannelDao {
                ON r.playlistId = ch.playlistId AND r.streamId = ch.streamId AND r.kind = 'LIVE'
         LEFT JOIN favorites f
                ON f.playlistId = ch.playlistId AND f.streamId = ch.streamId AND f.kind = 'LIVE'
+        LEFT JOIN channel_overrides o
+               ON o.playlistId = ch.playlistId AND o.streamId = ch.streamId
         WHERE ch.playlistId = :playlistId
+          AND IFNULL(o.isHidden, 0) = 0
         ORDER BY r.watchedAt DESC
         LIMIT :limit
         """,
@@ -181,12 +196,39 @@ interface ChannelDao {
                ON f.playlistId = ch.playlistId AND f.streamId = ch.streamId AND f.kind = 'LIVE'
         LEFT JOIN recents r
                ON r.playlistId = ch.playlistId AND r.streamId = ch.streamId AND r.kind = 'LIVE'
+        LEFT JOIN channel_overrides o
+               ON o.playlistId = ch.playlistId AND o.streamId = ch.streamId
         WHERE ch.playlistId = :playlistId AND ch.name LIKE '%' || :query || '%'
-        ORDER BY ch.number, ch.name
+          AND IFNULL(o.isHidden, 0) = 0
+        ORDER BY COALESCE(o.customOrder, ch.number), ch.name
         LIMIT 200
         """,
     )
     fun search(playlistId: Long, query: String): Flow<List<ChannelRow>>
+
+    // -------------------------------------------------------------------
+    // Kanalverwaltung (Einstellungen): Sender sortieren/ausblenden
+    // -------------------------------------------------------------------
+
+    /** Wie [observeByCategory]/[observeAll], aber inklusive ausgeblendeter Sender. */
+    @Query(
+        """
+        SELECT ch.streamId, ch.name, ch.logoUrl, ch.number,
+               IFNULL(o.isHidden, 0) AS isHidden
+        FROM channels ch
+        LEFT JOIN channel_overrides o
+               ON o.playlistId = ch.playlistId AND o.streamId = ch.streamId
+        WHERE ch.playlistId = :playlistId AND (:categoryId IS NULL OR ch.categoryId = :categoryId)
+        ORDER BY COALESCE(o.customOrder, ch.number), ch.name
+        """,
+    )
+    fun observeManageable(playlistId: Long, categoryId: String?): Flow<List<ManageableChannelRow>>
+
+    @Query("SELECT * FROM channel_overrides WHERE playlistId = :playlistId AND streamId = :streamId")
+    suspend fun getOverride(playlistId: Long, streamId: String): ChannelOverrideEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertOverride(override: ChannelOverrideEntity)
 
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND streamId = :streamId")
     suspend fun getById(playlistId: Long, streamId: String): ChannelEntity?
@@ -209,6 +251,15 @@ interface ChannelDao {
         channels.chunked(500).forEach { insertAll(it) }
     }
 }
+
+/** Projektion für die Kanalverwaltung (siehe [ChannelDao.observeManageable]). */
+data class ManageableChannelRow(
+    val streamId: String,
+    val name: String,
+    val logoUrl: String?,
+    val number: Int,
+    val isHidden: Boolean,
+)
 
 @Dao
 interface VodDao {
@@ -236,6 +287,12 @@ interface VodDao {
 
     @Query("SELECT * FROM movies WHERE playlistId = :playlistId AND streamId = :streamId")
     suspend fun getMovie(playlistId: Long, streamId: String): MovieEntity?
+
+    @Query("SELECT * FROM series WHERE playlistId = :playlistId AND seriesId = :seriesId")
+    suspend fun getSeriesById(playlistId: Long, seriesId: String): SeriesEntity?
+
+    @Query("SELECT COUNT(*) FROM episodes WHERE playlistId = :playlistId AND seriesId = :seriesId")
+    suspend fun countEpisodes(playlistId: Long, seriesId: String): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)

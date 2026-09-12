@@ -21,8 +21,13 @@ import androidx.room.RoomDatabase
         EpgProgramEntity::class,
         FavoriteEntity::class,
         RecentEntity::class,
+        ChannelOverrideEntity::class,
     ],
-    version = 1,
+    // v2: channel_overrides (Sender ausblenden/sortieren) ergänzt. Da die
+    // Datenbank per fallbackToDestructiveMigration läuft, verlieren
+    // bestehende Installationen beim Update einmalig Favoriten/Verlauf –
+    // dieselbe bewusste Abwägung wie beim ursprünglichen Schema.
+    version = 2,
     // Kein Schema-Export: die Datenbank ist ein reiner Cache mit
     // fallbackToDestructiveMigration, es werden nie Migrationen von Hand
     // geschrieben. Der Export brachte hier nur einen Konflikt, weil die

@@ -59,6 +59,7 @@ import androidx.tv.material3.Text
 import de.neunelf.player.core.TimeFormat
 import de.neunelf.player.data.model.AspectRatioMode
 import de.neunelf.player.data.model.Channel
+import de.neunelf.player.data.model.EpgProgram
 import de.neunelf.player.player.TrackOption
 import de.neunelf.player.player.toResizeMode
 import de.neunelf.player.ui.components.ChannelListItem
@@ -70,6 +71,13 @@ import de.neunelf.player.ui.theme.TvFavorite
 import de.neunelf.player.ui.theme.TvOnSurfaceMuted
 import de.neunelf.player.ui.theme.TvSpacing
 import de.neunelf.player.ui.theme.TvSurface
+
+/** Startet den Player im VOD-Modus (Film/Episode) statt mit einem Live-Sender. */
+data class StartVod(
+    val title: String,
+    val url: String,
+    val startPositionMs: Long = 0L,
+)
 
 /**
  * Vollbild-Player mit einblendbaren Overlays – die zentrale Ansicht der App.
@@ -94,14 +102,20 @@ fun PlayerScreen(
     startChannel: Channel?,
     onExit: () -> Unit,
     onEnterPip: () -> Unit,
+    startCatchupProgram: EpgProgram? = null,
+    startVod: StartVod? = null,
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val rootFocus = remember { FocusRequester() }
 
-    // Startkanal nur einmal anspielen – nicht bei jeder Recomposition.
-    LaunchedEffect(startChannel?.streamId) {
-        startChannel?.let { viewModel.playChannel(it) }
+    // Startinhalt nur einmal anspielen – nicht bei jeder Recomposition.
+    LaunchedEffect(startChannel?.streamId, startCatchupProgram?.id, startVod) {
+        when {
+            startVod != null -> viewModel.playVod(startVod.title, startVod.url, startVod.startPositionMs)
+            startChannel != null && startCatchupProgram != null -> viewModel.playCatchup(startChannel, startCatchupProgram)
+            startChannel != null -> viewModel.playChannel(startChannel)
+        }
     }
 
     // Nach dem Schließen eines Overlays muss der Fokus zurück auf die
@@ -124,7 +138,7 @@ fun PlayerScreen(
             .focusable()
             .dpadEvents(
                 onDown = {
-                    if (state.overlay == OverlayMode.NONE) {
+                    if (state.overlay == OverlayMode.NONE && state.isZappable) {
                         viewModel.showOverlay(OverlayMode.CHANNELS); true
                     } else {
                         false
@@ -145,21 +159,21 @@ fun PlayerScreen(
                     }
                 },
                 onLeft = {
-                    if (state.overlay == OverlayMode.NONE) {
+                    if (state.overlay == OverlayMode.NONE && state.isZappable) {
                         viewModel.previousChannel(); true
                     } else {
                         false
                     }
                 },
                 onRight = {
-                    if (state.overlay == OverlayMode.NONE) {
+                    if (state.overlay == OverlayMode.NONE && state.isZappable) {
                         viewModel.nextChannel(); true
                     } else {
                         false
                     }
                 },
-                onChannelUp = { viewModel.nextChannel(); true },
-                onChannelDown = { viewModel.previousChannel(); true },
+                onChannelUp = { if (state.isZappable) viewModel.nextChannel(); state.isZappable },
+                onChannelDown = { if (state.isZappable) viewModel.previousChannel(); state.isZappable },
             ),
     ) {
         // --- Videofläche ----------------------------------------------------
@@ -198,6 +212,7 @@ fun PlayerScreen(
                 subtitleTracks = state.playback.subtitleTracks,
                 aspectRatio = state.settings.aspectRatio,
                 isFavorite = state.isFavorite,
+                showFavorite = state.currentChannel != null,
                 onSelectAudio = viewModel::selectAudioTrack,
                 onSelectSubtitle = viewModel::selectSubtitleTrack,
                 onCycleAspectRatio = viewModel::cycleAspectRatio,
@@ -312,7 +327,22 @@ private fun PlaybackStatusOverlay(
 
 @Composable
 private fun InfoBar(state: PlayerUiState) {
-    val channel = state.currentChannel ?: return
+    val channel = state.currentChannel
+
+    if (channel == null) {
+        // VOD/Episode: kein Sender, nur der Titel.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))),
+                )
+                .padding(horizontal = TvSpacing.overscanHorizontal, vertical = TvSpacing.large),
+        ) {
+            Text(state.title, style = MaterialTheme.typography.headlineMedium, color = Color.White)
+        }
+        return
+    }
 
     Box(
         modifier = Modifier
@@ -336,6 +366,14 @@ private fun InfoBar(state: PlayerUiState) {
             Spacer(Modifier.width(TvSpacing.medium))
 
             Column(modifier = Modifier.weight(1f)) {
+                if (state.contentType == PlaybackContentType.CATCHUP) {
+                    Text(
+                        text = "CATCH-UP",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TvAccent,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = channel.number.takeIf { it > 0 }?.let { "$it · " }.orEmpty() + channel.name,
@@ -353,6 +391,7 @@ private fun InfoBar(state: PlayerUiState) {
                 }
 
                 val current = state.currentProgram
+                val isCatchup = state.contentType == PlaybackContentType.CATCHUP
                 if (current != null) {
                     Spacer(Modifier.height(6.dp))
                     Text(
@@ -363,15 +402,24 @@ private fun InfoBar(state: PlayerUiState) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "${TimeFormat.range(current.startAt, current.endAt)} · ${TimeFormat.remaining(current.endAt)}",
+                        // Bei Catch-up ist die "Sendezeit" die des ursprünglichen
+                        // Ausstrahlungstermins, nicht der aktuellen Wiedergabe –
+                        // eine Restzeit/Fortschrittsanzeige dazu wäre irreführend.
+                        text = if (isCatchup) {
+                            TimeFormat.range(current.startAt, current.endAt)
+                        } else {
+                            "${TimeFormat.range(current.startAt, current.endAt)} · ${TimeFormat.remaining(current.endAt)}"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = TvOnSurfaceMuted,
                     )
-                    Spacer(Modifier.height(6.dp))
-                    ProgramProgressBar(
-                        progress = current.progressAt(System.currentTimeMillis()),
-                        modifier = Modifier.fillMaxWidth(0.6f),
-                    )
+                    if (!isCatchup) {
+                        Spacer(Modifier.height(6.dp))
+                        ProgramProgressBar(
+                            progress = current.progressAt(System.currentTimeMillis()),
+                            modifier = Modifier.fillMaxWidth(0.6f),
+                        )
+                    }
                     state.nextProgram?.let { next ->
                         Spacer(Modifier.height(6.dp))
                         Text(
@@ -409,6 +457,7 @@ private fun QuickOptionsBar(
     subtitleTracks: List<TrackOption>,
     aspectRatio: AspectRatioMode,
     isFavorite: Boolean,
+    showFavorite: Boolean,
     onSelectAudio: (TrackOption) -> Unit,
     onSelectSubtitle: (TrackOption) -> Unit,
     onCycleAspectRatio: () -> Unit,
@@ -454,12 +503,14 @@ private fun QuickOptionsBar(
                 value = aspectRatio.label,
                 onClick = onCycleAspectRatio,
             )
-            QuickAction(
-                icon = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                label = if (isFavorite) "Favorit entfernen" else "Zu Favoriten",
-                tint = if (isFavorite) TvFavorite else Color.White,
-                onClick = onToggleFavorite,
-            )
+            if (showFavorite) {
+                QuickAction(
+                    icon = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                    label = if (isFavorite) "Favorit entfernen" else "Zu Favoriten",
+                    tint = if (isFavorite) TvFavorite else Color.White,
+                    onClick = onToggleFavorite,
+                )
+            }
             QuickAction(
                 icon = Icons.Default.PictureInPictureAlt,
                 label = "Bild-in-Bild",

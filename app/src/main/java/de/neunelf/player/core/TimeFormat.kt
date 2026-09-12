@@ -21,6 +21,7 @@ object TimeFormat {
     private val CLOCK: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.GERMANY)
     private val DAY_SHORT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.GERMANY)
     private val DAY_LONG: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, dd. MMMM", Locale.GERMANY)
+    private val XTREAM_TIMESHIFT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd:HH-mm", Locale.US)
 
     private val zone: ZoneId get() = ZoneId.systemDefault()
 
@@ -91,4 +92,7 @@ object TimeFormat {
     }
 
     fun today(): LocalDate = LocalDate.now(zone)
+
+    /** "2024-01-15:19-30" – Startzeitformat, das `streaming/timeshift.php` erwartet. */
+    fun xtreamTimeshiftStart(epochMillis: Long): String = XTREAM_TIMESHIFT.format(toLocal(epochMillis))
 }

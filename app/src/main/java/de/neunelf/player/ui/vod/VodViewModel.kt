@@ -19,6 +19,7 @@ import javax.inject.Inject
 /** Ein Eintrag im Poster-Raster – vereinheitlicht Film und Serie. */
 data class VodItem(
     val id: String,
+    val playlistId: Long,
     val title: String,
     val subtitle: String?,
     val posterUrl: String?,
@@ -59,6 +60,7 @@ class VodViewModel @Inject constructor(
                         list.map { series ->
                             VodItem(
                                 id = series.seriesId,
+                                playlistId = series.playlistId,
                                 title = series.name,
                                 subtitle = series.year,
                                 posterUrl = series.posterUrl,
@@ -70,6 +72,7 @@ class VodViewModel @Inject constructor(
                         list.map { movie ->
                             VodItem(
                                 id = movie.streamId,
+                                playlistId = movie.playlistId,
                                 title = movie.name,
                                 subtitle = movie.year
                                     ?: movie.rating.takeIf { it > 0 }?.let { "★ %.1f".format(it) },

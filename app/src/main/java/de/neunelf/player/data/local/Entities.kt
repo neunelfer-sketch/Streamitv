@@ -376,6 +376,22 @@ fun EpgProgram.toEntity(playlistId: Long) = EpgProgramEntity(
     episode = episode,
 )
 
+/**
+ * Nutzer-Anpassung eines Senders: ausgeblendet und/oder eigene Reihenfolge.
+ *
+ * Eigene Tabelle aus demselben Grund wie Favoriten/Verlauf: die Sendertabelle
+ * wird bei jedem Playlist-Refresh komplett ersetzt, diese Anpassungen sollen
+ * das überleben.
+ */
+@Entity(tableName = "channel_overrides", primaryKeys = ["playlistId", "streamId"])
+data class ChannelOverrideEntity(
+    val playlistId: Long,
+    val streamId: String,
+    val isHidden: Boolean = false,
+    /** `null` = Panel-Reihenfolge (`channels.number`) gilt weiterhin. */
+    val customOrder: Int? = null,
+)
+
 /** Favorit – überlebt bewusst das Neuladen der Playlist. */
 @Entity(tableName = "favorites", primaryKeys = ["playlistId", "streamId", "kind"])
 data class FavoriteEntity(

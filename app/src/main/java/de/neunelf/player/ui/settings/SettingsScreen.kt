@@ -47,6 +47,7 @@ import de.neunelf.player.ui.theme.TvSurfaceVariant
 fun SettingsScreen(
     onBack: () -> Unit,
     onPlaylistRemoved: () -> Unit,
+    onOpenChannelManager: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -95,6 +96,13 @@ fun SettingsScreen(
                     title = "Programmzeitschrift aktualisieren",
                     value = state.lastEpgSyncLabel,
                     onClick = viewModel::refreshEpg,
+                )
+            }
+            item {
+                SettingsRow(
+                    title = "Sender verwalten",
+                    value = "Ausblenden und sortieren",
+                    onClick = onOpenChannelManager,
                 )
             }
             item {

@@ -59,9 +59,9 @@ app/src/main/java/de/neunelf/player/
    ├─ home/                     Hauptbildschirm (2-Spalten-Layout)
    ├─ guide/                    TV-Guide (EPG-Raster)
    ├─ player/                   Vollbild-Player mit Overlays
-   ├─ vod/                      Filme und Serien
+   ├─ vod/                      Filme/Serien, inkl. Film- und Serien-Detailansicht
    ├─ login/                    Ersteinrichtung
-   ├─ settings/                 Einstellungen
+   ├─ settings/                 Einstellungen, inkl. Kanalverwaltung (sortieren/ausblenden)
    └─ navigation/               Navigationsgraph
 ```
 
@@ -169,14 +169,19 @@ Voraussetzungen: JDK 17, Android SDK 35, `minSdk 22` (deckt Fire OS 5 ab).
 - Favoriten und „Zuletzt gesehen“ (überleben einen Playlist-Refresh)
 - Bild-in-Bild
 - Automatische Neuversuche bei abgebrochenen Streams
+- Catch-up/Timeshift-Wiedergabe: vergangene Sendungen im TV-Guide antippen
+  (nur bei Sendern mit Archiv, Info-Leiste zeigt einen „Catch-up“-Hinweis)
+- Detailansicht für Filme (Plot, Jahr, Bewertung, Laufzeit) und
+  Staffel-/Episoden-Browser für Serien, inkl. Nachladen der Details
+  (`get_vod_info`/`get_series_info`) beim ersten Öffnen
+- Kanalverwaltung in den Einstellungen: Sender pro Kategorie ausblenden oder
+  mit ▲/▼ neu sortieren (übersteht einen Playlist-Refresh)
 
 ## Noch offen
 
-- Detailansicht für Filme und Staffelübersicht für Serien
-- Catch-up/Timeshift-Wiedergabe (die URL-Erzeugung steht bereits in `XtreamApi`)
 - Multiview (mehrere Streams gleichzeitig)
-- Sortierung und Ausblenden von Sendern durch den Nutzer
 - Aufnahmefunktion
+- Fortsetzen-Position für Filme/Episoden (Datenmodell ist vorbereitet)
 
 ---
 
