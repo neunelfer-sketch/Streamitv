@@ -208,6 +208,7 @@ jobs:
       # ohne den Build rot zu färben - die APKs liegen dann immer noch hier.
       - name: APK ins öffentliche Repo spiegeln
         if: env.RELEASE_TOKEN != ''
+        continue-on-error: true
         run: |
           # Das Token wird von Leerraum befreit, bevor es benutzt wird.
           # Beim Einfügen in das Secret-Feld wandert leicht ein Zeilenumbruch
