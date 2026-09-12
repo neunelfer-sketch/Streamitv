@@ -1,8 +1,8 @@
 package de.neunelf.player.ui.vod
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.SavedStateHandle
 import de.neunelf.player.data.model.Episode
 import de.neunelf.player.data.model.Series
 import de.neunelf.player.data.repository.IptvRepository
