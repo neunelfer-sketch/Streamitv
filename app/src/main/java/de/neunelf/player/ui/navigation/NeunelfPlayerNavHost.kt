@@ -154,14 +154,14 @@ fun NeunelfPlayerNavHost(
                 onOpenMovie = { playlistId, streamId ->
                     navController.navigate(Routes.movieDetail(playlistId, streamId))
                 },
-                onOpenSeries = {},
+                onOpenSeries = { _, _ -> },
             )
         }
 
         composable(Routes.SERIES) {
             VodScreen(
                 kind = StreamKind.SERIES,
-                onOpenMovie = {},
+                onOpenMovie = { _, _ -> },
                 onOpenSeries = { playlistId, seriesId ->
                     navController.navigate(Routes.seriesDetail(playlistId, seriesId))
                 },
