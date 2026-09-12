@@ -156,8 +156,14 @@ jobs:
           fi
           echo "value=$V" >> "$GITHUB_OUTPUT"
 
+      # Nur eine Kopie im Actions-Verlauf, zusätzlich zum eigentlichen
+      # Release weiter unten. continue-on-error, weil eine volle
+      # Artefakt-Speicherquote sonst die spätere Release-Veröffentlichung
+      # und die Spiegelung ins öffentliche Repo mitreißen würde - beide
+      # brauchen dieses Artefakt nicht, sie lesen direkt aus "out/".
       - name: APKs als Workflow-Artefakt sichern
         if: ${{ !inputs.nur_veroeffentlichen }}
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: apk-${{ steps.rename.outputs.version }}
